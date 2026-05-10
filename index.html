@@ -198,10 +198,10 @@
     <select id="jogadorSelect"></select>
 
     <input type="number" id="entrada" placeholder="Valor de entrada">
-    <button class="btn-buyin" onclick="adicionarEntrada()">Buy / Rebuy</button>
+    <button class="btn-buyin" onclick="adicionarEntrada()">Adicionar Entrada</button>
 
     <input type="number" id="saida" placeholder="Valor de saída">
-    <button class="btn-cashout" onclick="adicionarSaida()">Cashout</button>
+    <button class="btn-cashout" onclick="adicionarSaida()">Adicionar Saída</button>
   </div>
 
   <div class="card">
@@ -263,6 +263,8 @@
   </div>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <script>
   function imprimirTermo(nome, valor) {
@@ -342,9 +344,36 @@
       janela.close();
     }, 500);
   }
+  const supabaseUrl = 'https://rpohgkhkfzuorngtellg.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
+
+  const supabase = window.supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+  );
+
   let jogadores = JSON.parse(localStorage.getItem('jogadoresPoker')) || [];
   let movimentacoes = JSON.parse(localStorage.getItem('movimentacoesPoker')) || [];
   let indiceSugestao = -1;
+
+  async function carregarMovimentacoesSupabase() {
+    const { data, error } = await supabase
+      .from('movimentacoes')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (!error && data) {
+      movimentacoes = data.map(item => ({
+        data: item.data,
+        jogador: item.jogador,
+        tipo: item.tipo,
+        valor: Number(item.valor)
+      }));
+
+      carregarMovimentacoesSupabase();
+  atualizarTela();
+    }
+  }
 
   function salvar() {
     localStorage.setItem('jogadoresPoker', JSON.stringify(jogadores));
@@ -520,6 +549,17 @@
 
     imprimirTermo(jogadores[jogador].nome, valor);
 
+    supabase
+      .from('movimentacoes')
+      .insert([
+        {
+          jogador: jogadores[jogador].nome,
+          tipo: 'Entrada',
+          valor: valor,
+          data: new Date().toLocaleString('pt-BR')
+        }
+      ]);
+
     document.getElementById('entrada').value = '';
 
     atualizarTela();
@@ -541,6 +581,17 @@
       tipo: 'Saída',
       valor: valor
     });
+
+    supabase
+      .from('movimentacoes')
+      .insert([
+        {
+          jogador: jogadores[jogador].nome,
+          tipo: 'Saída',
+          valor: valor,
+          data: new Date().toLocaleString('pt-BR')
+        }
+      ]);
 
     document.getElementById('saida').value = '';
 
