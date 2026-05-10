@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Fichas Poker</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Inter, Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 24px;
+      color: #111;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      padding: 22px;
+      border-radius: 0px;
+      margin-bottom: 16px;
+      border: 1px solid #e5e5e5;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin-bottom: 18px;
+      font-weight: 600;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      margin-bottom: 10px;
+      border-radius: 0px;
+      border: 1px solid #d4d4d4;
+      background: white;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #111;
+    }
+
+    button {
+      padding: 11px 16px;
+      border: none;
+      border-radius: 0px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: 0.2s;
+      box-shadow: 2px 2px 0px rgba(0,0,0,0.22);
+    }
+
+    button:hover {
+      opacity: 0.92;
+    }
+
+    .btn-add {
+      background: #111;
+      color: white;
+    }
+
+    .btn-buyin {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-cashout {
+      background: #16a34a;
+      color: white;
+    }
+
+    .btn-reset {
+      background: #dc2626;
+      color: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th {
+      text-align: left;
+      padding: 14px 10px;
+      border-bottom: 1px solid #e5e5e5;
+      color: #666;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 14px 10px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    tr:hover {
+      background: #fafafa;
+    }
+
+    .positivo {
+      color: #16a34a;
+      font-weight: 700;
+    }
+
+    .negativo {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    .resumo {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .box {
+      padding: 18px;
+      border-radius: 0px;
+      background: #fafafa;
+      border: 1px solid #e5e5e5;
+    }
+
+    .box strong {
+      color: #666;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .box p {
+      margin: 8px 0 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    #sugestoesJogadores {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      border-radius: 0px !important;
+      overflow: hidden;
+      border: 1px solid #e5e5e5 !important;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      table {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="card">
+    <h1>Controle de Fichas Poker</h1>
+
+    <input type="text" id="nome" placeholder="Nome do jogador">
+    <button class="btn-add" onclick="adicionarJogador()">Adicionar Jogador</button>
+  </div>
+
+  <div class="card">
+    <h2>Registrar Valores</h2>
+
+    <div style="position:relative; margin-bottom:10px;">
+      <input type="text" id="pesquisaJogador" placeholder="Pesquisar jogador" oninput="filtrarJogadoresCustom()" autocomplete="off">
+
+      <div id="sugestoesJogadores" style="position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #ccc; border-top:none; max-height:200px; overflow-y:auto; z-index:1000; border-radius:0 0 10px 10px; display:none;"></div>
+    </div>
+
+    <select id="jogadorSelect"></select>
+
+    <input type="number" id="entrada" placeholder="Valor de entrada">
+    <button class="btn-buyin" onclick="adicionarEntrada()">Buy / Rebuy</button>
+
+    <input type="number" id="saida" placeholder="Valor de saída">
+    <button class="btn-cashout" onclick="adicionarSaida()">Cashout</button>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h2>Jogadores</h2>
+      <button class="btn-reset" onclick="zerarMesa()">Zerar Mesa</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Jogador</th>
+          <th>Entrou</th>
+          <th>Saiu</th>
+          <th>Resultado</th>
+        </tr>
+      </thead>
+
+      <tbody id="tabelaJogadores"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Relatório de Movimentações</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Data/Hora</th>
+          <th>Jogador</th>
+          <th>Tipo</th>
+          <th>Valor</th>
+        </tr>
+      </thead>
+
+      <tbody id="relatorioMovimentacoes"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Resumo da Mesa</h2>
+
+    <div class="resumo">
+      <div class="box">
+        <strong>Total Entradas</strong>
+        <p id="totalEntradas">R$ 0,00</p>
+      </div>
+
+      <div class="box">
+        <strong>Total Saídas</strong>
+        <p id="totalSaidas">R$ 0,00</p>
+      </div>
+
+      <div class="box">
+        <strong>Diferença</strong>
+        <p id="diferenca">R$ 0,00</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function imprimirTermo(nome, valor) {
+    const janela = window.open('', '', 'width=400,height=600');
+
+    janela.document.write(`
+      <html>
+      <head>
+        <title>Termo Poker</title>
+
+        <style>
+          body {
+            font-family: monospace;
+            width: 79mm;
+            padding: 10px;
+          }
+
+          .centro {
+            text-align: center;
+          }
+
+          .linha {
+            margin-top: 25px;
+          }
+        </style>
+      </head>
+
+      <body>
+        <div class="centro">
+          <h2>RPG Poker Club</h2>
+          <p>Termo de Retirada de Fichas</p>
+        </div>
+
+        <br><br>
+
+        <p>
+          Eu, ___________________________________,
+          declaro que retirei o valor de:
+        </p>
+
+        <h2 class="centro">
+          R$ ${valor.toFixed(2)}
+        </h2>
+
+        <p>
+          referente à utilização de fichas
+          no RPG Poker Club.
+        </p>
+
+        <br><br>
+
+        <p>
+          Nome: ${nome}
+        </p>
+
+        <div class="linha">
+          ___________________________________
+          <br>
+          Assinatura
+        </div>
+
+        <br><br>
+
+        <p>
+          Data/Hora: ${new Date().toLocaleString('pt-BR')}
+        </p>
+      </body>
+      </html>
+    `);
+
+    janela.document.close();
+
+    janela.focus();
+
+    setTimeout(() => {
+      janela.print();
+      janela.close();
+    }, 500);
+  }
+  let jogadores = JSON.parse(localStorage.getItem('jogadoresPoker')) || [];
+  let movimentacoes = JSON.parse(localStorage.getItem('movimentacoesPoker')) || [];
+  let indiceSugestao = -1;
+
+  function salvar() {
+    localStorage.setItem('jogadoresPoker', JSON.stringify(jogadores));
+    localStorage.setItem('movimentacoesPoker', JSON.stringify(movimentacoes));
+  }
+
+  function atualizarTela() {
+    const tabela = document.getElementById('tabelaJogadores');
+    const relatorio = document.getElementById('relatorioMovimentacoes');
+    const select = document.getElementById('jogadorSelect');
+
+    tabela.innerHTML = '';
+    relatorio.innerHTML = '';
+    select.innerHTML = '<option value="">Selecione o jogador</option>';
+
+    let totalEntradas = 0;
+    let totalSaidas = 0;
+
+    jogadores.forEach((jogador, index) => {
+      totalEntradas += jogador.entrada;
+      totalSaidas += jogador.saida;
+
+      const saldo = jogador.saida - jogador.entrada;
+
+      tabela.innerHTML += `
+        <tr>
+          <td>${jogador.nome}</td>
+          <td>R$ ${jogador.entrada.toFixed(2)}</td>
+          <td>R$ ${jogador.saida.toFixed(2)}</td>
+          <td class="${saldo >= 0 ? 'positivo' : 'negativo'}">
+            ${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}
+          </td>
+        </tr>
+      `;
+
+      select.innerHTML += `
+        <option value="${index}">${jogador.nome}</option>
+      `;
+    });
+
+    document.getElementById('totalEntradas').innerText = `R$ ${totalEntradas.toFixed(2)}`;
+    document.getElementById('totalSaidas').innerText = `R$ ${totalSaidas.toFixed(2)}`;
+    document.getElementById('diferenca').innerText = `R$ ${(totalSaidas - totalEntradas).toFixed(2)}`;
+
+    movimentacoes.slice().reverse().forEach((mov) => {
+      relatorio.innerHTML += `
+        <tr>
+          <td>${mov.data}</td>
+          <td>${mov.jogador}</td>
+          <td>${mov.tipo}</td>
+          <td>R$ ${mov.valor.toFixed(2)}</td>
+        </tr>
+      `;
+    });
+
+    salvar();
+  }
+
+  function filtrarJogadoresCustom() {
+    const pesquisa = document.getElementById('pesquisaJogador').value.toLowerCase();
+    const sugestoes = document.getElementById('sugestoesJogadores');
+
+    sugestoes.innerHTML = '';
+
+    if (!pesquisa) {
+      sugestoes.style.display = 'none';
+      return;
+    }
+
+    const filtrados = jogadores.filter(j =>
+      j.nome.toLowerCase().startsWith(pesquisa)
+    );
+
+    indiceSugestao = 0;
+
+    if (filtrados.length === 0) {
+      sugestoes.style.display = 'none';
+      return;
+    }
+
+    sugestoes.style.display = 'block';
+
+    filtrados.forEach((jogador, index) => {
+      const item = document.createElement('div');
+
+      item.innerText = jogador.nome;
+
+      item.style.padding = '10px';
+      item.style.cursor = 'pointer';
+      item.style.borderBottom = '1px solid #eee';
+
+      if (index === 0) {
+        item.style.background = '#dbeafe';
+      }
+
+      item.onmouseenter = () => {
+        item.style.background = '#f3f4f6';
+      };
+
+      item.onmouseleave = () => {
+        item.style.background = 'white';
+      };
+
+      item.onclick = () => {
+        document.getElementById('pesquisaJogador').value = jogador.nome;
+
+        const index = jogadores.findIndex(j => j.nome === jogador.nome);
+
+        document.getElementById('jogadorSelect').value = index;
+
+        sugestoes.style.display = 'none';
+      };
+
+      sugestoes.appendChild(item);
+    });
+  }
+
+  document.addEventListener('click', function(e) {
+    const sugestoes = document.getElementById('sugestoesJogadores');
+    const pesquisa = document.getElementById('pesquisaJogador');
+
+    if (!pesquisa.contains(e.target) && !sugestoes.contains(e.target)) {
+      sugestoes.style.display = 'none';
+    }
+  });
+
+  function adicionarJogador() {
+    const nome = document.getElementById('nome').value;
+
+    if (!nome) return;
+
+    jogadores.push({
+      nome,
+      entrada: 0,
+      saida: 0
+    });
+
+    document.getElementById('nome').value = '';
+
+    document.getElementById('pesquisaJogador')
+    .addEventListener('keydown', function(e) {
+
+      if (e.key === 'Enter') {
+
+        const sugestoes = document.getElementById('sugestoesJogadores');
+        const primeiro = sugestoes.firstChild;
+
+        if (primeiro) {
+          primeiro.click();
+        }
+      }
+  });
+
+  atualizarTela();
+  }
+
+  function adicionarEntrada() {
+    const jogador = document.getElementById('jogadorSelect').value;
+    const valor = parseFloat(document.getElementById('entrada').value);
+
+    if (jogador === '' || isNaN(valor)) return;
+
+    if (!confirm('Confirmar operação?')) return;
+
+    jogadores[jogador].entrada += valor;
+
+    movimentacoes.push({
+      data: new Date().toLocaleString('pt-BR'),
+      jogador: jogadores[jogador].nome,
+      tipo: 'Entrada',
+      valor: valor
+    });
+
+    imprimirTermo(jogadores[jogador].nome, valor);
+
+    document.getElementById('entrada').value = '';
+
+    atualizarTela();
+  }
+
+  function adicionarSaida() {
+    const jogador = document.getElementById('jogadorSelect').value;
+    const valor = parseFloat(document.getElementById('saida').value);
+
+    if (jogador === '' || isNaN(valor)) return;
+
+    if (!confirm('Confirmar operação?')) return;
+
+    jogadores[jogador].saida += valor;
+
+    movimentacoes.push({
+      data: new Date().toLocaleString('pt-BR'),
+      jogador: jogadores[jogador].nome,
+      tipo: 'Saída',
+      valor: valor
+    });
+
+    document.getElementById('saida').value = '';
+
+    atualizarTela();
+  }
+
+  function zerarMesa() {
+    if (confirm('Deseja realmente zerar a mesa?')) {
+      jogadores = [];
+      movimentacoes = [];
+      atualizarTela();
+    }
+  }
+
+  atualizarTela();
+</script>
+
+</body>
+</html>
