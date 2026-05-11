@@ -347,7 +347,7 @@
   const supabaseUrl = 'https://rpohgkhkfzuorngtellg.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
 
-  const supabase = supabase.createClient(
+  const supabaseClient = window.supabase.createClient(
     supabaseUrl,
     supabaseKey
   );
@@ -358,7 +358,7 @@
 
   async function carregarMovimentacoesSupabase() {
     console.log('Conectando ao Supabase...');
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('movimentacoes')
       .select('*')
       .order('id', { ascending: false });
@@ -376,8 +376,7 @@
         valor: Number(item.valor)
       }));
 
-      carregarMovimentacoesSupabase();
-  atualizarTela();
+      atualizarTela();
     }
   }
 
@@ -519,21 +518,7 @@
 
     document.getElementById('nome').value = '';
 
-    document.getElementById('pesquisaJogador')
-    .addEventListener('keydown', function(e) {
-
-      if (e.key === 'Enter') {
-
-        const sugestoes = document.getElementById('sugestoesJogadores');
-        const primeiro = sugestoes.firstChild;
-
-        if (primeiro) {
-          primeiro.click();
-        }
-      }
-  });
-
-  atualizarTela();
+    atualizarTela();
   }
 
   function adicionarEntrada() {
@@ -555,7 +540,7 @@
 
     imprimirTermo(jogadores[jogador].nome, valor);
 
-    supabase
+    supabaseClient
       .from('movimentacoes')
       .insert([
         {
@@ -588,7 +573,7 @@
       valor: valor
     });
 
-    supabase
+    supabaseClient
       .from('movimentacoes')
       .insert([
         {
@@ -603,6 +588,22 @@
 
     atualizarTela();
   }
+
+  document.getElementById('pesquisaJogador')
+    .addEventListener('keydown', function(e) {
+
+      if (e.key === 'Enter') {
+
+        const sugestoes = document.getElementById('sugestoesJogadores');
+        const primeiro = sugestoes.firstChild;
+
+        if (primeiro) {
+          primeiro.click();
+        }
+      }
+  });
+
+  carregarMovimentacoesSupabase();
 
   function zerarMesa() {
     if (confirm('Deseja realmente zerar a mesa?')) {
