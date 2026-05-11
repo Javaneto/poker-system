@@ -618,7 +618,14 @@
 
     if (adminLiberado) {
 
+      adminLiberado = false;
+
       localStorage.removeItem('adminExpira');
+
+      bloquearAcoes();
+
+      return;
+    }
 
     if (adminLiberado) {
 
@@ -695,7 +702,7 @@
       return;
     }
 
-    await carregarDados();
+    carregarDados();
   }
 
   function zerarMesa() {
