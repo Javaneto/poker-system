@@ -245,6 +245,9 @@
       >
 
       <input
+        enterkeyhint="done"
+        autocapitalize="words"
+        spellcheck="false"
         type="text"
         id="pesquisaJogador"
         placeholder="Pesquisar jogador"
@@ -613,9 +616,12 @@
       if ((e.key === 'Tab' || e.key === 'ArrowRight') && hintInput.value) {
         e.preventDefault();
         pesquisaInput.value = hintInput.value;
+        pesquisaInput.dispatchEvent(new Event('input'));
       }
 
       if (e.key === 'Enter') {
+
+        e.preventDefault();
 
         const primeiro = document.querySelector('.sugestao-item');
 
@@ -763,15 +769,18 @@
         <br>
 
         <p>
-          Eu, ${mov.jogador}
+          Eu, ____________________________
           declaro movimentação no valor de:
         </p>
 
         <h2 style="text-align:center;">
           R$ ${Number(mov.valor).toFixed(2)}
         </h2>
-        
-        <br>
+
+        <p>
+          Jogador: ${mov.jogador}
+        </p>
+
         <p>
           Tipo: ${mov.tipo}
         </p>
