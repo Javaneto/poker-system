@@ -268,6 +268,12 @@
   let movimentacoes = [];
   let adminLiberado = false;
 
+  const adminExpira = localStorage.getItem('adminExpira');
+
+  if (adminExpira && Date.now() < Number(adminExpira)) {
+    adminLiberado = true;
+  }
+
   async function carregarDados() {
 
     const { data: jogadoresDB } = await client
@@ -404,7 +410,11 @@
     document.getElementById('cadastroCpf').value = '';
 
     atualizarTela();
-    carregarDados();
+    if (adminLiberado) {
+    liberarAcoes();
+  }
+
+  carregarDados();
   }
 
   function filtrarJogadores() {
@@ -608,6 +618,10 @@
 
     if (adminLiberado) {
 
+      localStorage.removeItem('adminExpira');
+
+    if (adminLiberado) {
+
       adminLiberado = false;
 
       bloquearAcoes();
@@ -617,7 +631,12 @@
 
     const senha = prompt('Digite a senha ADM');
 
-    if (senha === '1234') {
+    if (senha === '14563') {
+
+      localStorage.setItem(
+        'adminExpira',
+        Date.now() + (8 * 60 * 60 * 1000)
+      );
 
       adminLiberado = true;
 
@@ -676,7 +695,10 @@
       return;
     }
 
-    car
+    await carregarDados();
+  }
+
+  function zerarMesa() {
 
     if (!adminLiberado) return;
 
