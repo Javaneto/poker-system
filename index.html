@@ -376,6 +376,30 @@
         valor: Number(item.valor)
       }));
 
+      jogadores = [];
+
+      movimentacoes.forEach(mov => {
+        let jogadorExistente = jogadores.find(j => j.nome === mov.jogador);
+
+        if (!jogadorExistente) {
+          jogadorExistente = {
+            nome: mov.jogador,
+            entrada: 0,
+            saida: 0
+          };
+
+          jogadores.push(jogadorExistente);
+        }
+
+        if (mov.tipo === 'Entrada') {
+          jogadorExistente.entrada += mov.valor;
+        }
+
+        if (mov.tipo === 'Saída') {
+          jogadorExistente.saida += mov.valor;
+        }
+      });
+
       atualizarTela();
     }
   }
