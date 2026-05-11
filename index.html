@@ -355,6 +355,7 @@
   let jogadores = JSON.parse(localStorage.getItem('jogadoresPoker')) || [];
   let movimentacoes = JSON.parse(localStorage.getItem('movimentacoesPoker')) || [];
   let indiceSugestao = -1;
+  let ultimaLimpezaMesa = localStorage.getItem('ultimaLimpezaMesa') || null;
 
   async function carregarMovimentacoesSupabase() {
     console.log('Conectando ao Supabase...');
@@ -378,7 +379,17 @@
 
       jogadores = [];
 
-      movimentacoes.forEach(mov => {
+      const movimentacoesMesa = ultimaLimpezaMesa
+        ? movimentacoes.filter(mov => {
+            const partes = mov.data.split(', ');
+            const dataBR = partes[0].split('/');
+            const dataConvertida = `${dataBR[2]}-${dataBR[1]}-${dataBR[0]}T${partes[1]}`;
+
+            return new Date(dataConvertida) >= new Date(ultimaLimpezaMesa);
+          })
+        : movimentacoes;
+
+      movimentacoesMesa.forEach(mov => {
         let jogadorExistente = jogadores.find(j => j.nome === mov.jogador);
 
         if (!jogadorExistente) {
@@ -647,6 +658,9 @@
     if (confirm('Deseja realmente zerar a mesa?')) {
 
       jogadores = [];
+
+      ultimaLimpezaMesa = new Date().toISOString();
+      localStorage.setItem('ultimaLimpezaMesa', ultimaLimpezaMesa);
 
       localStorage.removeItem('jogadoresPoker');
 
