@@ -347,7 +347,7 @@
   const supabaseUrl = 'https://rpohgkhkfzuorngtellg.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
 
-  const supabaseClient = window.supabase.createClient(
+  const client = window.supabase.createClient(
     supabaseUrl,
     supabaseKey
   );
@@ -358,7 +358,7 @@
 
   async function carregarMovimentacoesSupabase() {
     console.log('Conectando ao Supabase...');
-    const { data, error } = await supabaseClient
+    const { data, error } = await client
       .from('movimentacoes')
       .select('*')
       .order('id', { ascending: false });
@@ -540,7 +540,7 @@
 
     imprimirTermo(jogadores[jogador].nome, valor);
 
-    const { error } = await supabaseClient
+    const { error } = await client
       .from('movimentacoes')
       .insert([
         {
@@ -580,7 +580,7 @@
       valor: valor
     });
 
-    const { error } = await supabaseClient
+    const { error } = await client
       .from('movimentacoes')
       .insert([
         {
