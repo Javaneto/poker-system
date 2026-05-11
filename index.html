@@ -86,12 +86,15 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
+      table-layout: fixed;
     }
 
     th, td {
       text-align: left;
       padding: 12px;
       border-bottom: 1px solid #eee;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
 
     .positivo {
@@ -141,6 +144,49 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+
+      body {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 14px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      h2 {
+        font-size: 24px;
+      }
+
+      th, td {
+        padding: 8px;
+        font-size: 14px;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .flex {
+        flex-direction: column;
+      }
+
+      .topbar {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      table {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
