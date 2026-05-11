@@ -267,6 +267,7 @@
   let jogadores = [];
   let movimentacoes = [];
   let adminLiberado = false;
+  let ultimaLimpezaMesa = localStorage.getItem('ultimaLimpezaMesa') || null;
 
   const adminExpira = localStorage.getItem('adminExpira');
 
@@ -302,12 +303,16 @@
 
     select.innerHTML = '<option value="">Selecione o jogador</option>';
 
+    const movimentacoesMesa = ultimaLimpezaMesa
+      ? movimentacoes.filter(mov => new Date(mov.created_at || mov.data) >= new Date(ultimaLimpezaMesa))
+      : movimentacoes;
+
     jogadores.forEach((jogador, index) => {
 
       let entrada = 0;
       let saida = 0;
 
-      movimentacoes.forEach(mov => {
+      movimentacoesMesa.forEach(mov => {
         if (mov.jogador === jogador.nome) {
 
           if (mov.tipo === 'Entrada') {
@@ -711,7 +716,12 @@
 
     if (!confirm('Deseja realmente zerar a mesa?')) return;
 
-    movimentacoes = [];
+    ultimaLimpezaMesa = new Date().toISOString();
+
+    localStorage.setItem(
+      'ultimaLimpezaMesa',
+      ultimaLimpezaMesa
+    );
 
     atualizarTela();
   }
