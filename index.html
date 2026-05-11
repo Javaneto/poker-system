@@ -273,6 +273,10 @@
 
   if (adminExpira && Date.now() < Number(adminExpira)) {
     adminLiberado = true;
+
+    window.addEventListener('load', () => {
+      liberarAcoes();
+    });
   }
 
   async function carregarDados() {
@@ -659,7 +663,7 @@
 
       localStorage.setItem(
         'adminExpira',
-        Date.now() + (8 * 60 * 60 * 1000)
+        String(Date.now() + (8 * 60 * 60 * 1000))
       );
 
       adminLiberado = true;
