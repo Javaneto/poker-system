@@ -366,7 +366,7 @@
       return;
     }
 
-    await client
+    const { error } = await client
       .from('jogadores')
       .insert([
         {
@@ -376,10 +376,23 @@
         }
       ]);
 
+    if (error) {
+      alert('Erro ao cadastrar jogador');
+      console.error(error);
+      return;
+    }
+
+    jogadores.push({
+      nome,
+      telefone,
+      cpf
+    });
+
     document.getElementById('cadastroNome').value = '';
     document.getElementById('cadastroTelefone').value = '';
     document.getElementById('cadastroCpf').value = '';
 
+    atualizarTela();
     carregarDados();
   }
 
