@@ -259,7 +259,7 @@
 
     <div class="flex">
       <div>
-        <input type="number" id="entrada" placeholder="Entrada">
+        <input type="number" id="entrada" placeholder="Entrada" min="0">
 
         <button id="btnEntrada" class="btn-blue disabled" onclick="adicionarEntrada()">
           Adicionar Entrada
@@ -267,7 +267,7 @@
       </div>
 
       <div>
-        <input type="number" id="saida" placeholder="Saída">
+        <input type="number" id="saida" placeholder="Saída" min="0">
 
         <button id="btnSaida" class="btn-green disabled" onclick="adicionarSaida()">
           Adicionar Saída
@@ -639,7 +639,8 @@
       document.getElementById('entrada').value
     );
 
-    if (!jogador || isNaN(valor)) {
+    if (!jogador || isNaN(valor) || valor < 0) {
+      console.log('Entrada negativa bloqueada');
       console.log('Entrada inválida');
       return;
     }
@@ -680,7 +681,8 @@
       document.getElementById('saida').value
     );
 
-    if (!jogador || isNaN(valor)) {
+    if (!jogador || isNaN(valor) || valor < 0) {
+      console.log('Saída negativa bloqueada');
       console.log('Saída inválida');
       return;
     }
