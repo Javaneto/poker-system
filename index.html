@@ -97,6 +97,33 @@
       overflow-wrap: break-word;
     }
 
+    .autocomplete-wrapper {
+      position: relative;
+      margin-bottom: 10px;
+      height: 48px;
+    }
+
+    #autocompleteHint,
+    #pesquisaJogador {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 48px;
+    }
+
+    #autocompleteHint {
+      color: #9ca3af;
+      background: white;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #pesquisaJogador {
+      background: transparent;
+      z-index: 2;
+    }
+
     .positivo {
       color: green;
       font-weight: bold;
@@ -211,7 +238,14 @@
   <div class="card">
     <h2>Registrar Movimentação</h2>
 
-    <div style="position:relative;">
+    <div class="autocomplete-wrapper">
+      <input
+        type="text"
+        id="autocompleteHint"
+        tabindex="-1"
+        readonly
+      >
+
       <input
         type="text"
         id="pesquisaJogador"
@@ -488,6 +522,9 @@
   carregarDados();
   }
 
+  const pesquisaInput = document.getElementById('pesquisaJogador');
+  const hintInput = document.getElementById('autocompleteHint');
+
   function filtrarJogadores() {
 
     const pesquisa = document.getElementById('pesquisaJogador').value.toLowerCase();
@@ -498,6 +535,7 @@
 
     if (!pesquisa) {
       sugestoes.style.display = 'none';
+      hintInput.value = '';
       return;
     }
 
@@ -507,8 +545,11 @@
 
     if (filtrados.length === 0) {
       sugestoes.style.display = 'none';
+      hintInput.value = '';
       return;
     }
+
+    hintInput.value = filtrados[0].nome;
 
     sugestoes.style.display = 'block';
 
@@ -530,6 +571,7 @@
       div.onclick = () => {
 
         document.getElementById('pesquisaJogador').value = jogador.nome;
+        hintInput.value = jogador.nome;
 
         const indexJogador = jogadores.findIndex(j => j.nome === jogador.nome);
 
@@ -544,6 +586,11 @@
 
   document.getElementById('pesquisaJogador')
     .addEventListener('keydown', function(e) {
+
+      if ((e.key === 'Tab' || e.key === 'ArrowRight') && hintInput.value) {
+        e.preventDefault();
+        pesquisaInput.value = hintInput.value;
+      }
 
       if (e.key === 'Enter') {
 
