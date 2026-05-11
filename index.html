@@ -713,17 +713,17 @@
 
     console.log('Imprimindo movimentação');
 
-    const janela = window.open('', '', 'width=400,height=600');
+    const janela = window.open('', '', 'width=420,height=700');
 
     janela.document.write(`
       <html>
-      <body style="font-family:monospace;width:79mm;padding:10px;">
+      <body style="font-family:monospace;width:79mm;padding:2mm;margin:0;font-size:15px;line-height:1.3;">
 
-        <h2 style="text-align:center;">
+        <h2 style="text-align:center;margin:0 0 4px 0;font-size:22px;">
           RPG Poker Club
         </h2>
 
-        <p style="text-align:center;">
+        <p style="text-align:center;margin:0 0 10px 0;font-size:14px;">
           Termo de Movimentação
         </p>
 
@@ -754,8 +754,7 @@
           Telefone: ${mov.telefone || '-'}
         </p>
 
-        <br><br>
-
+        <br><br><br>
         ____________________________
         <br>
         Assinatura
