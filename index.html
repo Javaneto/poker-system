@@ -163,7 +163,7 @@
     <input type="text" id="cadastroTelefone" placeholder="Telefone">
     <input type="text" id="cadastroCpf" placeholder="CPF">
 
-    <button class="btn-dark" onclick="cadastrarJogador()">
+    <button id="btnCadastrarJogador" class="btn-dark disabled" onclick="cadastrarJogador()">
       Cadastrar Jogador
     </button>
   </div>
@@ -349,6 +349,11 @@
   }
 
   async function cadastrarJogador() {
+
+    if (!adminLiberado) {
+      alert('Modo ADM necessário');
+      return;
+    }
 
     const nome = document.getElementById('cadastroNome').value;
     const telefone = document.getElementById('cadastroTelefone').value;
@@ -621,12 +626,16 @@
 
   function liberarAcoes() {
 
+    document.getElementById('btnCadastrarJogador').classList.remove('disabled');
+
     document.getElementById('btnEntrada').classList.remove('disabled');
     document.getElementById('btnSaida').classList.remove('disabled');
     document.getElementById('btnZerar').classList.remove('disabled');
   }
 
   function bloquearAcoes() {
+
+    document.getElementById('btnCadastrarJogador').classList.add('disabled');
 
     document.getElementById('btnEntrada').classList.add('disabled');
     document.getElementById('btnSaida').classList.add('disabled');
