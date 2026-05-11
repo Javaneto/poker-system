@@ -233,8 +233,6 @@
     </button>
   </div>
 
-  
-
   <div class="card">
     <h2>Registrar Movimentação</h2>
 
@@ -297,7 +295,6 @@
       <thead>
         <tr>
           <th>Jogador</th>
-          
           <th>Entrou</th>
           <th>Saiu</th>
           <th>Resultado</th>
@@ -339,6 +336,8 @@
   </div>
 
 <script>
+  console.log('Sistema iniciado');
+
   const SUPABASE_URL = 'https://rpohgkhkfzuorngtellg.supabase.co';
 
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
@@ -347,6 +346,8 @@
     SUPABASE_URL,
     SUPABASE_KEY
   );
+
+  console.log('Supabase conectado');
 
   let jogadores = [];
   let movimentacoes = [];
@@ -358,12 +359,16 @@
   if (adminExpira && Date.now() < Number(adminExpira)) {
     adminLiberado = true;
 
+    console.log('Sessão ADM restaurada');
+
     window.addEventListener('load', () => {
       liberarAcoes();
     });
   }
 
   async function carregarDados() {
+
+    console.log('Carregando dados do Supabase');
 
     const { data: jogadoresDB } = await client
       .from('jogadores')
@@ -377,10 +382,15 @@
     jogadores = jogadoresDB || [];
     movimentacoes = movimentacoesDB || [];
 
+    console.log('Jogadores carregados:', jogadores.length);
+    console.log('Movimentações carregadas:', movimentacoes.length);
+
     atualizarTela();
   }
 
   function atualizarTela() {
+
+    console.log('Atualizando tela');
 
     const mesa = document.getElementById('mesaAtual');
     const relatorio = document.getElementById('relatorio');
@@ -432,7 +442,6 @@
         mesa.innerHTML += `
           <tr>
             <td>${jogador.nome}</td>
-            
             <td>R$ ${entrada.toFixed(2)}</td>
             <td>R$ ${saida.toFixed(2)}</td>
             <td class="${saldo >= 0 ? 'positivo' : 'negativo'}">
@@ -467,6 +476,8 @@
 
   async function cadastrarJogador() {
 
+    console.log('Tentando cadastrar jogador');
+
     if (!adminLiberado) {
       alert('Modo ADM necessário');
       return;
@@ -484,6 +495,7 @@
     );
 
     if (existe) {
+      console.log('Jogador duplicado detectado');
       alert('Jogador já cadastrado');
       return;
     }
@@ -504,6 +516,8 @@
       return;
     }
 
+    console.log('Jogador cadastrado:', nome);
+
     jogadores.push({
       nome,
       telefone,
@@ -515,11 +529,12 @@
     document.getElementById('cadastroCpf').value = '';
 
     atualizarTela();
-    if (adminLiberado) {
-    liberarAcoes();
-  }
 
-  carregarDados();
+    if (adminLiberado) {
+      liberarAcoes();
+    }
+
+    carregarDados();
   }
 
   const pesquisaInput = document.getElementById('pesquisaJogador');
@@ -528,6 +543,8 @@
   function filtrarJogadores() {
 
     const pesquisa = document.getElementById('pesquisaJogador').value.toLowerCase();
+
+    console.log('Pesquisando jogador:', pesquisa);
 
     const sugestoes = document.getElementById('sugestoesJogadores');
 
@@ -542,6 +559,8 @@
     const filtrados = jogadores.filter(j =>
       j.nome.toLowerCase().startsWith(pesquisa)
     );
+
+    console.log('Sugestões encontradas:', filtrados.length);
 
     if (filtrados.length === 0) {
       sugestoes.style.display = 'none';
@@ -570,6 +589,8 @@
 
       div.onclick = () => {
 
+        console.log('Jogador selecionado:', jogador.nome);
+
         document.getElementById('pesquisaJogador').value = jogador.nome;
         hintInput.value = jogador.nome;
 
@@ -586,6 +607,8 @@
 
   document.getElementById('pesquisaJogador')
     .addEventListener('keydown', function(e) {
+
+      console.log('Tecla pressionada:', e.key);
 
       if ((e.key === 'Tab' || e.key === 'ArrowRight') && hintInput.value) {
         e.preventDefault();
@@ -604,6 +627,8 @@
 
   async function adicionarEntrada() {
 
+    console.log('Adicionando entrada');
+
     if (!adminLiberado) return;
 
     const jogador = jogadores[
@@ -614,7 +639,10 @@
       document.getElementById('entrada').value
     );
 
-    if (!jogador || isNaN(valor)) return;
+    if (!jogador || isNaN(valor)) {
+      console.log('Entrada inválida');
+      return;
+    }
 
     if (!confirm('Confirmar entrada?')) return;
 
@@ -631,12 +659,16 @@
         }
       ]);
 
+    console.log('Entrada registrada:', valor);
+
     document.getElementById('entrada').value = '';
 
     carregarDados();
   }
 
   async function adicionarSaida() {
+
+    console.log('Adicionando saída');
 
     if (!adminLiberado) return;
 
@@ -648,7 +680,10 @@
       document.getElementById('saida').value
     );
 
-    if (!jogador || isNaN(valor)) return;
+    if (!jogador || isNaN(valor)) {
+      console.log('Saída inválida');
+      return;
+    }
 
     if (!confirm('Confirmar saída?')) return;
 
@@ -665,12 +700,16 @@
         }
       ]);
 
+    console.log('Saída registrada:', valor);
+
     document.getElementById('saida').value = '';
 
     carregarDados();
   }
 
   function imprimirMovimentacao(mov) {
+
+    console.log('Imprimindo movimentação');
 
     const janela = window.open('', '', 'width=400,height=600');
 
@@ -734,6 +773,8 @@
 
   function toggleAdmin() {
 
+    console.log('Alternando modo ADM');
+
     if (adminLiberado) {
 
       adminLiberado = false;
@@ -742,14 +783,7 @@
 
       bloquearAcoes();
 
-      return;
-    }
-
-    if (adminLiberado) {
-
-      adminLiberado = false;
-
-      bloquearAcoes();
+      console.log('ADM desativado');
 
       return;
     }
@@ -767,14 +801,19 @@
 
       liberarAcoes();
 
+      console.log('ADM liberado');
+
       alert('Modo administrador liberado');
 
     } else {
+      console.log('Senha incorreta');
       alert('Senha incorreta');
     }
   }
 
   function liberarAcoes() {
+
+    console.log('Liberando ações ADM');
 
     document.getElementById('btnDesfazer').classList.remove('disabled');
 
@@ -787,6 +826,8 @@
 
   function bloquearAcoes() {
 
+    console.log('Bloqueando ações ADM');
+
     document.getElementById('btnDesfazer').classList.add('disabled');
 
     document.getElementById('btnCadastrarJogador').classList.add('disabled');
@@ -797,6 +838,8 @@
   }
 
   async function desfazerUltimaMovimentacao() {
+
+    console.log('Tentando desfazer movimentação');
 
     if (!adminLiberado) return;
 
@@ -820,10 +863,14 @@
       return;
     }
 
+    console.log('Movimentação desfeita:', ultima.id);
+
     carregarDados();
   }
 
   function zerarMesa() {
+
+    console.log('Zerando mesa');
 
     if (!adminLiberado) return;
 
@@ -835,6 +882,8 @@
       'ultimaLimpezaMesa',
       ultimaLimpezaMesa
     );
+
+    console.log('Mesa zerada em:', ultimaLimpezaMesa);
 
     atualizarTela();
   }
