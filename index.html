@@ -202,17 +202,7 @@
     </button>
   </div>
 
-  <div class="card">
-    <h2>Cadastrar Jogador</h2>
-
-    <input type="text" id="cadastroNome" placeholder="Nome">
-    <input type="text" id="cadastroTelefone" placeholder="Telefone">
-    <input type="text" id="cadastroCpf" placeholder="CPF">
-
-    <button id="btnCadastrarJogador" class="btn-dark disabled" onclick="cadastrarJogador()">
-      Cadastrar Jogador
-    </button>
-  </div>
+  
 
   <div class="card">
     <h2>Registrar Movimentação</h2>
@@ -269,7 +259,7 @@
       <thead>
         <tr>
           <th>Jogador</th>
-          <th>Telefone</th>
+          
           <th>Entrou</th>
           <th>Saiu</th>
           <th>Resultado</th>
@@ -298,7 +288,17 @@
     </table>
   </div>
 
-</div>
+  <div class="card">
+    <h2>Cadastrar Jogador</h2>
+
+    <input type="text" id="cadastroNome" placeholder="Nome">
+    <input type="text" id="cadastroTelefone" placeholder="Telefone">
+    <input type="text" id="cadastroCpf" placeholder="CPF">
+
+    <button id="btnCadastrarJogador" class="btn-dark disabled" onclick="cadastrarJogador()">
+      Cadastrar Jogador
+    </button>
+  </div>
 
 <script>
   const SUPABASE_URL = 'https://rpohgkhkfzuorngtellg.supabase.co';
@@ -394,7 +394,7 @@
         mesa.innerHTML += `
           <tr>
             <td>${jogador.nome}</td>
-            <td>${jogador.telefone || '-'}</td>
+            
             <td>R$ ${entrada.toFixed(2)}</td>
             <td>R$ ${saida.toFixed(2)}</td>
             <td class="${saldo >= 0 ? 'positivo' : 'negativo'}">
