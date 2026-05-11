@@ -521,7 +521,7 @@
     atualizarTela();
   }
 
-  function adicionarEntrada() {
+  async function adicionarEntrada() {
     const jogador = document.getElementById('jogadorSelect').value;
     const valor = parseFloat(document.getElementById('entrada').value);
 
@@ -540,7 +540,7 @@
 
     imprimirTermo(jogadores[jogador].nome, valor);
 
-    supabaseClient
+    const { error } = await supabaseClient
       .from('movimentacoes')
       .insert([
         {
@@ -551,12 +551,19 @@
         }
       ]);
 
+    if (error) {
+      alert('Erro ao salvar no Supabase');
+      console.error(error);
+    } else {
+      console.log('Entrada salva no Supabase');
+    }
+
     document.getElementById('entrada').value = '';
 
     atualizarTela();
   }
 
-  function adicionarSaida() {
+  async function adicionarSaida() {
     const jogador = document.getElementById('jogadorSelect').value;
     const valor = parseFloat(document.getElementById('saida').value);
 
@@ -573,7 +580,7 @@
       valor: valor
     });
 
-    supabaseClient
+    const { error } = await supabaseClient
       .from('movimentacoes')
       .insert([
         {
@@ -583,6 +590,13 @@
           data: new Date().toLocaleString('pt-BR')
         }
       ]);
+
+    if (error) {
+      alert('Erro ao salvar no Supabase');
+      console.error(error);
+    } else {
+      console.log('Saída salva no Supabase');
+    }
 
     document.getElementById('saida').value = '';
 
