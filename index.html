@@ -208,9 +208,15 @@
     <div class="topbar">
       <h2>Mesa Atual</h2>
 
-      <button id="btnZerar" class="btn-red disabled" onclick="zerarMesa()">
-        Zerar Mesa
-      </button>
+      <div style="display:flex;gap:8px;">
+        <button id="btnDesfazer" class="btn-gray disabled" onclick="desfazerUltimaMovimentacao()">
+          Desfazer Última
+        </button>
+
+        <button id="btnZerar" class="btn-red disabled" onclick="zerarMesa()">
+          Zerar Mesa
+        </button>
+      </div>
     </div>
 
     <table>
@@ -626,6 +632,8 @@
 
   function liberarAcoes() {
 
+    document.getElementById('btnDesfazer').classList.remove('disabled');
+
     document.getElementById('btnCadastrarJogador').classList.remove('disabled');
 
     document.getElementById('btnEntrada').classList.remove('disabled');
@@ -635,6 +643,8 @@
 
   function bloquearAcoes() {
 
+    document.getElementById('btnDesfazer').classList.add('disabled');
+
     document.getElementById('btnCadastrarJogador').classList.add('disabled');
 
     document.getElementById('btnEntrada').classList.add('disabled');
@@ -642,7 +652,31 @@
     document.getElementById('btnZerar').classList.add('disabled');
   }
 
-  function zerarMesa() {
+  async function desfazerUltimaMovimentacao() {
+
+    if (!adminLiberado) return;
+
+    if (movimentacoes.length === 0) {
+      alert('Nenhuma movimentação encontrada');
+      return;
+    }
+
+    if (!confirm('Desfazer última movimentação?')) return;
+
+    const ultima = movimentacoes[0];
+
+    const { error } = await client
+      .from('movimentacoes')
+      .delete()
+      .eq('id', ultima.id);
+
+    if (error) {
+      alert('Erro ao desfazer movimentação');
+      console.error(error);
+      return;
+    }
+
+    car
 
     if (!adminLiberado) return;
 
