@@ -304,7 +304,19 @@
     select.innerHTML = '<option value="">Selecione o jogador</option>';
 
     const movimentacoesMesa = ultimaLimpezaMesa
-      ? movimentacoes.filter(mov => new Date(mov.created_at || mov.data) >= new Date(ultimaLimpezaMesa))
+      ? movimentacoes.filter(mov => {
+          const partes = mov.data.split(', ');
+
+          if (!partes[0] || !partes[1]) return true;
+
+          const dataBR = partes[0].split('/');
+
+          const dataConvertida = new Date(
+            `${dataBR[2]}-${dataBR[1]}-${dataBR[0]}T${partes[1]}`
+          );
+
+          return dataConvertida >= new Date(ultimaLimpezaMesa);
+        })
       : movimentacoes;
 
     jogadores.forEach((jogador, index) => {
