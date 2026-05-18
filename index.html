@@ -330,10 +330,12 @@
         id="btnVerMais"
         class="btn-gray"
         onclick="verMaisRelatorio()"
+        type="button"
       >
         Ver Mais
       </button>
     </div>
+  </div>
     </table>
   </div>
 
@@ -471,9 +473,11 @@
       `;
     });
 
-    movimentacoes
-      .slice(0, limiteRelatorio)
-      .forEach(mov => {
+    const movimentacoesVisiveis = movimentacoes.slice(0, limiteRelatorio);
+
+    console.log('Renderizando movimentações:', movimentacoesVisiveis.length);
+
+    movimentacoesVisiveis.forEach(mov => {
 
       relatorio.innerHTML += `
         <tr>
@@ -555,7 +559,9 @@
 
     console.log('Expandindo relatório');
 
-    limiteRelatorio += 10;
+    limiteRelatorio = limiteRelatorio + 10;
+
+    console.log('Novo limite:', limiteRelatorio);
 
     atualizarTela();
   }
