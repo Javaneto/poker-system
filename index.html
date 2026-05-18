@@ -324,6 +324,16 @@
 
       <tbody id="relatorio"></tbody>
     </table>
+
+    <div style="margin-top:12px;text-align:center;">
+      <button
+        id="btnVerMais"
+        class="btn-gray"
+        onclick="verMaisRelatorio()"
+      >
+        Ver Mais
+      </button>
+    </table>
   </div>
 
   <div class="card">
@@ -355,6 +365,7 @@
   let jogadores = [];
   let movimentacoes = [];
   let adminLiberado = false;
+  let limiteRelatorio = 10;
   let ultimaLimpezaMesa = localStorage.getItem('ultimaLimpezaMesa') || null;
 
   const adminExpira = localStorage.getItem('adminExpira');
@@ -459,7 +470,9 @@
       `;
     });
 
-    movimentacoes.forEach(mov => {
+    movimentacoes
+      .slice(0, limiteRelatorio)
+      .forEach(mov => {
 
       relatorio.innerHTML += `
         <tr>
@@ -537,7 +550,16 @@
       liberarAcoes();
     }
 
-    carregarDados();
+    function verMaisRelatorio() {
+
+    console.log('Expandindo relatório');
+
+    limiteRelatorio += 10;
+
+    atualizarTela();
+  }
+
+  carregarDados();
   }
 
   const pesquisaInput = document.getElementById('pesquisaJogador');
@@ -769,14 +791,14 @@
         <br>
 
         <p>
-          Eu, ${mov.jogador}
+          Eu, ${mov.jogador}          
           declaro movimentação no valor de:
         </p>
 
         <h2 style="text-align:center;">
           R$ ${Number(mov.valor).toFixed(2)}
         </h2>
-
+          
         <br>
         <p>
           Tipo: ${mov.tipo}
