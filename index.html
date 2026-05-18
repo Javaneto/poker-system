@@ -369,7 +369,7 @@
   let movimentacoes = [];
   let adminLiberado = false;
   let limiteRelatorio = 10;
-  let ultimaLimpezaMesa = null;
+  let mesaAtualId = 1;
 
   const adminExpira = localStorage.getItem('adminExpira');
 
@@ -405,7 +405,7 @@
     jogadores = jogadoresDB || [];
     movimentacoes = movimentacoesDB || [];
 
-    ultimaLimpezaMesa = configuracaoDB?.ultima_limpeza_mesa || null;
+    mesaAtualId = configuracaoDB?.mesa_atual_id || 1;
 
     console.log('Jogadores carregados:', jogadores.length);
     console.log('Movimentações carregadas:', movimentacoes.length);
@@ -426,16 +426,9 @@
 
     select.innerHTML = '<option value="">Selecione o jogador</option>';
 
-    const movimentacoesMesa = ultimaLimpezaMesa
-      ? movimentacoes.filter(mov => {
-          try {
-            return new Date(mov.data) >= new Date(ultimaLimpezaMesa);
-          } catch (e) {
-            console.error('Erro ao comparar datas:', e);
-            return true;
-          }
-        })
-      : movimentacoes;
+    const movimentacoesMesa = movimentacoes.filter(
+      mov => Number(mov.mesa_id || 1) === Number(mesaAtualId)
+    );
 
     jogadores.forEach((jogador, index) => {
 
@@ -484,7 +477,7 @@
 
       relatorio.innerHTML += `
         <tr>
-          <td>${new Date(mov.data).toLocaleString('pt-BR')}</td>
+          <td>${mov.data}</td>
           <td>${mov.jogador}</td>
           <td>${mov.tipo}</td>
           <td>R$ ${Number(mov.valor).toFixed(2)}</td>
@@ -558,43 +551,15 @@
       liberarAcoes();
     }
 
-    window.verMaisRelatorio = function verMaisRelatorio() {
+    function verMaisRelatorio() {
 
     console.log('Expandindo relatório');
 
-    limiteRelatorio += 10;
+    limiteRelatorio = limiteRelatorio + 10;
 
     console.log('Novo limite:', limiteRelatorio);
 
     atualizarTela();
-  }
-
-  async function zerarMesa() {
-
-    console.log('Zerando mesa');
-
-    if (!adminLiberado) return;
-
-    if (!confirm('Deseja realmente zerar a mesa?')) return;
-
-    ultimaLimpezaMesa = new Date().toISOString();
-
-    const { error } = await client
-      .from('configuracoes')
-      .update({
-        ultima_limpeza_mesa: ultimaLimpezaMesa
-      })
-      .eq('id', 1);
-
-    if (error) {
-      console.error(error);
-      alert('Erro ao zerar mesa');
-      return;
-    }
-
-    console.log('Mesa zerada em:', ultimaLimpezaMesa);
-
-    carregarDados();
   }
 
   carregarDados();
@@ -734,7 +699,8 @@
           jogador: jogador.nome,
           tipo: 'Entrada',
           valor,
-          data: new Date().toISOString(),
+          data: new Date().toLocaleString('pt-BR'),
+          mesa_id: mesaAtualId,
           cpf: jogador.cpf,
           telefone: jogador.telefone
         }
@@ -776,7 +742,8 @@
           jogador: jogador.nome,
           tipo: 'Saída',
           valor,
-          data: new Date().toISOString(),
+          data: new Date().toLocaleString('pt-BR'),
+          mesa_id: mesaAtualId,
           cpf: jogador.cpf,
           telefone: jogador.telefone
         }
@@ -871,7 +838,7 @@
 
         <br><br>
 
-        ${new Date(mov.data).toLocaleString('pt-BR')}
+        ${mov.data}
 
       </body>
       </html>
@@ -998,12 +965,12 @@
 
     if (!confirm('Deseja realmente zerar a mesa?')) return;
 
-    ultimaLimpezaMesa = new Date().toISOString();
+    const novoMesaId = Number(mesaAtualId) + 1;
 
     const { error } = await client
       .from('configuracoes')
       .update({
-        ultima_limpeza_mesa: ultimaLimpezaMesa
+        mesa_atual_id: novoMesaId
       })
       .eq('id', 1);
 
@@ -1013,7 +980,9 @@
       return;
     }
 
-    console.log('Mesa zerada em:', ultimaLimpezaMesa);
+    mesaAtualId = novoMesaId;
+
+    console.log('Nova mesa atual:', mesaAtualId);
 
     carregarDados();
   }
