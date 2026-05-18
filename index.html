@@ -369,7 +369,7 @@
   let movimentacoes = [];
   let adminLiberado = false;
   let limiteRelatorio = 10;
-  let ultimaLimpezaMesa = localStorage.getItem('ultimaLimpezaMesa') || null;
+  let ultimaLimpezaMesa = null;
 
   const adminExpira = localStorage.getItem('adminExpira');
 
@@ -396,8 +396,16 @@
       .select('*')
       .order('id', { ascending: false });
 
+    const { data: configuracaoDB } = await client
+      .from('configuracoes')
+      .select('*')
+      .eq('id', 1)
+      .single();
+
     jogadores = jogadoresDB || [];
     movimentacoes = movimentacoesDB || [];
+
+    ultimaLimpezaMesa = configuracaoDB?.ultima_limpeza_mesa || null;
 
     console.log('Jogadores carregados:', jogadores.length);
     console.log('Movimentações carregadas:', movimentacoes.length);
@@ -969,14 +977,16 @@
 
     ultimaLimpezaMesa = new Date().toISOString();
 
-    localStorage.setItem(
-      'ultimaLimpezaMesa',
-      ultimaLimpezaMesa
-    );
+    client
+      .from('configuracoes')
+      .update({
+        ultima_limpeza_mesa: ultimaLimpezaMesa
+      })
+      .eq('id', 1);
 
     console.log('Mesa zerada em:', ultimaLimpezaMesa);
 
-    atualizarTela();
+    carregarDados();
   }
 
   carregarDados();
