@@ -428,7 +428,12 @@
 
     const movimentacoesMesa = ultimaLimpezaMesa
       ? movimentacoes.filter(mov => {
-          return new Date(mov.data) >= new Date(ultimaLimpezaMesa);
+          try {
+            return new Date(mov.data) >= new Date(ultimaLimpezaMesa);
+          } catch (e) {
+            console.error('Erro ao comparar datas:', e);
+            return true;
+          }
         })
       : movimentacoes;
 
@@ -479,7 +484,7 @@
 
       relatorio.innerHTML += `
         <tr>
-          <td>${new Date(mov.data).toLocaleString('pmov.data).toLocaleString('pt-BR')}</td>
+          <td>${new Date(mov.data).toLocaleString('pt-BR')}</td>
           <td>${mov.jogador}</td>
           <td>${mov.tipo}</td>
           <td>R$ ${Number(mov.valor).toFixed(2)}</td>
@@ -866,7 +871,7 @@
 
         <br><br>
 
-        ${mov.data}
+        ${new Date(mov.data).toLocaleString('pt-BR')}
 
       </body>
       </html>
