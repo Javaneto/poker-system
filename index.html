@@ -428,17 +428,7 @@
 
     const movimentacoesMesa = ultimaLimpezaMesa
       ? movimentacoes.filter(mov => {
-          const partes = mov.data.split(', ');
-
-          if (!partes[0] || !partes[1]) return true;
-
-          const dataBR = partes[0].split('/');
-
-          const dataConvertida = new Date(
-            `${dataBR[2]}-${dataBR[1]}-${dataBR[0]}T${partes[1]}`
-          );
-
-          return dataConvertida >= new Date(ultimaLimpezaMesa);
+          return new Date(mov.data) >= new Date(ultimaLimpezaMesa);
         })
       : movimentacoes;
 
@@ -489,7 +479,7 @@
 
       relatorio.innerHTML += `
         <tr>
-          <td>${mov.data}</td>
+          <td>${new Date(mov.data).toLocaleString('pmov.data).toLocaleString('pt-BR')}</td>
           <td>${mov.jogador}</td>
           <td>${mov.tipo}</td>
           <td>R$ ${Number(mov.valor).toFixed(2)}</td>
@@ -739,7 +729,7 @@
           jogador: jogador.nome,
           tipo: 'Entrada',
           valor,
-          data: new Date().toLocaleString('pt-BR'),
+          data: new Date().toISOString(),
           cpf: jogador.cpf,
           telefone: jogador.telefone
         }
@@ -781,7 +771,7 @@
           jogador: jogador.nome,
           tipo: 'Saída',
           valor,
-          data: new Date().toLocaleString('pt-BR'),
+          data: new Date().toISOString(),
           cpf: jogador.cpf,
           telefone: jogador.telefone
         }
