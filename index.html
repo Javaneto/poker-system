@@ -588,9 +588,23 @@
       return;
     }
 
-    const filtrados = jogadores.filter(j =>
-      j.nome.toLowerCase().startsWith(pesquisa)
-    );
+    const filtrados = jogadores
+      .filter(j =>
+        j.nome.toLowerCase().includes(pesquisa)
+      )
+      .sort((a, b) => {
+
+        const aNome = a.nome.toLowerCase();
+        const bNome = b.nome.toLowerCase();
+
+        const aStarts = aNome.startsWith(pesquisa);
+        const bStarts = bNome.startsWith(pesquisa);
+
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+
+        return aNome.localeCompare(bNome);
+      });
 
     console.log('Sugestões encontradas:', filtrados.length);
 
