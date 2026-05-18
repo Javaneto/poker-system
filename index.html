@@ -967,7 +967,7 @@
     atualizarTela();
   }
 
-  function zerarMesa() {
+  async function zerarMesa() {
 
     console.log('Zerando mesa');
 
@@ -977,17 +977,20 @@
 
     ultimaLimpezaMesa = new Date().toISOString();
 
-    client
+    const { error } = await client
       .from('configuracoes')
       .update({
         ultima_limpeza_mesa: ultimaLimpezaMesa
       })
       .eq('id', 1);
 
-    console.log('Mesa zerada em:', ultimaLimpezaMesa);
+    if (error) {
+      console.error(error);
+      alert('Erro ao zerar mesa');
+      return;
+    }
 
-    carregarDados();
-  }
+    console.log('Mesa zerada
 
   carregarDados();
 </script>
