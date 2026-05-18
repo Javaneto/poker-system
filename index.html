@@ -567,11 +567,39 @@
 
     console.log('Expandindo relatório');
 
-    limiteRelatorio = limiteRelatorio + 10;
+    limiteRelatorio += 10;
 
     console.log('Novo limite:', limiteRelatorio);
 
     atualizarTela();
+  }
+
+  async function zerarMesa() {
+
+    console.log('Zerando mesa');
+
+    if (!adminLiberado) return;
+
+    if (!confirm('Deseja realmente zerar a mesa?')) return;
+
+    ultimaLimpezaMesa = new Date().toISOString();
+
+    const { error } = await client
+      .from('configuracoes')
+      .update({
+        ultima_limpeza_mesa: ultimaLimpezaMesa
+      })
+      .eq('id', 1);
+
+    if (error) {
+      console.error(error);
+      alert('Erro ao zerar mesa');
+      return;
+    }
+
+    console.log('Mesa zerada em:', ultimaLimpezaMesa);
+
+    carregarDados();
   }
 
   carregarDados();
@@ -990,7 +1018,10 @@
       return;
     }
 
-    console.log('Mesa zerada
+    console.log('Mesa zerada em:', ultimaLimpezaMesa);
+
+    carregarDados();
+  }
 
   carregarDados();
 </script>
