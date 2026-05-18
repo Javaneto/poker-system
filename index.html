@@ -710,7 +710,7 @@
           jogador: jogador.nome,
           tipo: 'Entrada',
           valor,
-          data: new Date().toLocaleString('pt-BR'),
+          data: new Date().toISOString(),
           mesa_id: mesaAtualId,
           cpf: jogador.cpf,
           telefone: jogador.telefone
@@ -753,7 +753,7 @@
           jogador: jogador.nome,
           tipo: 'Saída',
           valor,
-          data: new Date().toLocaleString('pt-BR'),
+          data: new Date().toISOString(),
           mesa_id: mesaAtualId,
           cpf: jogador.cpf,
           telefone: jogador.telefone
