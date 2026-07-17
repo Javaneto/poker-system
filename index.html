@@ -103,6 +103,11 @@
       height: 48px;
     }
 
+    .pesquisa-wrapper {
+      position: relative;
+      margin-bottom: 10px;
+    }
+
     #autocompleteHint,
     #pesquisaJogador {
       position: absolute;
@@ -139,7 +144,8 @@
       font-weight: bold;
     }
 
-    #sugestoesJogadores {
+    #sugestoesJogadores,
+    #sugestoesJogadoresRelatorio {
       position: absolute;
       background: white;
       border: 1px solid #ccc;
@@ -316,6 +322,21 @@
   <div class="card">
     <h2>Relatório de Movimentações</h2>
 
+    <div class="pesquisa-wrapper">
+      <input
+        enterkeyhint="done"
+        autocapitalize="words"
+        spellcheck="false"
+        type="text"
+        id="pesquisaJogadorRelatorio"
+        placeholder="Pesquisar jogador"
+        autocomplete="off"
+        oninput="filtrarJogadoresRelatorio()"
+      >
+
+      <div id="sugestoesJogadoresRelatorio"></div>
+    </div>
+
     <table>
       <thead>
         <tr>
@@ -341,8 +362,6 @@
       </button>
     </div>
   </div>
-    </table>
-  </div>
 
   <div class="card">
     <h2>Cadastrar Jogador</h2>
@@ -355,6 +374,8 @@
       Cadastrar Jogador
     </button>
   </div>
+
+</div>
 
 <script>
   console.log('Sistema iniciado');
@@ -375,6 +396,7 @@
   let adminLiberado = false;
   let limiteRelatorio = 10;
   let mesaAtualId = 1;
+  let filtroRelatorioJogador = '';
 
   const adminExpira = localStorage.getItem('adminExpira');
 
@@ -386,6 +408,16 @@
     window.addEventListener('load', () => {
       liberarAcoes();
     });
+  }
+
+  function escapeHtml(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[c]));
   }
 
   async function carregarDados() {
@@ -459,7 +491,7 @@
 
         mesa.innerHTML += `
           <tr>
-            <td>${jogador.nome}</td>
+            <td>${escapeHtml(jogador.nome)}</td>
             <td>R$ ${entrada.toFixed(2)}</td>
             <td>R$ ${saida.toFixed(2)}</td>
             <td class="${saldo >= 0 ? 'positivo' : 'negativo'}">
@@ -470,11 +502,17 @@
       }
 
       select.innerHTML += `
-        <option value="${index}">${jogador.nome}</option>
+        <option value="${index}">${escapeHtml(jogador.nome)}</option>
       `;
     });
 
-    const movimentacoesVisiveis = movimentacoes.slice(0, limiteRelatorio);
+    const movimentacoesFiltradas = filtroRelatorioJogador
+      ? movimentacoes.filter(mov =>
+          mov.jogador.toLowerCase().includes(filtroRelatorioJogador.toLowerCase())
+        )
+      : movimentacoes;
+
+    const movimentacoesVisiveis = movimentacoesFiltradas.slice(0, limiteRelatorio);
 
     console.log('Renderizando movimentações:', movimentacoesVisiveis.length);
 
@@ -489,11 +527,11 @@
               hour: '2-digit',
               minute: '2-digit'
             })}</td>
-          <td>${mov.jogador}</td>
-          <td>${mov.tipo}</td>
+          <td>${escapeHtml(mov.jogador)}</td>
+          <td>${escapeHtml(mov.tipo)}</td>
           <td>R$ ${Number(mov.valor).toFixed(2)}</td>
           <td>
-            <button class="btn-dark" onclick='imprimirMovimentacao(${JSON.stringify(mov)})'>
+            <button class="btn-dark" onclick="imprimirMovimentacaoPorId(${mov.id})">
               Imprimir
             </button>
           </td>
@@ -561,19 +599,6 @@
     if (adminLiberado) {
       liberarAcoes();
     }
-
-    function verMaisRelatorio() {
-
-    console.log('Expandindo relatório');
-
-    limiteRelatorio = limiteRelatorio + 10;
-
-    console.log('Novo limite:', limiteRelatorio);
-
-    atualizarTela();
-  }
-
-  carregarDados();
   }
 
   const pesquisaInput = document.getElementById('pesquisaJogador');
@@ -636,8 +661,8 @@
       }
 
       div.innerHTML = `
-        <strong>${jogador.nome}</strong><br>
-        <small>${jogador.telefone || ''}</small>
+        <strong>${escapeHtml(jogador.nome)}</strong><br>
+        <small>${escapeHtml(jogador.telefone || '')}</small>
       `;
 
       div.onclick = () => {
@@ -681,6 +706,98 @@
       }
   });
 
+  function filtrarJogadoresRelatorio() {
+
+    const pesquisa = document.getElementById('pesquisaJogadorRelatorio').value;
+
+    console.log('Pesquisando jogador no relatório:', pesquisa);
+
+    filtroRelatorioJogador = pesquisa.trim();
+    limiteRelatorio = 10;
+
+    const sugestoes = document.getElementById('sugestoesJogadoresRelatorio');
+    const termo = pesquisa.toLowerCase();
+
+    sugestoes.innerHTML = '';
+
+    if (!termo) {
+      sugestoes.style.display = 'none';
+      atualizarTela();
+      return;
+    }
+
+    const filtrados = jogadores
+      .filter(j => j.nome.toLowerCase().includes(termo))
+      .sort((a, b) => {
+
+        const aNome = a.nome.toLowerCase();
+        const bNome = b.nome.toLowerCase();
+
+        const aStarts = aNome.startsWith(termo);
+        const bStarts = bNome.startsWith(termo);
+
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+
+        return aNome.localeCompare(bNome);
+      });
+
+    console.log('Sugestões encontradas no relatório:', filtrados.length);
+
+    if (filtrados.length === 0) {
+      sugestoes.style.display = 'none';
+      atualizarTela();
+      return;
+    }
+
+    sugestoes.style.display = 'block';
+
+    filtrados.forEach((jogador, index) => {
+
+      const div = document.createElement('div');
+
+      div.className = 'sugestao-item';
+
+      if (index === 0) {
+        div.classList.add('sugestao-selecionada');
+      }
+
+      div.innerHTML = `<strong>${escapeHtml(jogador.nome)}</strong>`;
+
+      div.onclick = () => {
+
+        console.log('Jogador selecionado no filtro do relatório:', jogador.nome);
+
+        document.getElementById('pesquisaJogadorRelatorio').value = jogador.nome;
+
+        filtroRelatorioJogador = jogador.nome;
+
+        sugestoes.style.display = 'none';
+
+        atualizarTela();
+      };
+
+      sugestoes.appendChild(div);
+    });
+
+    atualizarTela();
+  }
+
+  document.getElementById('pesquisaJogadorRelatorio')
+    .addEventListener('keydown', function(e) {
+
+      if (e.key === 'Enter') {
+
+        e.preventDefault();
+
+        const primeiro = document.querySelector('#sugestoesJogadoresRelatorio .sugestao-item');
+
+        if (primeiro) {
+          primeiro.click();
+        }
+      }
+  });
+
   async function adicionarEntrada() {
 
     console.log('Adicionando entrada');
@@ -696,14 +813,13 @@
     );
 
     if (!jogador || isNaN(valor) || valor < 0) {
-      console.log('Entrada negativa bloqueada');
       console.log('Entrada inválida');
       return;
     }
 
     if (!confirm('Confirmar entrada?')) return;
 
-    await client
+    const { error } = await client
       .from('movimentacoes')
       .insert([
         {
@@ -716,6 +832,12 @@
           telefone: jogador.telefone
         }
       ]);
+
+    if (error) {
+      alert('Erro ao registrar entrada');
+      console.error(error);
+      return;
+    }
 
     console.log('Entrada registrada:', valor);
 
@@ -739,14 +861,13 @@
     );
 
     if (!jogador || isNaN(valor) || valor < 0) {
-      console.log('Saída negativa bloqueada');
       console.log('Saída inválida');
       return;
     }
 
     if (!confirm('Confirmar saída?')) return;
 
-    await client
+    const { error } = await client
       .from('movimentacoes')
       .insert([
         {
@@ -760,11 +881,29 @@
         }
       ]);
 
+    if (error) {
+      alert('Erro ao registrar saída');
+      console.error(error);
+      return;
+    }
+
     console.log('Saída registrada:', valor);
 
     document.getElementById('saida').value = '';
 
     carregarDados();
+  }
+
+  function imprimirMovimentacaoPorId(id) {
+
+    const mov = movimentacoes.find(m => m.id === id);
+
+    if (!mov) {
+      console.log('Movimentação não encontrada:', id);
+      return;
+    }
+
+    imprimirMovimentacao(mov);
   }
 
   function imprimirMovimentacao(mov) {
@@ -821,25 +960,24 @@
         <br>
 
         <p>
-          Eu, ${mov.jogador}          
-          declaro movimentação no valor de:
+          Eu, ${escapeHtml(mov.jogador)}, declaro movimentação no valor de:
         </p>
 
         <h2 style="text-align:center;">
           R$ ${Number(mov.valor).toFixed(2)}
         </h2>
-          
+
         <br>
         <p>
-          Tipo: ${mov.tipo}
+          Tipo: ${escapeHtml(mov.tipo)}
         </p>
 
         <p>
-          CPF: ${mov.cpf || '-'}
+          CPF: ${escapeHtml(mov.cpf || '-')}
         </p>
 
         <p>
-          Telefone: ${mov.telefone || '-'}
+          Telefone: ${escapeHtml(mov.telefone || '-')}
         </p>
 
         <br><br><br>
@@ -849,7 +987,7 @@
 
         <br><br>
 
-        ${mov.data}
+        ${escapeHtml(mov.data)}
 
       </body>
       </html>
