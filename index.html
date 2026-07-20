@@ -303,7 +303,7 @@
       </button>
 
       <button id="btnAdmin" class="btn-gray" onclick="toggleAdmin()">
-        ADM
+        Login
       </button>
     </div>
   </div>
@@ -471,7 +471,7 @@
         Cancelar
       </button>
 
-      <button class="btn-blue" onclick="confirmarEntradaComModalidade()">
+      <button id="btnConfirmarEntrada" class="btn-blue" onclick="confirmarEntradaComModalidade()">
         Confirmar
       </button>
     </div>
@@ -499,8 +499,27 @@
         Cancelar
       </button>
 
-      <button class="btn-green" onclick="confirmarSaidaComModalidade()">
+      <button id="btnConfirmarSaida" class="btn-green" onclick="confirmarSaidaComModalidade()">
         Confirmar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalLogin" class="modal-overlay">
+  <div class="modal-box">
+    <h2>Login</h2>
+
+    <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="username">
+    <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalLogin()">
+        Cancelar
+      </button>
+
+      <button id="btnConfirmarLogin" class="btn-blue" onclick="confirmarLogin()">
+        Entrar
       </button>
     </div>
   </div>
@@ -529,15 +548,22 @@
 
   const adminExpira = localStorage.getItem('adminExpira');
 
-  if (adminExpira && Date.now() < Number(adminExpira)) {
-    adminLiberado = true;
-
-    console.log('Sessão ADM restaurada');
-
-    window.addEventListener('load', () => {
-      liberarAcoes();
-    });
+  if (adminExpira) {
+    localStorage.removeItem('adminExpira');
   }
+
+  client.auth.onAuthStateChange((event, session) => {
+
+    adminLiberado = !!session;
+
+    console.log('Estado de autenticação ADM:', event, adminLiberado);
+
+    if (adminLiberado) {
+      liberarAcoes();
+    } else {
+      bloquearAcoes();
+    }
+  });
 
   function escapeHtml(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
@@ -695,9 +721,9 @@
       return;
     }
 
-    const nome = document.getElementById('cadastroNome').value;
-    const telefone = document.getElementById('cadastroTelefone').value;
-    const cpf = document.getElementById('cadastroCpf').value;
+    const nome = document.getElementById('cadastroNome').value.trim();
+    const telefone = document.getElementById('cadastroTelefone').value.trim();
+    const cpf = document.getElementById('cadastroCpf').value.trim();
 
     if (!nome) return;
 
@@ -712,6 +738,9 @@
       return;
     }
 
+    const btn = document.getElementById('btnCadastrarJogador');
+    btn.classList.add('disabled');
+
     const { error } = await client
       .from('jogadores')
       .insert([
@@ -721,6 +750,8 @@
           cpf
         }
       ]);
+
+    btn.classList.remove('disabled');
 
     if (error) {
       alert('Erro ao cadastrar jogador');
@@ -838,7 +869,7 @@
 
         e.preventDefault();
 
-        const primeiro = document.querySelector('.sugestao-item');
+        const primeiro = document.querySelector('#sugestoesJogadores .sugestao-item');
 
         if (primeiro) {
           primeiro.click();
@@ -955,8 +986,13 @@
       document.getElementById('entrada').value
     );
 
-    if (!jogador || isNaN(valor) || valor < 0) {
-      console.log('Entrada inválida');
+    if (!jogador) {
+      alert('Selecione um jogador antes de continuar');
+      return;
+    }
+
+    if (isNaN(valor) || valor <= 0) {
+      alert('Informe um valor válido');
       return;
     }
 
@@ -997,6 +1033,9 @@
     const { jogador, valor } = entradaPendente;
     const modalidade = modalidadeSelecionada;
 
+    const btn = document.getElementById('btnConfirmarEntrada');
+    btn.classList.add('disabled');
+
     const { error } = await client
       .from('movimentacoes')
       .insert([
@@ -1012,6 +1051,8 @@
         }
       ]);
 
+    btn.classList.remove('disabled');
+
     if (error) {
       alert('Erro ao registrar entrada');
       console.error(error);
@@ -1021,6 +1062,8 @@
     console.log('Entrada registrada:', valor, modalidade);
 
     document.getElementById('entrada').value = '';
+    document.getElementById('pesquisaJogador').value = '';
+    hintInput.value = '';
 
     fecharModalConfirmacao();
 
@@ -1044,8 +1087,13 @@
       document.getElementById('saida').value
     );
 
-    if (!jogador || isNaN(valor) || valor < 0) {
-      console.log('Saída inválida');
+    if (!jogador) {
+      alert('Selecione um jogador antes de continuar');
+      return;
+    }
+
+    if (isNaN(valor) || valor <= 0) {
+      alert('Informe um valor válido');
       return;
     }
 
@@ -1086,6 +1134,9 @@
     const { jogador, valor } = saidaPendente;
     const modalidade = modalidadeSaidaSelecionada;
 
+    const btn = document.getElementById('btnConfirmarSaida');
+    btn.classList.add('disabled');
+
     const { error } = await client
       .from('movimentacoes')
       .insert([
@@ -1101,6 +1152,8 @@
         }
       ]);
 
+    btn.classList.remove('disabled');
+
     if (error) {
       alert('Erro ao registrar saída');
       console.error(error);
@@ -1110,6 +1163,8 @@
     console.log('Saída registrada:', valor, modalidade);
 
     document.getElementById('saida').value = '';
+    document.getElementById('pesquisaJogador').value = '';
+    hintInput.value = '';
 
     fecharModalConfirmacaoSaida();
 
@@ -1195,6 +1250,10 @@
         </p>
 
         <p>
+          Modalidade: ${escapeHtml(mov.modalidade || '-')}
+        </p>
+
+        <p>
           CPF: ${escapeHtml(mov.cpf || '-')}
         </p>
 
@@ -1220,49 +1279,99 @@
     janela.print();
   }
 
-  function toggleAdmin() {
+  async function toggleAdmin() {
 
     console.log('Alternando modo ADM');
 
     if (adminLiberado) {
 
-      adminLiberado = false;
-
-      localStorage.removeItem('adminExpira');
-
-      bloquearAcoes();
+      await client.auth.signOut();
 
       console.log('ADM desativado');
 
       return;
     }
 
-    const senha = prompt('Digite a senha ADM');
-
-    if (senha === '14563') {
-
-      localStorage.setItem(
-        'adminExpira',
-        String(Date.now() + (8 * 60 * 60 * 1000))
-      );
-
-      adminLiberado = true;
-
-      liberarAcoes();
-
-      console.log('ADM liberado');
-
-      alert('Modo administrador liberado');
-
-    } else {
-      console.log('Senha incorreta');
-      alert('Senha incorreta');
-    }
+    abrirModalLogin();
   }
+
+  function abrirModalLogin() {
+
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginSenha').value = '';
+
+    document.getElementById('modalLogin').classList.add('aberto');
+
+    document.getElementById('loginEmail').focus();
+  }
+
+  function fecharModalLogin() {
+
+    document.getElementById('modalLogin').classList.remove('aberto');
+  }
+
+  async function confirmarLogin() {
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value;
+
+    if (!email || !senha) {
+      alert('Informe e-mail e senha');
+      return;
+    }
+
+    const btn = document.getElementById('btnConfirmarLogin');
+    btn.classList.add('disabled');
+
+    const { error } = await client.auth.signInWithPassword({
+      email,
+      password: senha
+    });
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      console.log('Falha no login ADM:', error.message);
+      alert('E-mail ou senha incorretos');
+      return;
+    }
+
+    console.log('ADM liberado');
+
+    fecharModalLogin();
+  }
+
+  document.getElementById('loginEmail')
+    .addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('loginSenha').focus();
+      }
+    });
+
+  document.getElementById('loginSenha')
+    .addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmarLogin();
+      }
+    });
+
+  document.addEventListener('keydown', function(e) {
+
+    if (e.key !== 'Escape') return;
+
+    fecharModalLogin();
+    fecharModalCadastro();
+    fecharModalConfirmacao();
+    fecharModalConfirmacaoSaida();
+  });
 
   function liberarAcoes() {
 
     console.log('Liberando ações ADM');
+
+    document.getElementById('btnAdmin').textContent = 'Sair';
 
     document.getElementById('btnDesfazer').classList.remove('disabled');
 
@@ -1277,6 +1386,8 @@
 
     console.log('Bloqueando ações ADM');
 
+    document.getElementById('btnAdmin').textContent = 'Login';
+
     document.getElementById('btnDesfazer').classList.add('disabled');
 
     document.getElementById('btnAbrirCadastro').classList.add('disabled');
@@ -1285,6 +1396,7 @@
     document.getElementById('btnSaida').classList.add('disabled');
     document.getElementById('btnZerar').classList.add('disabled');
 
+    fecharModalLogin();
     fecharModalCadastro();
     fecharModalConfirmacao();
     fecharModalConfirmacaoSaida();
