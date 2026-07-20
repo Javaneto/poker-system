@@ -82,6 +82,64 @@
       pointer-events: none;
     }
 
+    .oculto {
+      display: none;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 16px;
+    }
+
+    .modal-overlay.aberto {
+      display: flex;
+    }
+
+    .modal-box {
+      background: white;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .modal-resumo {
+      color: #444;
+      margin-bottom: 16px;
+    }
+
+    .modalidade-opcoes {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .modalidade-btn {
+      flex: 1;
+      background: #eee;
+      color: #111;
+      box-shadow: none;
+      padding: 12px;
+    }
+
+    .modalidade-btn.ativo {
+      background: #2563eb;
+      color: white;
+    }
+
+    .modal-acoes {
+      display: flex;
+      gap: 10px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -239,9 +297,15 @@
   <div class="topbar">
     <h1>RPG Poker Club</h1>
 
-    <button id="btnAdmin" class="btn-gray" onclick="toggleAdmin()">
-      ADM
-    </button>
+    <div style="display:flex;gap:8px;">
+      <button id="btnAbrirCadastro" class="btn-dark disabled" onclick="abrirModalCadastro()">
+        Cadastrar Jogador
+      </button>
+
+      <button id="btnAdmin" class="btn-gray" onclick="toggleAdmin()">
+        ADM
+      </button>
+    </div>
   </div>
 
   <div class="card">
@@ -269,7 +333,7 @@
       <div id="sugestoesJogadores"></div>
     </div>
 
-    <select id="jogadorSelect"></select>
+    <select id="jogadorSelect" class="oculto"></select>
 
     <div class="flex">
       <div>
@@ -343,6 +407,7 @@
           <th>Data/Hora</th>
           <th>Jogador</th>
           <th>Tipo</th>
+          <th>Modalidade</th>
           <th>Valor</th>
           <th>Imprimir</th>
         </tr>
@@ -363,18 +428,82 @@
     </div>
   </div>
 
-  <div class="card">
+</div>
+
+<div id="modalCadastro" class="modal-overlay">
+  <div class="modal-box">
     <h2>Cadastrar Jogador</h2>
 
     <input type="text" id="cadastroNome" placeholder="Nome">
     <input type="text" id="cadastroTelefone" placeholder="Telefone">
     <input type="text" id="cadastroCpf" placeholder="CPF">
 
-    <button id="btnCadastrarJogador" class="btn-dark disabled" onclick="cadastrarJogador()">
-      Cadastrar Jogador
-    </button>
-  </div>
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalCadastro()">
+        Cancelar
+      </button>
 
+      <button id="btnCadastrarJogador" class="btn-dark" onclick="cadastrarJogador()">
+        Cadastrar Jogador
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalConfirmacao" class="modal-overlay">
+  <div class="modal-box">
+    <h2>Confirmar Entrada</h2>
+
+    <p id="modalResumo" class="modal-resumo"></p>
+
+    <div class="modalidade-opcoes">
+      <button type="button" id="btnModalidadeCash" class="modalidade-btn ativo" onclick="selecionarModalidade('Cash')">
+        Cash
+      </button>
+
+      <button type="button" id="btnModalidadeTorneio" class="modalidade-btn" onclick="selecionarModalidade('Torneio')">
+        Torneio
+      </button>
+    </div>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalConfirmacao()">
+        Cancelar
+      </button>
+
+      <button class="btn-blue" onclick="confirmarEntradaComModalidade()">
+        Confirmar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalConfirmacaoSaida" class="modal-overlay">
+  <div class="modal-box">
+    <h2>Confirmar Saída</h2>
+
+    <p id="modalResumoSaida" class="modal-resumo"></p>
+
+    <div class="modalidade-opcoes">
+      <button type="button" id="btnModalidadeSaidaPagamento" class="modalidade-btn ativo" onclick="selecionarModalidadeSaida('Pagamento')">
+        Pagamento
+      </button>
+
+      <button type="button" id="btnModalidadeSaidaCashout" class="modalidade-btn" onclick="selecionarModalidadeSaida('Cashout')">
+        Cashout
+      </button>
+    </div>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalConfirmacaoSaida()">
+        Cancelar
+      </button>
+
+      <button class="btn-green" onclick="confirmarSaidaComModalidade()">
+        Confirmar
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -529,6 +658,7 @@
             })}</td>
           <td>${escapeHtml(mov.jogador)}</td>
           <td>${escapeHtml(mov.tipo)}</td>
+          <td>${escapeHtml(mov.modalidade || '-')}</td>
           <td>R$ ${Number(mov.valor).toFixed(2)}</td>
           <td>
             <button class="btn-dark" onclick="imprimirMovimentacaoPorId(${mov.id})">
@@ -538,6 +668,22 @@
         </tr>
       `;
     });
+  }
+
+  function abrirModalCadastro() {
+
+    if (!adminLiberado) return;
+
+    document.getElementById('cadastroNome').value = '';
+    document.getElementById('cadastroTelefone').value = '';
+    document.getElementById('cadastroCpf').value = '';
+
+    document.getElementById('modalCadastro').classList.add('aberto');
+  }
+
+  function fecharModalCadastro() {
+
+    document.getElementById('modalCadastro').classList.remove('aberto');
   }
 
   async function cadastrarJogador() {
@@ -590,15 +736,9 @@
       cpf
     });
 
-    document.getElementById('cadastroNome').value = '';
-    document.getElementById('cadastroTelefone').value = '';
-    document.getElementById('cadastroCpf').value = '';
-
     atualizarTela();
 
-    if (adminLiberado) {
-      liberarAcoes();
-    }
+    fecharModalCadastro();
   }
 
   const pesquisaInput = document.getElementById('pesquisaJogador');
@@ -798,7 +938,10 @@
       }
   });
 
-  async function adicionarEntrada() {
+  let entradaPendente = null;
+  let modalidadeSelecionada = 'Cash';
+
+  function adicionarEntrada() {
 
     console.log('Adicionando entrada');
 
@@ -817,7 +960,42 @@
       return;
     }
 
-    if (!confirm('Confirmar entrada?')) return;
+    entradaPendente = { jogador, valor };
+
+    abrirModalConfirmacao();
+  }
+
+  function abrirModalConfirmacao() {
+
+    selecionarModalidade('Cash');
+
+    document.getElementById('modalResumo').textContent =
+      `${entradaPendente.jogador.nome} — Entrada de R$ ${entradaPendente.valor.toFixed(2)}`;
+
+    document.getElementById('modalConfirmacao').classList.add('aberto');
+  }
+
+  function fecharModalConfirmacao() {
+
+    entradaPendente = null;
+
+    document.getElementById('modalConfirmacao').classList.remove('aberto');
+  }
+
+  function selecionarModalidade(modalidade) {
+
+    modalidadeSelecionada = modalidade;
+
+    document.getElementById('btnModalidadeCash').classList.toggle('ativo', modalidade === 'Cash');
+    document.getElementById('btnModalidadeTorneio').classList.toggle('ativo', modalidade === 'Torneio');
+  }
+
+  async function confirmarEntradaComModalidade() {
+
+    if (!entradaPendente) return;
+
+    const { jogador, valor } = entradaPendente;
+    const modalidade = modalidadeSelecionada;
 
     const { error } = await client
       .from('movimentacoes')
@@ -826,6 +1004,7 @@
           jogador: jogador.nome,
           tipo: 'Entrada',
           valor,
+          modalidade,
           data: new Date().toISOString(),
           mesa_id: mesaAtualId,
           cpf: jogador.cpf,
@@ -839,14 +1018,19 @@
       return;
     }
 
-    console.log('Entrada registrada:', valor);
+    console.log('Entrada registrada:', valor, modalidade);
 
     document.getElementById('entrada').value = '';
+
+    fecharModalConfirmacao();
 
     carregarDados();
   }
 
-  async function adicionarSaida() {
+  let saidaPendente = null;
+  let modalidadeSaidaSelecionada = 'Pagamento';
+
+  function adicionarSaida() {
 
     console.log('Adicionando saída');
 
@@ -865,7 +1049,42 @@
       return;
     }
 
-    if (!confirm('Confirmar saída?')) return;
+    saidaPendente = { jogador, valor };
+
+    abrirModalConfirmacaoSaida();
+  }
+
+  function abrirModalConfirmacaoSaida() {
+
+    selecionarModalidadeSaida('Pagamento');
+
+    document.getElementById('modalResumoSaida').textContent =
+      `${saidaPendente.jogador.nome} — Saída de R$ ${saidaPendente.valor.toFixed(2)}`;
+
+    document.getElementById('modalConfirmacaoSaida').classList.add('aberto');
+  }
+
+  function fecharModalConfirmacaoSaida() {
+
+    saidaPendente = null;
+
+    document.getElementById('modalConfirmacaoSaida').classList.remove('aberto');
+  }
+
+  function selecionarModalidadeSaida(modalidade) {
+
+    modalidadeSaidaSelecionada = modalidade;
+
+    document.getElementById('btnModalidadeSaidaPagamento').classList.toggle('ativo', modalidade === 'Pagamento');
+    document.getElementById('btnModalidadeSaidaCashout').classList.toggle('ativo', modalidade === 'Cashout');
+  }
+
+  async function confirmarSaidaComModalidade() {
+
+    if (!saidaPendente) return;
+
+    const { jogador, valor } = saidaPendente;
+    const modalidade = modalidadeSaidaSelecionada;
 
     const { error } = await client
       .from('movimentacoes')
@@ -874,6 +1093,7 @@
           jogador: jogador.nome,
           tipo: 'Saída',
           valor,
+          modalidade,
           data: new Date().toISOString(),
           mesa_id: mesaAtualId,
           cpf: jogador.cpf,
@@ -887,9 +1107,11 @@
       return;
     }
 
-    console.log('Saída registrada:', valor);
+    console.log('Saída registrada:', valor, modalidade);
 
     document.getElementById('saida').value = '';
+
+    fecharModalConfirmacaoSaida();
 
     carregarDados();
   }
@@ -1044,7 +1266,7 @@
 
     document.getElementById('btnDesfazer').classList.remove('disabled');
 
-    document.getElementById('btnCadastrarJogador').classList.remove('disabled');
+    document.getElementById('btnAbrirCadastro').classList.remove('disabled');
 
     document.getElementById('btnEntrada').classList.remove('disabled');
     document.getElementById('btnSaida').classList.remove('disabled');
@@ -1057,11 +1279,15 @@
 
     document.getElementById('btnDesfazer').classList.add('disabled');
 
-    document.getElementById('btnCadastrarJogador').classList.add('disabled');
+    document.getElementById('btnAbrirCadastro').classList.add('disabled');
 
     document.getElementById('btnEntrada').classList.add('disabled');
     document.getElementById('btnSaida').classList.add('disabled');
     document.getElementById('btnZerar').classList.add('disabled');
+
+    fecharModalCadastro();
+    fecharModalConfirmacao();
+    fecharModalConfirmacaoSaida();
   }
 
   async function desfazerUltimaMovimentacao() {
