@@ -303,7 +303,7 @@
       </button>
 
       <button id="btnAdmin" class="btn-gray" onclick="toggleAdmin()">
-        ADM
+        Login
       </button>
     </div>
   </div>
@@ -501,6 +501,25 @@
 
       <button id="btnConfirmarSaida" class="btn-green" onclick="confirmarSaidaComModalidade()">
         Confirmar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalLogin" class="modal-overlay">
+  <div class="modal-box">
+    <h2>Login</h2>
+
+    <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="username">
+    <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalLogin()">
+        Cancelar
+      </button>
+
+      <button id="btnConfirmarLogin" class="btn-blue" onclick="confirmarLogin()">
+        Entrar
       </button>
     </div>
   </div>
@@ -1273,18 +1292,43 @@
       return;
     }
 
-    const email = prompt('E-mail do administrador');
+    abrirModalLogin();
+  }
 
-    if (!email) return;
+  function abrirModalLogin() {
 
-    const senha = prompt('Senha do administrador');
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginSenha').value = '';
 
-    if (!senha) return;
+    document.getElementById('modalLogin').classList.add('aberto');
+
+    document.getElementById('loginEmail').focus();
+  }
+
+  function fecharModalLogin() {
+
+    document.getElementById('modalLogin').classList.remove('aberto');
+  }
+
+  async function confirmarLogin() {
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value;
+
+    if (!email || !senha) {
+      alert('Informe e-mail e senha');
+      return;
+    }
+
+    const btn = document.getElementById('btnConfirmarLogin');
+    btn.classList.add('disabled');
 
     const { error } = await client.auth.signInWithPassword({
       email,
       password: senha
     });
+
+    btn.classList.remove('disabled');
 
     if (error) {
       console.log('Falha no login ADM:', error.message);
@@ -1294,12 +1338,40 @@
 
     console.log('ADM liberado');
 
-    alert('Modo administrador liberado');
+    fecharModalLogin();
   }
+
+  document.getElementById('loginEmail')
+    .addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('loginSenha').focus();
+      }
+    });
+
+  document.getElementById('loginSenha')
+    .addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmarLogin();
+      }
+    });
+
+  document.addEventListener('keydown', function(e) {
+
+    if (e.key !== 'Escape') return;
+
+    fecharModalLogin();
+    fecharModalCadastro();
+    fecharModalConfirmacao();
+    fecharModalConfirmacaoSaida();
+  });
 
   function liberarAcoes() {
 
     console.log('Liberando ações ADM');
+
+    document.getElementById('btnAdmin').textContent = 'Sair';
 
     document.getElementById('btnDesfazer').classList.remove('disabled');
 
@@ -1314,6 +1386,8 @@
 
     console.log('Bloqueando ações ADM');
 
+    document.getElementById('btnAdmin').textContent = 'Login';
+
     document.getElementById('btnDesfazer').classList.add('disabled');
 
     document.getElementById('btnAbrirCadastro').classList.add('disabled');
@@ -1322,6 +1396,7 @@
     document.getElementById('btnSaida').classList.add('disabled');
     document.getElementById('btnZerar').classList.add('disabled');
 
+    fecharModalLogin();
     fecharModalCadastro();
     fecharModalConfirmacao();
     fecharModalConfirmacaoSaida();
