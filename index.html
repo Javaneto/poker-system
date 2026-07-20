@@ -155,41 +155,35 @@
       overflow-wrap: break-word;
     }
 
-    .autocomplete-wrapper {
-      position: relative;
-      margin-bottom: 10px;
-      height: 48px;
-    }
-
     .pesquisa-wrapper {
       position: relative;
       margin-bottom: 10px;
     }
 
-    #autocompleteHint,
-    #pesquisaJogador {
+    .pesquisa-wrapper::before {
+      content: '🔍';
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 48px;
-    }
-
-    #autocompleteHint {
-      color: #cbd5e1;
-      background: transparent;
-      pointer-events: none;
+      left: 14px;
+      top: 40%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      opacity: 0.45;
       z-index: 1;
-      border-color: transparent;
-      box-shadow: none;
-      font-weight: 500;
+      pointer-events: none;
     }
 
-    #pesquisaJogador {
-      background: transparent;
-      z-index: 2;
-      position: relative;
-      color: #111;
+    #pesquisaJogador,
+    #pesquisaJogadorRelatorio {
+      border-radius: 24px;
+      padding-left: 38px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    #pesquisaJogador:focus,
+    #pesquisaJogadorRelatorio:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
     .positivo {
@@ -206,23 +200,27 @@
     #sugestoesJogadoresRelatorio {
       position: absolute;
       background: white;
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.15);
+      margin-top: 6px;
       width: 100%;
       z-index: 1000;
       max-height: 220px;
       overflow-y: auto;
+      overflow-x: hidden;
       display: none;
     }
 
     .sugestao-item {
-      padding: 10px;
+      padding: 10px 14px;
       cursor: pointer;
       border-bottom: 1px solid #eee;
     }
 
     .sugestao-item:hover,
     .sugestao-selecionada {
-      background: #f0f0f0;
+      background: #eef2ff;
     }
 
     .flex {
@@ -311,14 +309,7 @@
   <div class="card">
     <h2>Registrar Movimentação</h2>
 
-    <div class="autocomplete-wrapper">
-      <input
-        type="text"
-        id="autocompleteHint"
-        tabindex="-1"
-        readonly
-      >
-
+    <div class="pesquisa-wrapper">
       <input
         enterkeyhint="done"
         autocapitalize="words"
@@ -772,8 +763,36 @@
     fecharModalCadastro();
   }
 
-  const pesquisaInput = document.getElementById('pesquisaJogador');
-  const hintInput = document.getElementById('autocompleteHint');
+  let sugestoesAtuais = [];
+  let indiceDestacado = 0;
+
+  function destacarSugestao(novoIndice) {
+
+    indiceDestacado = novoIndice;
+
+    const itens = document.querySelectorAll('#sugestoesJogadores .sugestao-item');
+
+    itens.forEach((item, i) => {
+      item.classList.toggle('sugestao-selecionada', i === indiceDestacado);
+    });
+
+    if (itens[indiceDestacado]) {
+      itens[indiceDestacado].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function selecionarJogadorPesquisa(jogador) {
+
+    console.log('Jogador selecionado:', jogador.nome);
+
+    document.getElementById('pesquisaJogador').value = jogador.nome;
+
+    const indexJogador = jogadores.findIndex(j => j.nome === jogador.nome);
+
+    document.getElementById('jogadorSelect').value = indexJogador;
+
+    document.getElementById('sugestoesJogadores').style.display = 'none';
+  }
 
   function filtrarJogadores() {
 
@@ -784,10 +803,10 @@
     const sugestoes = document.getElementById('sugestoesJogadores');
 
     sugestoes.innerHTML = '';
+    sugestoesAtuais = [];
 
     if (!pesquisa) {
       sugestoes.style.display = 'none';
-      hintInput.value = '';
       return;
     }
 
@@ -811,71 +830,90 @@
 
     console.log('Sugestões encontradas:', filtrados.length);
 
+    sugestoesAtuais = filtrados;
+
     if (filtrados.length === 0) {
       sugestoes.style.display = 'none';
-      hintInput.value = '';
       return;
     }
 
-    hintInput.value = filtrados[0].nome;
-
     sugestoes.style.display = 'block';
 
-    filtrados.forEach((jogador, index) => {
+    filtrados.forEach((jogador) => {
 
       const div = document.createElement('div');
 
       div.className = 'sugestao-item';
 
-      if (index === 0) {
-        div.classList.add('sugestao-selecionada');
-      }
-
-      div.innerHTML = `
-        <strong>${escapeHtml(jogador.nome)}</strong><br>
-        <small>${escapeHtml(jogador.telefone || '')}</small>
-      `;
+      div.innerHTML = `<strong>${escapeHtml(jogador.nome)}</strong>`;
 
       div.onclick = () => {
-
-        console.log('Jogador selecionado:', jogador.nome);
-
-        document.getElementById('pesquisaJogador').value = jogador.nome;
-        hintInput.value = jogador.nome;
-
-        const indexJogador = jogadores.findIndex(j => j.nome === jogador.nome);
-
-        document.getElementById('jogadorSelect').value = indexJogador;
-
-        sugestoes.style.display = 'none';
+        selecionarJogadorPesquisa(jogador);
       };
 
       sugestoes.appendChild(div);
     });
+
+    destacarSugestao(0);
   }
 
   document.getElementById('pesquisaJogador')
     .addEventListener('keydown', function(e) {
 
-      console.log('Tecla pressionada:', e.key);
-
-      if ((e.key === 'Tab' || e.key === 'ArrowRight') && hintInput.value) {
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
-        pesquisaInput.value = hintInput.value;
-        pesquisaInput.dispatchEvent(new Event('input'));
+        if (sugestoesAtuais.length === 0) return;
+        destacarSugestao(Math.min(indiceDestacado + 1, sugestoesAtuais.length - 1));
+        return;
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (sugestoesAtuais.length === 0) return;
+        destacarSugestao(Math.max(indiceDestacado - 1, 0));
+        return;
       }
 
       if (e.key === 'Enter') {
 
         e.preventDefault();
 
-        const primeiro = document.querySelector('#sugestoesJogadores .sugestao-item');
-
-        if (primeiro) {
-          primeiro.click();
+        if (sugestoesAtuais[indiceDestacado]) {
+          selecionarJogadorPesquisa(sugestoesAtuais[indiceDestacado]);
         }
       }
   });
+
+  let sugestoesRelatorioAtuais = [];
+  let indiceDestacadoRelatorio = 0;
+
+  function destacarSugestaoRelatorio(novoIndice) {
+
+    indiceDestacadoRelatorio = novoIndice;
+
+    const itens = document.querySelectorAll('#sugestoesJogadoresRelatorio .sugestao-item');
+
+    itens.forEach((item, i) => {
+      item.classList.toggle('sugestao-selecionada', i === indiceDestacadoRelatorio);
+    });
+
+    if (itens[indiceDestacadoRelatorio]) {
+      itens[indiceDestacadoRelatorio].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function selecionarJogadorRelatorio(jogador) {
+
+    console.log('Jogador selecionado no filtro do relatório:', jogador.nome);
+
+    document.getElementById('pesquisaJogadorRelatorio').value = jogador.nome;
+
+    filtroRelatorioJogador = jogador.nome;
+
+    document.getElementById('sugestoesJogadoresRelatorio').style.display = 'none';
+
+    atualizarTela();
+  }
 
   function filtrarJogadoresRelatorio() {
 
@@ -890,6 +928,7 @@
     const termo = pesquisa.toLowerCase();
 
     sugestoes.innerHTML = '';
+    sugestoesRelatorioAtuais = [];
 
     if (!termo) {
       sugestoes.style.display = 'none';
@@ -915,6 +954,8 @@
 
     console.log('Sugestões encontradas no relatório:', filtrados.length);
 
+    sugestoesRelatorioAtuais = filtrados;
+
     if (filtrados.length === 0) {
       sugestoes.style.display = 'none';
       atualizarTela();
@@ -923,33 +964,22 @@
 
     sugestoes.style.display = 'block';
 
-    filtrados.forEach((jogador, index) => {
+    filtrados.forEach((jogador) => {
 
       const div = document.createElement('div');
 
       div.className = 'sugestao-item';
 
-      if (index === 0) {
-        div.classList.add('sugestao-selecionada');
-      }
-
       div.innerHTML = `<strong>${escapeHtml(jogador.nome)}</strong>`;
 
       div.onclick = () => {
-
-        console.log('Jogador selecionado no filtro do relatório:', jogador.nome);
-
-        document.getElementById('pesquisaJogadorRelatorio').value = jogador.nome;
-
-        filtroRelatorioJogador = jogador.nome;
-
-        sugestoes.style.display = 'none';
-
-        atualizarTela();
+        selecionarJogadorRelatorio(jogador);
       };
 
       sugestoes.appendChild(div);
     });
+
+    destacarSugestaoRelatorio(0);
 
     atualizarTela();
   }
@@ -957,14 +987,26 @@
   document.getElementById('pesquisaJogadorRelatorio')
     .addEventListener('keydown', function(e) {
 
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (sugestoesRelatorioAtuais.length === 0) return;
+        destacarSugestaoRelatorio(Math.min(indiceDestacadoRelatorio + 1, sugestoesRelatorioAtuais.length - 1));
+        return;
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (sugestoesRelatorioAtuais.length === 0) return;
+        destacarSugestaoRelatorio(Math.max(indiceDestacadoRelatorio - 1, 0));
+        return;
+      }
+
       if (e.key === 'Enter') {
 
         e.preventDefault();
 
-        const primeiro = document.querySelector('#sugestoesJogadoresRelatorio .sugestao-item');
-
-        if (primeiro) {
-          primeiro.click();
+        if (sugestoesRelatorioAtuais[indiceDestacadoRelatorio]) {
+          selecionarJogadorRelatorio(sugestoesRelatorioAtuais[indiceDestacadoRelatorio]);
         }
       }
   });
@@ -1063,7 +1105,6 @@
 
     document.getElementById('entrada').value = '';
     document.getElementById('pesquisaJogador').value = '';
-    hintInput.value = '';
 
     fecharModalConfirmacao();
 
@@ -1164,7 +1205,6 @@
 
     document.getElementById('saida').value = '';
     document.getElementById('pesquisaJogador').value = '';
-    hintInput.value = '';
 
     fecharModalConfirmacaoSaida();
 
