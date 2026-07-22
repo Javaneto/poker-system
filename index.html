@@ -556,6 +556,27 @@
     }
   });
 
+  let recarregarTimeout = null;
+
+  function recarregarComDebounce() {
+
+    clearTimeout(recarregarTimeout);
+
+    recarregarTimeout = setTimeout(() => {
+      console.log('Recarregando dados via Realtime');
+      carregarDados();
+    }, 300);
+  }
+
+  client
+    .channel('mesa-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'movimentacoes' }, recarregarComDebounce)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'jogadores' }, recarregarComDebounce)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, recarregarComDebounce)
+    .subscribe((status) => {
+      console.log('Status do canal Realtime:', status);
+    });
+
   function escapeHtml(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
       '&': '&amp;',
