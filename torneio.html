@@ -110,6 +110,52 @@
       display: flex;
     }
 
+    .menu-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      z-index: 3000;
+    }
+
+    .menu-overlay.aberto {
+      display: block;
+    }
+
+    .menu-lateral {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 270px;
+      max-width: 85vw;
+      background: white;
+      padding: 20px;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+    }
+
+    .menu-lateral .menu-item {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 13px;
+      font-weight: bold;
+      font-size: 14px;
+      font-family: inherit;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+      border: none;
+    }
+
     .grid-torneios {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -121,6 +167,7 @@
       padding: 14px;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
     .torneio-card.atual {
@@ -138,11 +185,62 @@
       font-size: 12px;
     }
 
+    .torneio-card .btn-excluir-torneio {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 8px;
+      font-size: 12px;
+      box-shadow: none;
+    }
+
+    .torneio-card .status-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 2px 8px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .status-badge.aberto {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .status-badge.encerrado {
+      background: #eee;
+      color: #666;
+    }
+
     .torneio-card .torneio-info {
       font-size: 13px;
       color: #444;
       margin-bottom: 12px;
       flex-grow: 1;
+    }
+
+    .linha-desfazer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .linha-desfazer .linha-desfazer-info {
+      font-size: 13px;
+      color: #333;
+    }
+
+    .linha-desfazer .linha-desfazer-info strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .linha-desfazer button {
+      flex: 0 0 auto;
     }
 
     .btn-icone {
@@ -286,17 +384,18 @@
       flex: 1;
     }
 
+    .linha-tipo-pagamento .tipo-nome-fixo {
+      flex: 1;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
     .linha-tipo-pagamento .tipo-prize {
       flex: 1;
       font-size: 14px;
       color: #16a34a;
       font-weight: bold;
       white-space: nowrap;
-    }
-
-    .linha-tipo-pagamento button {
-      flex: 0 0 auto;
-      padding: 9px 12px;
     }
 
     .cabecalho-tipos {
@@ -313,11 +412,6 @@
       text-transform: uppercase;
       letter-spacing: 0.02em;
       text-align: center;
-    }
-
-    .cabecalho-tipos span:last-child {
-      flex: 0 0 auto;
-      width: 36px;
     }
 
     @media (max-width: 768px) {
@@ -368,7 +462,8 @@
         flex-wrap: wrap;
       }
 
-      .linha-tipo-pagamento input {
+      .linha-tipo-pagamento input,
+      .linha-tipo-pagamento .tipo-nome-fixo {
         flex: 1 1 45%;
       }
 
@@ -385,15 +480,9 @@
   <div class="topbar">
     <h1>RPG Poker Club — Torneio</h1>
 
-    <div style="display:flex;gap:8px;">
-      <a href="index.html" class="btn-gray">
-        Mesa Cash
-      </a>
-
-      <button id="btnAdmin" class="btn-gray" onclick="toggleAdmin()">
-        Login
-      </button>
-    </div>
+    <button id="btnMenu" class="btn-gray" onclick="abrirMenu()">
+      ☰
+    </button>
   </div>
 
   <div class="card">
@@ -414,34 +503,48 @@
     </div>
 
     <div id="infoTorneio" class="oculto">
-      <h3 id="nomeTorneioAtual"></h3>
+      <div class="topbar" style="margin-bottom:8px;">
+        <h3 id="nomeTorneioAtual" style="margin:0;"></h3>
+
+        <div style="display:flex;gap:8px;">
+          <button id="btnConfigTorneioAtual" class="btn-gray disabled" onclick="abrirModalConfigTorneioAtual()">
+            ⚙️ Configurar Torneio
+          </button>
+
+          <button id="btnEncerrarTorneio" class="btn-red disabled" onclick="encerrarTorneio()">
+            Encerrar Torneio
+          </button>
+        </div>
+      </div>
+
+      <p style="color:#666;margin-bottom:4px;">Prêmio acumulado</p>
+      <p id="totalPrizeAcumulado" class="positivo" style="font-size:32px;margin-top:0;">R$ 0,00</p>
+
+      <h3 style="font-size:16px;margin-bottom:4px;">Distribuição de Prêmios</h3>
+
+      <p id="nomeEstruturaAtual" style="color:#666;font-size:13px;margin-top:0;margin-bottom:8px;">
+        Nenhuma estrutura selecionada.
+      </p>
 
       <table>
         <thead>
           <tr>
-            <th>Tipo</th>
+            <th>Posição</th>
             <th>Valor</th>
           </tr>
         </thead>
 
-        <tbody id="tabelaValoresTorneio"></tbody>
+        <tbody id="tabelaPremiacao"></tbody>
       </table>
 
-      <div class="flex" style="margin-top:16px;">
-        <div>
-          <p style="color:#666;margin-bottom:4px;">Prêmio acumulado</p>
-          <p id="totalPrizeAcumulado" class="positivo" style="font-size:20px;">R$ 0,00</p>
-        </div>
-
-        <div>
-          <p style="color:#666;margin-bottom:4px;">Rake acumulado</p>
-          <p style="font-size:20px;font-weight:bold;display:flex;align-items:center;gap:6px;margin:0;">
-            <span id="totalRakeAcumulado" data-valor="R$ 0,00">••••••</span>
-            <button type="button" id="btnToggleRake" class="btn-icone" onclick="alternarVisibilidadeRake()">
-              🙈
-            </button>
-          </p>
-        </div>
+      <div style="margin-top:16px;">
+        <p style="color:#666;margin-bottom:4px;">Rake acumulado</p>
+        <p style="font-size:20px;font-weight:bold;display:flex;align-items:center;gap:6px;margin:0;">
+          <span id="totalRakeAcumulado" data-valor="R$ 0,00">••••••</span>
+          <button type="button" id="btnToggleRake" class="btn-icone" onclick="alternarVisibilidadeRake()">
+            🙈
+          </button>
+        </p>
       </div>
     </div>
   </div>
@@ -455,7 +558,13 @@
   </div>
 
   <div class="card">
-    <h2>Movimentações em Aberto</h2>
+    <div class="topbar">
+      <h2>Movimentações em Aberto</h2>
+
+      <button id="btnDesfazerTorneio" class="btn-gray disabled" onclick="abrirModalDesfazer()">
+        Desfazer
+      </button>
+    </div>
 
     <select id="filtroModalidadeAbertoTorneio" onchange="atualizarMovimentacoesAbertas()" style="max-width:260px;">
       <option value="">Todas as modalidades</option>
@@ -478,6 +587,30 @@
 
 </div>
 
+<div id="menuOverlay" class="menu-overlay" onclick="fecharMenuSeClicouFora(event)">
+  <div class="menu-lateral">
+    <div class="topbar" style="margin-bottom:16px;">
+      <h2 style="margin:0;font-size:20px;">Menu</h2>
+
+      <button class="btn-icone" style="font-size:22px;" onclick="fecharMenu()">
+        ×
+      </button>
+    </div>
+
+    <a href="index.html" class="btn-gray menu-item">
+      Mesa Cash
+    </a>
+
+    <button id="btnConfigTorneioMenu" class="btn-gray disabled menu-item" onclick="fecharMenu(); abrirModalEstruturas();">
+      Configurações de Torneio
+    </button>
+
+    <button id="btnAdmin" class="btn-gray menu-item" onclick="toggleAdmin()">
+      Login
+    </button>
+  </div>
+</div>
+
 <div id="modalNovoTorneio" class="modal-overlay">
   <div class="modal-box" style="max-width:880px;">
     <h2>Novo Torneio</h2>
@@ -489,14 +622,13 @@
       <span>Valor Total</span>
       <span>Rake</span>
       <span>Prêmio</span>
-      <span></span>
     </div>
 
     <div id="linhasTiposPagamento"></div>
 
-    <button type="button" class="btn-gray" style="margin-bottom:16px;" onclick="adicionarLinhaTipo()">
-      + Adicionar tipo
-    </button>
+    <p style="color:#666;font-size:12px;margin-top:-4px;">
+      Para adicionar, editar ou remover tipos, use "Configurações de Torneio".
+    </p>
 
     <div class="modal-acoes">
       <button class="btn-gray" onclick="fecharModalNovoTorneio()">
@@ -505,6 +637,149 @@
 
       <button id="btnCriarTorneio" class="btn-dark" onclick="confirmarNovoTorneio()">
         Criar Torneio
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalConfigTorneioAtual" class="modal-overlay">
+  <div class="modal-box" style="max-width:880px;">
+    <h2>Configurar Torneio</h2>
+
+    <h3 style="font-size:15px;">Estrutura de Premiação</h3>
+
+    <select id="selectEstruturaPremiacaoModal">
+      <option value="">Nenhuma selecionada</option>
+    </select>
+
+    <h3 style="font-size:15px;margin-top:16px;">Valores (Buy-in, Rebuy, Add-on...)</h3>
+
+    <div class="cabecalho-tipos">
+      <span>Tipo</span>
+      <span>Valor Total</span>
+      <span>Rake</span>
+      <span>Prêmio</span>
+    </div>
+
+    <div id="linhasTiposEditar"></div>
+
+    <p style="color:#666;font-size:12px;margin-top:-4px;margin-bottom:16px;">
+      Para adicionar, editar ou remover tipos, use "Configurações de Torneio".
+    </p>
+
+    <h3 style="font-size:15px;">Estrutura de Blinds</h3>
+
+    <p style="color:#666;font-size:13px;">Em breve.</p>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalConfigTorneioAtual()">
+        Cancelar
+      </button>
+
+
+      <button id="btnSalvarConfigTorneio" class="btn-dark" onclick="confirmarConfigTorneioAtual()">
+        Salvar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalEstruturas" class="modal-overlay">
+  <div class="modal-box" style="max-width:420px;">
+    <h2>Configurações de Torneio</h2>
+
+    <div class="linha-desfazer">
+      <div class="linha-desfazer-info">
+        <strong>Tipo de Pagamento</strong>
+        <div id="previewTiposPagamento" style="color:#666;font-size:12px;margin-top:2px;"></div>
+      </div>
+      <button class="btn-gray" onclick="abrirModalTiposPagamento()">
+        Editar
+      </button>
+    </div>
+
+    <div class="linha-desfazer">
+      <div class="linha-desfazer-info">
+        <strong>Estrutura de Premiação</strong>
+        <div id="previewEstruturasPremiacao" style="color:#666;font-size:12px;margin-top:2px;"></div>
+      </div>
+      <button class="btn-gray" onclick="abrirModalEstruturasPremiacao()">
+        Editar
+      </button>
+    </div>
+
+    <div class="linha-desfazer">
+      <div class="linha-desfazer-info">
+        <strong>Estrutura de Blinds</strong>
+        <div style="color:#666;font-size:12px;margin-top:2px;">Em breve</div>
+      </div>
+      <button class="btn-gray disabled" title="Em breve">
+        Editar
+      </button>
+    </div>
+
+    <div class="modal-acoes" style="margin-top:16px;">
+      <button class="btn-gray" onclick="fecharModalEstruturas()">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalTiposPagamento" class="modal-overlay">
+  <div class="modal-box" style="max-width:480px;">
+    <h2>Tipos de Pagamento</h2>
+
+    <div id="listaTiposPagamento" style="max-height:220px;overflow-y:auto;margin-bottom:16px;"></div>
+
+    <input type="text" id="novoTipoPagamentoNome" placeholder="Nome do tipo (ex: Mega Add-on)">
+
+    <button type="button" class="btn-dark" id="btnCriarTipoPagamento" style="margin-bottom:16px;" onclick="confirmarNovoTipoPagamento()">
+      Criar Tipo
+    </button>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalTiposPagamento()">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalEstruturasPremiacao" class="modal-overlay">
+  <div class="modal-box" style="max-width:480px;">
+    <h2>Estruturas de Premiação</h2>
+
+    <div id="listaEstruturas" style="max-height:220px;overflow-y:auto;margin-bottom:16px;"></div>
+
+    <input type="text" id="novaEstruturaNome" placeholder="Nome (ex: 70% - 20% - 10%)">
+    <input type="text" id="novaEstruturaPercentuais" placeholder="Percentuais separados por vírgula (ex: 70,20,10)">
+
+    <button type="button" class="btn-dark" id="btnCriarEstrutura" style="margin-bottom:16px;" onclick="confirmarNovaEstrutura()">
+      Criar Estrutura
+    </button>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalEstruturasPremiacao()">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalDesfazer" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px;">
+    <h2>Desfazer Movimentação</h2>
+
+    <p style="color:#666;font-size:13px;margin-top:-8px;">
+      Mostrando todas as movimentações em aberto do torneio selecionado.
+    </p>
+
+    <div id="listaDesfazer" style="max-height:340px;overflow-y:auto;"></div>
+
+    <div class="modal-acoes" style="margin-top:16px;">
+      <button class="btn-gray" onclick="fecharModalDesfazer()">
+        Fechar
       </button>
     </div>
   </div>
@@ -593,6 +868,8 @@
   let valoresTorneio = [];
   let todosTorneios = [];
   let todosValoresTorneios = [];
+  let estruturasPremiacao = [];
+  let tiposPagamentoTorneio = [];
   let movimentacoesTorneio = [];
   let movimentacoes = [];
   let pagamentoTipoSelecionado = null;
@@ -620,6 +897,20 @@
   }
   let mesaAtualIdCash = 1;
   let adminLiberado = false;
+
+  function abrirMenu() {
+    document.getElementById('menuOverlay').classList.add('aberto');
+  }
+
+  function fecharMenu() {
+    document.getElementById('menuOverlay').classList.remove('aberto');
+  }
+
+  function fecharMenuSeClicouFora(e) {
+    if (e.target.id === 'menuOverlay') {
+      fecharMenu();
+    }
+  }
 
   function escapeHtml(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
@@ -674,6 +965,7 @@
       .select('*');
 
     jogadores = jogadoresDB || [];
+    jogadores.sort((a, b) => a.nome.localeCompare(b.nome));
 
     const { data: configuracaoDB } = await client
       .from('configuracoes')
@@ -702,6 +994,20 @@
       .order('ordem', { ascending: true });
 
     todosValoresTorneios = todosValoresDB || [];
+
+    const { data: estruturasDB } = await client
+      .from('premiacao_estruturas')
+      .select('*')
+      .order('id', { ascending: true });
+
+    estruturasPremiacao = estruturasDB || [];
+
+    const { data: tiposDB } = await client
+      .from('tipos_pagamento_torneio')
+      .select('*')
+      .order('ordem', { ascending: true });
+
+    tiposPagamentoTorneio = tiposDB || [];
 
     const torneioAtualId = configuracaoDB?.torneio_atual_id || null;
 
@@ -758,18 +1064,6 @@
 
     document.getElementById('nomeTorneioAtual').textContent = torneioAtual.nome;
 
-    const tabelaValores = document.getElementById('tabelaValoresTorneio');
-    tabelaValores.innerHTML = '';
-
-    valoresTorneio.forEach(v => {
-      tabelaValores.innerHTML += `
-        <tr>
-          <td>${escapeHtml(v.tipo)}</td>
-          <td>R$ ${Number(v.valor_total).toFixed(2)}</td>
-        </tr>
-      `;
-    });
-
     const totalPrize = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_prize || 0), 0);
     const totalRake = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_rake || 0), 0);
 
@@ -778,8 +1072,151 @@
     document.getElementById('totalRakeAcumulado').dataset.valor = `R$ ${totalRake.toFixed(2)}`;
     atualizarExibicaoRake();
 
+    renderizarTabelaPremiacao(totalPrize);
+
     atualizarBotoesPagamento();
     atualizarMovimentacoesAbertas();
+  }
+
+  function renderizarTabelaPremiacao(totalPrize) {
+
+    const tabela = document.getElementById('tabelaPremiacao');
+    tabela.innerHTML = '';
+
+    const estrutura = estruturasPremiacao.find(e => e.id === torneioAtual?.premiacao_estrutura_id);
+
+    document.getElementById('nomeEstruturaAtual').textContent = estrutura
+      ? `Estrutura: ${estrutura.nome}`
+      : 'Nenhuma estrutura selecionada.';
+
+    if (!estrutura) {
+      tabela.innerHTML = '<tr><td colspan="2" style="color:#666;">Nenhuma estrutura de premiação selecionada.</td></tr>';
+      return;
+    }
+
+    const percentuais = estrutura.percentuais || [];
+
+    percentuais.forEach((pct, index) => {
+
+      const valor = totalPrize * (Number(pct) / 100);
+
+      tabela.innerHTML += `
+        <tr>
+          <td>${index + 1}º</td>
+          <td>R$ ${valor.toFixed(2)}</td>
+        </tr>
+      `;
+    });
+  }
+
+  function abrirModalConfigTorneioAtual() {
+
+    if (!adminLiberado || !torneioAtual) return;
+
+    const select = document.getElementById('selectEstruturaPremiacaoModal');
+
+    select.innerHTML = '<option value="">Nenhuma selecionada</option>' +
+      estruturasPremiacao.map(e => `<option value="${e.id}">${escapeHtml(e.nome)}</option>`).join('');
+
+    select.value = torneioAtual.premiacao_estrutura_id || '';
+
+    const container = document.getElementById('linhasTiposEditar');
+    container.innerHTML = '';
+    contadorLinhaTipo = 0;
+
+    if (tiposPagamentoTorneio.length === 0) {
+      container.innerHTML = '<p style="color:#666;">Nenhum tipo de pagamento cadastrado. Crie um em "Configurações de Torneio".</p>';
+    } else {
+      tiposPagamentoTorneio.forEach(t => {
+        const existente = valoresTorneio.find(v => v.tipo === t.nome);
+        criarLinhaTipo(t.nome, existente ? existente.valor_total : 0, existente ? existente.valor_rake : 0, 'linhasTiposEditar');
+      });
+    }
+
+    document.getElementById('modalConfigTorneioAtual').classList.add('aberto');
+  }
+
+  function fecharModalConfigTorneioAtual() {
+
+    document.getElementById('modalConfigTorneioAtual').classList.remove('aberto');
+  }
+
+  async function confirmarConfigTorneioAtual() {
+
+    if (!torneioAtual) return;
+
+    const linhas = Array.from(document.querySelectorAll('#linhasTiposEditar .linha-tipo-pagamento'));
+
+    const tipos = linhas
+      .map((linha, index) => {
+
+        const tipoNome = linha.dataset.tipoNome;
+        const total = parseFloat(linha.querySelector('.tipo-total').value) || 0;
+        const rake = parseFloat(linha.querySelector('.tipo-rake').value) || 0;
+
+        return {
+          tipo: tipoNome,
+          valor_total: total,
+          valor_rake: rake,
+          valor_prize: Math.max(total - rake, 0),
+          ordem: index,
+          torneio_id: torneioAtual.id
+        };
+      })
+      .filter(t => t.tipo && t.valor_total > 0);
+
+    if (tipos.length === 0) {
+      alert('Adicione ao menos um tipo de pagamento com valor');
+      return;
+    }
+
+    const select = document.getElementById('selectEstruturaPremiacaoModal');
+    const novaEstruturaId = select.value ? Number(select.value) : null;
+
+    const btn = document.getElementById('btnSalvarConfigTorneio');
+    btn.classList.add('disabled');
+
+    const { error: erroDelete } = await client
+      .from('torneio_valores')
+      .delete()
+      .eq('torneio_id', torneioAtual.id);
+
+    if (erroDelete) {
+      btn.classList.remove('disabled');
+      alert('Erro ao salvar valores do torneio');
+      console.error(erroDelete);
+      return;
+    }
+
+    const { error: erroInsert } = await client
+      .from('torneio_valores')
+      .insert(tipos);
+
+    if (erroInsert) {
+      btn.classList.remove('disabled');
+      alert('Erro ao salvar valores do torneio');
+      console.error(erroInsert);
+      return;
+    }
+
+    const { error: erroEstrutura } = await client
+      .from('torneios')
+      .update({ premiacao_estrutura_id: novaEstruturaId })
+      .eq('id', torneioAtual.id);
+
+    btn.classList.remove('disabled');
+
+    if (erroEstrutura) {
+      alert('Erro ao salvar estrutura de premiação');
+      console.error(erroEstrutura);
+      return;
+    }
+
+    console.log('Configuração do torneio salva:', torneioAtual.id);
+
+    fecharModalConfigTorneioAtual();
+
+    carregarDados();
   }
 
   function renderizarListaTorneios() {
@@ -799,6 +1236,7 @@
       const primeiroValor = valoresDoTorneio[0];
 
       const ehAtual = !!(torneioAtual && torneioAtual.id === torneio.id);
+      const estaEncerrado = torneio.status === 'encerrado';
 
       const div = document.createElement('div');
 
@@ -813,12 +1251,22 @@
       });
 
       div.innerHTML = `
+        <span class="status-badge ${estaEncerrado ? 'encerrado' : 'aberto'}">${estaEncerrado ? 'Encerrado' : 'Aberto'}</span>
         <div class="torneio-data">${dataFormatada}</div>
         <h3>${escapeHtml(torneio.nome)}</h3>
         <div class="torneio-info">
           ${primeiroValor ? `${escapeHtml(primeiroValor.tipo)}: R$ ${Number(primeiroValor.valor_total).toFixed(2)}` : 'Sem valores configurados'}
         </div>
       `;
+
+      const btnExcluir = document.createElement('button');
+
+      btnExcluir.className = 'btn-red btn-excluir-torneio' + (adminLiberado && estaEncerrado ? '' : ' disabled');
+      btnExcluir.textContent = '🗑️';
+      btnExcluir.title = estaEncerrado ? 'Excluir torneio' : 'Encerre o torneio antes de excluir';
+      btnExcluir.onclick = () => excluirTorneio(torneio.id, torneio.nome);
+
+      div.appendChild(btnExcluir);
 
       const btn = document.createElement('button');
 
@@ -855,6 +1303,78 @@
     }
 
     console.log('Torneio atual alterado para:', torneioId);
+
+    carregarDados();
+  }
+
+  async function encerrarTorneio() {
+
+    if (!adminLiberado || !torneioAtual) return;
+
+    if (!confirm(`Encerrar o torneio "${torneioAtual.nome}"? Não será mais possível registrar pagamentos nem editar as configurações dele. Depois de encerrado, ele pode ser excluído.`)) return;
+
+    const btn = document.getElementById('btnEncerrarTorneio');
+    btn.classList.add('disabled');
+
+    const { error: erroStatus } = await client
+      .from('torneios')
+      .update({ status: 'encerrado' })
+      .eq('id', torneioAtual.id);
+
+    if (erroStatus) {
+      btn.classList.remove('disabled');
+      alert('Erro ao encerrar torneio');
+      console.error(erroStatus);
+      return;
+    }
+
+    const { error: erroConfig } = await client
+      .from('configuracoes')
+      .update({ torneio_atual_id: null })
+      .eq('id', 1)
+      .eq('torneio_atual_id', torneioAtual.id);
+
+    btn.classList.remove('disabled');
+
+    if (erroConfig) {
+      console.error(erroConfig);
+    }
+
+    console.log('Torneio encerrado:', torneioAtual.id);
+
+    carregarDados();
+  }
+
+  async function excluirTorneio(torneioId, nomeTorneio) {
+
+    if (!adminLiberado) return;
+
+    if (torneioAtual && torneioAtual.id === torneioId) {
+      alert('Esse é o torneio ativo. Encerre-o antes de excluir.');
+      return;
+    }
+
+    const torneio = todosTorneios.find(t => t.id === torneioId);
+
+    if (!torneio || torneio.status !== 'encerrado') {
+      alert('Só é possível excluir torneios encerrados.');
+      return;
+    }
+
+    if (!confirm(`Excluir permanentemente o torneio "${nomeTorneio}"? Essa ação não pode ser desfeita. As movimentações financeiras continuam no relatório, só deixam de estar vinculadas a esse torneio.`)) return;
+
+    const { error } = await client
+      .from('torneios')
+      .delete()
+      .eq('id', torneioId);
+
+    if (error) {
+      alert('Erro ao excluir torneio');
+      console.error(error);
+      return;
+    }
+
+    console.log('Torneio excluído:', torneioId);
 
     carregarDados();
   }
@@ -951,6 +1471,100 @@
         `;
       }
     });
+  }
+
+  function obterMovimentacoesAbertasTorneio() {
+
+    if (!torneioAtual) return [];
+
+    return movimentacoes
+      .filter(mov => Number(mov.mesa_id || 1) === Number(mesaAtualIdCash) && !mov.pago && mov.torneio_id === torneioAtual.id)
+      .sort((a, b) => b.id - a.id);
+  }
+
+  function abrirModalDesfazer() {
+
+    if (!adminLiberado) return;
+
+    renderizarListaDesfazer();
+
+    document.getElementById('modalDesfazer').classList.add('aberto');
+  }
+
+  function fecharModalDesfazer() {
+
+    document.getElementById('modalDesfazer').classList.remove('aberto');
+  }
+
+  function renderizarListaDesfazer() {
+
+    const lista = document.getElementById('listaDesfazer');
+
+    lista.innerHTML = '';
+
+    const abertas = obterMovimentacoesAbertasTorneio();
+
+    if (abertas.length === 0) {
+      lista.innerHTML = '<p style="color:#666;padding:8px 0;">Nenhuma movimentação em aberto no torneio.</p>';
+      return;
+    }
+
+    abertas.forEach(mov => {
+
+      const div = document.createElement('div');
+
+      div.className = 'linha-desfazer';
+
+      const dataFormatada = new Date(mov.data).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      div.innerHTML = `
+        <div class="linha-desfazer-info">
+          <strong>${escapeHtml(mov.jogador)}</strong>
+          ${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')} · R$ ${Number(mov.valor).toFixed(2)}<br>
+          <span style="color:#999;">${dataFormatada}</span>
+        </div>
+      `;
+
+      const btn = document.createElement('button');
+
+      btn.className = 'btn-red';
+      btn.textContent = 'Desfazer';
+      btn.onclick = () => desfazerMovimentacaoPorId(mov.id);
+
+      div.appendChild(btn);
+
+      lista.appendChild(div);
+    });
+  }
+
+  async function desfazerMovimentacaoPorId(id) {
+
+    if (!adminLiberado) return;
+
+    if (!confirm('Desfazer esta movimentação? Essa ação não pode ser desfeita.')) return;
+
+    const { error } = await client
+      .from('movimentacoes')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert('Erro ao desfazer movimentação');
+      console.error(error);
+      return;
+    }
+
+    console.log('Movimentação desfeita:', id);
+
+    await carregarDados();
+
+    renderizarListaDesfazer();
   }
 
   function abrirModalSelecionarJogador(valorTipo) {
@@ -1061,7 +1675,7 @@
 
   let contadorLinhaTipo = 0;
 
-  function criarLinhaTipo(nome, total, rake) {
+  function criarLinhaTipo(nome, total, rake, containerId) {
 
     contadorLinhaTipo++;
 
@@ -1069,13 +1683,13 @@
 
     div.className = 'linha-tipo-pagamento';
     div.dataset.linhaId = contadorLinhaTipo;
+    div.dataset.tipoNome = nome;
 
     div.innerHTML = `
-      <input type="text" class="tipo-nome" placeholder="Tipo (ex: Buy-in)" value="${escapeHtml(nome)}">
+      <span class="tipo-nome-fixo">${escapeHtml(nome)}</span>
       <input type="number" class="tipo-total" placeholder="Valor total" min="0" value="${total}">
       <input type="number" class="tipo-rake" placeholder="Rake" min="0" value="${rake}">
       <span class="tipo-prize">R$ 0,00</span>
-      <button type="button" class="btn-red" onclick="removerLinhaTipo(this)">×</button>
     `;
 
     const inputTotal = div.querySelector('.tipo-total');
@@ -1094,15 +1708,28 @@
 
     recalcular();
 
-    document.getElementById('linhasTiposPagamento').appendChild(div);
+    document.getElementById(containerId || 'linhasTiposPagamento').appendChild(div);
   }
 
-  function adicionarLinhaTipo() {
-    criarLinhaTipo('', 0, 0);
-  }
+  function obterProximoNomeTorneio() {
 
-  function removerLinhaTipo(botao) {
-    botao.closest('.linha-tipo-pagamento').remove();
+    const prefixo = 'RPG Poker Club #';
+
+    let maiorNumero = 0;
+
+    todosTorneios.forEach(t => {
+
+      if (t.nome && t.nome.startsWith(prefixo)) {
+
+        const numero = parseInt(t.nome.slice(prefixo.length), 10);
+
+        if (!isNaN(numero) && numero > maiorNumero) {
+          maiorNumero = numero;
+        }
+      }
+    });
+
+    return `${prefixo}${maiorNumero + 1}`;
   }
 
   function abrirModalNovoTorneio() {
@@ -1113,15 +1740,17 @@
       return;
     }
 
-    document.getElementById('novoTorneioNome').value = '';
+    document.getElementById('novoTorneioNome').value = obterProximoNomeTorneio();
 
-    document.getElementById('linhasTiposPagamento').innerHTML = '';
+    const container = document.getElementById('linhasTiposPagamento');
+    container.innerHTML = '';
     contadorLinhaTipo = 0;
 
-    criarLinhaTipo('Buy-in', 0, 0);
-    criarLinhaTipo('Rebuy', 0, 0);
-    criarLinhaTipo('Rebuy Duplo', 0, 0);
-    criarLinhaTipo('Add-on', 0, 0);
+    if (tiposPagamentoTorneio.length === 0) {
+      container.innerHTML = '<p style="color:#666;">Nenhum tipo de pagamento cadastrado. Crie um em "Configurações de Torneio".</p>';
+    } else {
+      tiposPagamentoTorneio.forEach(t => criarLinhaTipo(t.nome, 0, 0, 'linhasTiposPagamento'));
+    }
 
     document.getElementById('modalNovoTorneio').classList.add('aberto');
   }
@@ -1140,12 +1769,12 @@
       return;
     }
 
-    const linhas = Array.from(document.querySelectorAll('.linha-tipo-pagamento'));
+    const linhas = Array.from(document.querySelectorAll('#linhasTiposPagamento .linha-tipo-pagamento'));
 
     const tipos = linhas
       .map((linha, index) => {
 
-        const tipoNome = linha.querySelector('.tipo-nome').value.trim();
+        const tipoNome = linha.dataset.tipoNome;
         const total = parseFloat(linha.querySelector('.tipo-total').value) || 0;
         const rake = parseFloat(linha.querySelector('.tipo-rake').value) || 0;
 
@@ -1193,10 +1822,26 @@
       return;
     }
 
+    const estruturaPadrao = estruturasPremiacao.find(e => e.nome === '50% - 30% - 20%');
+
+    const dadosParaVincular = estruturaPadrao ? { premiacao_estrutura_id: estruturaPadrao.id } : {};
+
     const { error: erroConfig } = await client
       .from('configuracoes')
       .update({ torneio_atual_id: torneioCriado.id })
       .eq('id', 1);
+
+    if (Object.keys(dadosParaVincular).length > 0) {
+
+      const { error: erroVincular } = await client
+        .from('torneios')
+        .update(dadosParaVincular)
+        .eq('id', torneioCriado.id);
+
+      if (erroVincular) {
+        console.error(erroVincular);
+      }
+    }
 
     btn.classList.remove('disabled');
 
@@ -1211,6 +1856,337 @@
     fecharModalNovoTorneio();
 
     carregarDados();
+  }
+
+  let estruturaEditandoId = null;
+  let tipoEditandoId = null;
+
+  function atualizarPreviewsConfigTorneio() {
+
+    const previewTipos = document.getElementById('previewTiposPagamento');
+    const previewEstruturas = document.getElementById('previewEstruturasPremiacao');
+
+    previewTipos.innerHTML = tiposPagamentoTorneio.length > 0
+      ? tiposPagamentoTorneio.map(t => escapeHtml(t.nome)).join('<br>')
+      : 'Nenhum cadastrado';
+
+    previewEstruturas.innerHTML = estruturasPremiacao.length > 0
+      ? estruturasPremiacao.map(e => escapeHtml(e.nome)).join('<br>')
+      : 'Nenhuma cadastrada';
+  }
+
+  function abrirModalEstruturas() {
+
+    if (!adminLiberado) return;
+
+    atualizarPreviewsConfigTorneio();
+
+    document.getElementById('modalEstruturas').classList.add('aberto');
+  }
+
+  function fecharModalEstruturas() {
+
+    document.getElementById('modalEstruturas').classList.remove('aberto');
+  }
+
+  function abrirModalTiposPagamento() {
+
+    if (!adminLiberado) return;
+
+    tipoEditandoId = null;
+
+    renderizarListaTiposPagamento();
+
+    document.getElementById('novoTipoPagamentoNome').value = '';
+    document.getElementById('btnCriarTipoPagamento').textContent = 'Criar Tipo';
+
+    document.getElementById('modalTiposPagamento').classList.add('aberto');
+  }
+
+  function fecharModalTiposPagamento() {
+
+    tipoEditandoId = null;
+
+    atualizarPreviewsConfigTorneio();
+
+    document.getElementById('modalTiposPagamento').classList.remove('aberto');
+  }
+
+  function abrirModalEstruturasPremiacao() {
+
+    if (!adminLiberado) return;
+
+    estruturaEditandoId = null;
+
+    renderizarListaEstruturas();
+
+    document.getElementById('novaEstruturaNome').value = '';
+    document.getElementById('novaEstruturaPercentuais').value = '';
+    document.getElementById('btnCriarEstrutura').textContent = 'Criar Estrutura';
+
+    document.getElementById('modalEstruturasPremiacao').classList.add('aberto');
+  }
+
+  function fecharModalEstruturasPremiacao() {
+
+    estruturaEditandoId = null;
+
+    atualizarPreviewsConfigTorneio();
+
+    document.getElementById('modalEstruturasPremiacao').classList.remove('aberto');
+  }
+
+  function renderizarListaEstruturas() {
+
+    const lista = document.getElementById('listaEstruturas');
+
+    lista.innerHTML = '';
+
+    if (estruturasPremiacao.length === 0) {
+      lista.innerHTML = '<p style="color:#666;">Nenhuma estrutura cadastrada ainda.</p>';
+      return;
+    }
+
+    estruturasPremiacao.forEach(e => {
+
+      const div = document.createElement('div');
+
+      div.className = 'linha-desfazer';
+
+      div.innerHTML = `<div class="linha-desfazer-info"><strong>${escapeHtml(e.nome)}</strong></div>`;
+
+      const acoes = document.createElement('div');
+      acoes.style.display = 'flex';
+      acoes.style.gap = '8px';
+
+      const btnEditar = document.createElement('button');
+      btnEditar.className = 'btn-gray';
+      btnEditar.textContent = '✏️';
+      btnEditar.title = 'Editar';
+      btnEditar.onclick = () => editarEstrutura(e.id);
+
+      const btnExcluir = document.createElement('button');
+      btnExcluir.className = 'btn-red';
+      btnExcluir.textContent = 'Excluir';
+      btnExcluir.onclick = () => excluirEstrutura(e.id);
+
+      acoes.appendChild(btnEditar);
+      acoes.appendChild(btnExcluir);
+
+      div.appendChild(acoes);
+
+      lista.appendChild(div);
+    });
+  }
+
+  function editarEstrutura(id) {
+
+    const estrutura = estruturasPremiacao.find(e => e.id === id);
+
+    if (!estrutura) return;
+
+    estruturaEditandoId = id;
+
+    document.getElementById('novaEstruturaNome').value = estrutura.nome;
+    document.getElementById('novaEstruturaPercentuais').value = (estrutura.percentuais || []).join(',');
+    document.getElementById('btnCriarEstrutura').textContent = 'Salvar Alterações';
+  }
+
+  async function confirmarNovaEstrutura() {
+
+    const nome = document.getElementById('novaEstruturaNome').value.trim();
+    const percentuaisTexto = document.getElementById('novaEstruturaPercentuais').value.trim();
+
+    if (!nome || !percentuaisTexto) {
+      alert('Preencha o nome e os percentuais');
+      return;
+    }
+
+    const percentuais = percentuaisTexto
+      .split(',')
+      .map(p => parseFloat(p.trim()))
+      .filter(p => !isNaN(p) && p > 0);
+
+    if (percentuais.length === 0) {
+      alert('Informe percentuais válidos, separados por vírgula');
+      return;
+    }
+
+    const total = percentuais.reduce((soma, p) => soma + p, 0);
+
+    if (Math.round(total) !== 100) {
+      alert(`A soma dos percentuais precisa ser 100%. Está em ${total}%.`);
+      return;
+    }
+
+    const btn = document.getElementById('btnCriarEstrutura');
+    btn.classList.add('disabled');
+
+    const { error } = estruturaEditandoId
+      ? await client.from('premiacao_estruturas').update({ nome, percentuais }).eq('id', estruturaEditandoId)
+      : await client.from('premiacao_estruturas').insert([{ nome, percentuais }]);
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      alert('Erro ao salvar estrutura');
+      console.error(error);
+      return;
+    }
+
+    console.log('Estrutura de premiação salva:', nome);
+
+    document.getElementById('novaEstruturaNome').value = '';
+    document.getElementById('novaEstruturaPercentuais').value = '';
+    estruturaEditandoId = null;
+    btn.textContent = 'Criar Estrutura';
+
+    await carregarDados();
+
+    renderizarListaEstruturas();
+  }
+
+  async function excluirEstrutura(id) {
+
+    if (!adminLiberado) return;
+
+    if (!confirm('Excluir esta estrutura de premiação?')) return;
+
+    const { error } = await client
+      .from('premiacao_estruturas')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert('Erro ao excluir. Ela pode estar em uso por algum torneio.');
+      console.error(error);
+      return;
+    }
+
+    console.log('Estrutura de premiação excluída:', id);
+
+    await carregarDados();
+
+    renderizarListaEstruturas();
+  }
+
+  function renderizarListaTiposPagamento() {
+
+    const lista = document.getElementById('listaTiposPagamento');
+
+    lista.innerHTML = '';
+
+    if (tiposPagamentoTorneio.length === 0) {
+      lista.innerHTML = '<p style="color:#666;">Nenhum tipo cadastrado ainda.</p>';
+      return;
+    }
+
+    tiposPagamentoTorneio.forEach(t => {
+
+      const div = document.createElement('div');
+
+      div.className = 'linha-desfazer';
+
+      div.innerHTML = `<div class="linha-desfazer-info"><strong>${escapeHtml(t.nome)}</strong></div>`;
+
+      const acoes = document.createElement('div');
+      acoes.style.display = 'flex';
+      acoes.style.gap = '8px';
+
+      const btnEditar = document.createElement('button');
+      btnEditar.className = 'btn-gray';
+      btnEditar.textContent = '✏️';
+      btnEditar.title = 'Editar';
+      btnEditar.onclick = () => editarTipoPagamento(t.id);
+
+      const btnExcluir = document.createElement('button');
+      btnExcluir.className = 'btn-red';
+      btnExcluir.textContent = 'Excluir';
+      btnExcluir.onclick = () => excluirTipoPagamento(t.id);
+
+      acoes.appendChild(btnEditar);
+      acoes.appendChild(btnExcluir);
+
+      div.appendChild(acoes);
+
+      lista.appendChild(div);
+    });
+  }
+
+  function editarTipoPagamento(id) {
+
+    const tipo = tiposPagamentoTorneio.find(t => t.id === id);
+
+    if (!tipo) return;
+
+    tipoEditandoId = id;
+
+    document.getElementById('novoTipoPagamentoNome').value = tipo.nome;
+    document.getElementById('btnCriarTipoPagamento').textContent = 'Salvar Alterações';
+  }
+
+  async function confirmarNovoTipoPagamento() {
+
+    const nome = document.getElementById('novoTipoPagamentoNome').value.trim();
+
+    if (!nome) {
+      alert('Informe o nome do tipo');
+      return;
+    }
+
+    const btn = document.getElementById('btnCriarTipoPagamento');
+    btn.classList.add('disabled');
+
+    let error;
+
+    if (tipoEditandoId) {
+      ({ error } = await client.from('tipos_pagamento_torneio').update({ nome }).eq('id', tipoEditandoId));
+    } else {
+      const proximaOrdem = tiposPagamentoTorneio.length;
+      ({ error } = await client.from('tipos_pagamento_torneio').insert([{ nome, ordem: proximaOrdem }]));
+    }
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      alert('Erro ao salvar tipo de pagamento');
+      console.error(error);
+      return;
+    }
+
+    console.log('Tipo de pagamento salvo:', nome);
+
+    document.getElementById('novoTipoPagamentoNome').value = '';
+    tipoEditandoId = null;
+    btn.textContent = 'Criar Tipo';
+
+    await carregarDados();
+
+    renderizarListaTiposPagamento();
+  }
+
+  async function excluirTipoPagamento(id) {
+
+    if (!adminLiberado) return;
+
+    if (!confirm('Excluir este tipo de pagamento? Torneios que já usam esse tipo continuam com os valores salvos, só não aparecerá mais para novos torneios.')) return;
+
+    const { error } = await client
+      .from('tipos_pagamento_torneio')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert('Erro ao excluir tipo de pagamento');
+      console.error(error);
+      return;
+    }
+
+    console.log('Tipo de pagamento excluído:', id);
+
+    await carregarDados();
+
+    renderizarListaTiposPagamento();
   }
 
   let pagamentoPendente = null;
@@ -1360,9 +2336,15 @@
 
     if (e.key !== 'Escape') return;
 
+    fecharMenu();
     fecharModalLogin();
     fecharModalNovoTorneio();
+    fecharModalEstruturas();
+    fecharModalTiposPagamento();
+    fecharModalEstruturasPremiacao();
+    fecharModalConfigTorneioAtual();
     fecharModalSelecionarJogador();
+    fecharModalDesfazer();
     fecharModalPagamento();
   });
 
@@ -1373,6 +2355,10 @@
     document.getElementById('btnAdmin').textContent = 'Sair';
 
     document.getElementById('btnNovoTorneio').classList.remove('disabled');
+    document.getElementById('btnDesfazerTorneio').classList.remove('disabled');
+    document.getElementById('btnConfigTorneioMenu').classList.remove('disabled');
+    document.getElementById('btnConfigTorneioAtual').classList.remove('disabled');
+    document.getElementById('btnEncerrarTorneio').classList.remove('disabled');
 
     atualizarBotoesPagamento();
     atualizarMovimentacoesAbertas();
@@ -1386,10 +2372,19 @@
     document.getElementById('btnAdmin').textContent = 'Login';
 
     document.getElementById('btnNovoTorneio').classList.add('disabled');
+    document.getElementById('btnDesfazerTorneio').classList.add('disabled');
+    document.getElementById('btnConfigTorneioMenu').classList.add('disabled');
+    document.getElementById('btnConfigTorneioAtual').classList.add('disabled');
+    document.getElementById('btnEncerrarTorneio').classList.add('disabled');
 
     fecharModalLogin();
     fecharModalNovoTorneio();
+    fecharModalEstruturas();
+    fecharModalTiposPagamento();
+    fecharModalEstruturasPremiacao();
+    fecharModalConfigTorneioAtual();
     fecharModalSelecionarJogador();
+    fecharModalDesfazer();
     fecharModalPagamento();
 
     atualizarBotoesPagamento();
