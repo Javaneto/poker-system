@@ -486,18 +486,6 @@
   </div>
 
   <div class="card">
-    <div class="topbar">
-      <h2>Torneios</h2>
-
-      <button id="btnNovoTorneio" class="btn-dark disabled" onclick="abrirModalNovoTorneio()">
-        Novo Torneio
-      </button>
-    </div>
-
-    <div id="listaTorneios" class="grid-torneios"></div>
-  </div>
-
-  <div class="card">
     <div id="semTorneio">
       <p style="color:#666;">Nenhum torneio selecionado.</p>
     </div>
@@ -601,6 +589,14 @@
       Mesa Cash
     </a>
 
+    <button class="btn-gray menu-item" onclick="fecharMenu()">
+      Torneio Ativo
+    </button>
+
+    <button class="btn-gray menu-item" onclick="fecharMenu(); abrirModalTorneios();">
+      Torneios
+    </button>
+
     <button id="btnConfigTorneioMenu" class="btn-gray disabled menu-item" onclick="fecharMenu(); abrirModalEstruturas();">
       Configurações de Torneio
     </button>
@@ -608,6 +604,26 @@
     <button id="btnAdmin" class="btn-gray menu-item" onclick="toggleAdmin()">
       Login
     </button>
+  </div>
+</div>
+
+<div id="modalTorneios" class="modal-overlay">
+  <div class="modal-box" style="max-width:900px;">
+    <div class="topbar">
+      <h2>Torneios</h2>
+
+      <button id="btnNovoTorneio" class="btn-dark disabled" onclick="abrirModalNovoTorneio()">
+        Novo Torneio
+      </button>
+    </div>
+
+    <div id="listaTorneios" class="grid-torneios"></div>
+
+    <div class="modal-acoes" style="margin-top:16px;">
+      <button class="btn-gray" onclick="fecharModalTorneios()">
+        Fechar
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1732,6 +1748,16 @@
     return `${prefixo}${maiorNumero + 1}`;
   }
 
+  function abrirModalTorneios() {
+
+    document.getElementById('modalTorneios').classList.add('aberto');
+  }
+
+  function fecharModalTorneios() {
+
+    document.getElementById('modalTorneios').classList.remove('aberto');
+  }
+
   function abrirModalNovoTorneio() {
 
     if (!adminLiberado) return;
@@ -2338,6 +2364,7 @@
 
     fecharMenu();
     fecharModalLogin();
+    fecharModalTorneios();
     fecharModalNovoTorneio();
     fecharModalEstruturas();
     fecharModalTiposPagamento();
