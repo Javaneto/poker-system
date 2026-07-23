@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RPG Poker Club — Torneio</title>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #f3f3f3;
+      font-family: Arial, sans-serif;
+      color: #111;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #ddd;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 9px 13px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+    }
+
+    a.btn-gray {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .btn-dark {
+      background: #111;
+      color: white;
+    }
+
+    .btn-blue {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-green {
+      background: #16a34a;
+      color: white;
+    }
+
+    .btn-red {
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-gray {
+      background: #444;
+      color: white;
+    }
+
+    .disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .oculto {
+      display: none;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 16px;
+    }
+
+    .modal-overlay.aberto {
+      display: flex;
+    }
+
+    .grid-torneios {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .torneio-card {
+      border: 1px solid #ddd;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .torneio-card.atual {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    .torneio-card h3 {
+      margin: 4px 0 8px 0;
+      font-size: 16px;
+    }
+
+    .torneio-card .torneio-data {
+      color: #666;
+      font-size: 12px;
+    }
+
+    .torneio-card .torneio-info {
+      font-size: 13px;
+      color: #444;
+      margin-bottom: 12px;
+      flex-grow: 1;
+    }
+
+    .btn-icone {
+      background: none;
+      border: none;
+      box-shadow: none;
+      padding: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .modal-box {
+      background: white;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      max-height: 95vh;
+      overflow-y: auto;
+    }
+
+    .modal-resumo {
+      color: #444;
+      margin-bottom: 16px;
+    }
+
+    .modal-acoes {
+      display: flex;
+      gap: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      table-layout: fixed;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .pesquisa-wrapper {
+      position: relative;
+      margin-bottom: 10px;
+    }
+
+    .pesquisa-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 14px;
+      top: 40%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      opacity: 0.45;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .pesquisa-wrapper input {
+      border-radius: 24px;
+      padding-left: 38px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .pesquisa-wrapper input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .positivo {
+      color: green;
+      font-weight: bold;
+    }
+
+    .negativo {
+      color: red;
+      font-weight: bold;
+    }
+
+    #sugestoesJogadores {
+      position: absolute;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.15);
+      margin-top: 6px;
+      width: 100%;
+      z-index: 1000;
+      max-height: 220px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: none;
+    }
+
+    .sugestao-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+
+    .sugestao-item:hover,
+    .sugestao-selecionada {
+      background: #eef2ff;
+    }
+
+    .flex {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .flex > * {
+      flex: 1;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .linha-tipo-pagamento {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .linha-tipo-pagamento input {
+      margin-bottom: 0;
+      width: auto;
+      flex: 1;
+    }
+
+    .linha-tipo-pagamento .tipo-prize {
+      flex: 1;
+      font-size: 14px;
+      color: #16a34a;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .linha-tipo-pagamento button {
+      flex: 0 0 auto;
+      padding: 9px 12px;
+    }
+
+    .cabecalho-tipos {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .cabecalho-tipos span {
+      flex: 1;
+      font-size: 12px;
+      font-weight: bold;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      text-align: center;
+    }
+
+    .cabecalho-tipos span:last-child {
+      flex: 0 0 auto;
+      width: 36px;
+    }
+
+    @media (max-width: 768px) {
+
+      body {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 14px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      h2 {
+        font-size: 24px;
+      }
+
+      th, td {
+        padding: 8px;
+        font-size: 14px;
+      }
+
+      button {
+        width: auto;
+      }
+
+      .flex button {
+        width: 100%;
+      }
+
+      .flex {
+        flex-direction: column;
+      }
+
+      .topbar {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      table {
+        font-size: 13px;
+      }
+
+      .linha-tipo-pagamento {
+        flex-wrap: wrap;
+      }
+
+      .linha-tipo-pagamento input {
+        flex: 1 1 45%;
+      }
+
+      .cabecalho-tipos {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="topbar">
+    <h1>RPG Poker Club — Torneio</h1>
+
+    <div style="display:flex;gap:8px;">
+      <a href="index.html" class="btn-gray">
+        Mesa Cash
+      </a>
+
+      <button id="btnAdmin" class="btn-gray" onclick="toggleAdmin()">
+        Login
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="topbar">
+      <h2>Torneios</h2>
+
+      <button id="btnNovoTorneio" class="btn-dark disabled" onclick="abrirModalNovoTorneio()">
+        Novo Torneio
+      </button>
+    </div>
+
+    <div id="listaTorneios" class="grid-torneios"></div>
+  </div>
+
+  <div class="card">
+    <div id="semTorneio">
+      <p style="color:#666;">Nenhum torneio selecionado.</p>
+    </div>
+
+    <div id="infoTorneio" class="oculto">
+      <h3 id="nomeTorneioAtual"></h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+
+        <tbody id="tabelaValoresTorneio"></tbody>
+      </table>
+
+      <div class="flex" style="margin-top:16px;">
+        <div>
+          <p style="color:#666;margin-bottom:4px;">Prêmio acumulado</p>
+          <p id="totalPrizeAcumulado" class="positivo" style="font-size:20px;">R$ 0,00</p>
+        </div>
+
+        <div>
+          <p style="color:#666;margin-bottom:4px;">Rake acumulado</p>
+          <p style="font-size:20px;font-weight:bold;display:flex;align-items:center;gap:6px;margin:0;">
+            <span id="totalRakeAcumulado" data-valor="R$ 0,00">••••••</span>
+            <button type="button" id="btnToggleRake" class="btn-icone" onclick="alternarVisibilidadeRake()">
+              🙈
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Registrar Pagamento</h2>
+
+    <p id="semTipoPagamento" style="color:#666;">Nenhum torneio em andamento.</p>
+
+    <div id="botoesPagamento" class="flex oculto"></div>
+  </div>
+
+  <div class="card">
+    <h2>Movimentações em Aberto</h2>
+
+    <select id="filtroModalidadeAbertoTorneio" onchange="atualizarMovimentacoesAbertas()" style="max-width:260px;">
+      <option value="">Todas as modalidades</option>
+    </select>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Jogador</th>
+          <th>Entrou</th>
+          <th>Saiu</th>
+          <th>Rebuys</th>
+          <th>Resultado</th>
+        </tr>
+      </thead>
+
+      <tbody id="tabelaMovimentacoesAbertas"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<div id="modalNovoTorneio" class="modal-overlay">
+  <div class="modal-box" style="max-width:880px;">
+    <h2>Novo Torneio</h2>
+
+    <input type="text" id="novoTorneioNome" placeholder="Nome do torneio">
+
+    <div class="cabecalho-tipos">
+      <span>Tipo</span>
+      <span>Valor Total</span>
+      <span>Rake</span>
+      <span>Prêmio</span>
+      <span></span>
+    </div>
+
+    <div id="linhasTiposPagamento"></div>
+
+    <button type="button" class="btn-gray" style="margin-bottom:16px;" onclick="adicionarLinhaTipo()">
+      + Adicionar tipo
+    </button>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalNovoTorneio()">
+        Cancelar
+      </button>
+
+      <button id="btnCriarTorneio" class="btn-dark" onclick="confirmarNovoTorneio()">
+        Criar Torneio
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalSelecionarJogador" class="modal-overlay">
+  <div class="modal-box">
+    <h2 id="modalSelecionarJogadorTitulo">Selecionar Jogador</h2>
+
+    <div class="pesquisa-wrapper">
+      <input
+        enterkeyhint="done"
+        autocapitalize="words"
+        spellcheck="false"
+        type="text"
+        id="pesquisaJogadorModal"
+        placeholder="Pesquisar jogador"
+        autocomplete="off"
+        oninput="filtrarJogadoresModal()"
+      >
+    </div>
+
+    <div id="listaJogadoresModal" style="max-height:280px;overflow-y:auto;"></div>
+
+    <div class="modal-acoes" style="margin-top:16px;">
+      <button class="btn-gray" onclick="fecharModalSelecionarJogador()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalPagamento" class="modal-overlay">
+  <div class="modal-box">
+    <h2>Confirmar Pagamento</h2>
+
+    <p id="modalPagamentoResumo" class="modal-resumo"></p>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalPagamento()">
+        Cancelar
+      </button>
+
+      <button id="btnConfirmarPagamento" class="btn-blue" onclick="confirmarPagamento()">
+        Confirmar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalLogin" class="modal-overlay">
+  <div class="modal-box">
+    <h2>Login</h2>
+
+    <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="username">
+    <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalLogin()">
+        Cancelar
+      </button>
+
+      <button id="btnConfirmarLogin" class="btn-blue" onclick="confirmarLogin()">
+        Entrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  console.log('Sistema de torneio iniciado');
+
+  const SUPABASE_URL = 'https://rpohgkhkfzuorngtellg.supabase.co';
+
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
+
+  const client = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+  console.log('Supabase conectado');
+
+  let jogadores = [];
+  let torneioAtual = null;
+  let valoresTorneio = [];
+  let todosTorneios = [];
+  let todosValoresTorneios = [];
+  let movimentacoesTorneio = [];
+  let movimentacoes = [];
+  let pagamentoTipoSelecionado = null;
+  let rakeOculto = true;
+
+  function alternarVisibilidadeRake() {
+
+    rakeOculto = !rakeOculto;
+
+    atualizarExibicaoRake();
+  }
+
+  function atualizarExibicaoRake() {
+
+    const span = document.getElementById('totalRakeAcumulado');
+    const btn = document.getElementById('btnToggleRake');
+
+    if (!span) return;
+
+    span.textContent = rakeOculto ? '••••••' : span.dataset.valor;
+
+    if (btn) {
+      btn.textContent = rakeOculto ? '🙈' : '👁️';
+    }
+  }
+  let mesaAtualIdCash = 1;
+  let adminLiberado = false;
+
+  function escapeHtml(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[c]));
+  }
+
+  client.auth.onAuthStateChange((event, session) => {
+
+    adminLiberado = !!session;
+
+    console.log('Estado de autenticação ADM:', event, adminLiberado);
+
+    if (adminLiberado) {
+      liberarAcoes();
+    } else {
+      bloquearAcoes();
+    }
+  });
+
+  let recarregarTimeout = null;
+
+  function recarregarComDebounce() {
+
+    clearTimeout(recarregarTimeout);
+
+    recarregarTimeout = setTimeout(() => {
+      console.log('Recarregando dados via Realtime');
+      carregarDados();
+    }, 300);
+  }
+
+  client
+    .channel('torneio-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'movimentacoes' }, recarregarComDebounce)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'jogadores' }, recarregarComDebounce)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, recarregarComDebounce)
+    .subscribe((status) => {
+      console.log('Status do canal Realtime:', status);
+    });
+
+  async function carregarDados() {
+
+    console.log('Carregando dados do Supabase');
+
+    const { data: jogadoresDB } = await client
+      .from('jogadores')
+      .select('*');
+
+    jogadores = jogadoresDB || [];
+
+    const { data: configuracaoDB } = await client
+      .from('configuracoes')
+      .select('*')
+      .eq('id', 1)
+      .single();
+
+    mesaAtualIdCash = configuracaoDB?.mesa_atual_id || 1;
+
+    const { data: movimentacoesTodasDB } = await client
+      .from('movimentacoes')
+      .select('*');
+
+    movimentacoes = movimentacoesTodasDB || [];
+
+    const { data: torneiosDB } = await client
+      .from('torneios')
+      .select('*')
+      .order('criado_em', { ascending: false });
+
+    todosTorneios = torneiosDB || [];
+
+    const { data: todosValoresDB } = await client
+      .from('torneio_valores')
+      .select('*')
+      .order('ordem', { ascending: true });
+
+    todosValoresTorneios = todosValoresDB || [];
+
+    const torneioAtualId = configuracaoDB?.torneio_atual_id || null;
+
+    if (!torneioAtualId) {
+
+      torneioAtual = null;
+      valoresTorneio = [];
+      movimentacoesTorneio = [];
+
+      atualizarTela();
+      return;
+    }
+
+    const torneioDB = todosTorneios.find(t => t.id === torneioAtualId) || null;
+
+    torneioAtual = torneioDB;
+
+    valoresTorneio = todosValoresTorneios.filter(v => v.torneio_id === torneioAtualId);
+
+    const { data: movimentacoesDB } = await client
+      .from('movimentacoes')
+      .select('*')
+      .eq('torneio_id', torneioAtualId);
+
+    movimentacoesTorneio = movimentacoesDB || [];
+
+    console.log('Torneio atual:', torneioAtual?.nome);
+
+    atualizarTela();
+  }
+
+  function atualizarTela() {
+
+    console.log('Atualizando tela do torneio');
+
+    renderizarListaTorneios();
+
+    const semTorneio = document.getElementById('semTorneio');
+    const infoTorneio = document.getElementById('infoTorneio');
+
+    if (!torneioAtual) {
+
+      semTorneio.classList.remove('oculto');
+      infoTorneio.classList.add('oculto');
+
+      atualizarBotoesPagamento();
+      atualizarMovimentacoesAbertas();
+
+      return;
+    }
+
+    semTorneio.classList.add('oculto');
+    infoTorneio.classList.remove('oculto');
+
+    document.getElementById('nomeTorneioAtual').textContent = torneioAtual.nome;
+
+    const tabelaValores = document.getElementById('tabelaValoresTorneio');
+    tabelaValores.innerHTML = '';
+
+    valoresTorneio.forEach(v => {
+      tabelaValores.innerHTML += `
+        <tr>
+          <td>${escapeHtml(v.tipo)}</td>
+          <td>R$ ${Number(v.valor_total).toFixed(2)}</td>
+        </tr>
+      `;
+    });
+
+    const totalPrize = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_prize || 0), 0);
+    const totalRake = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_rake || 0), 0);
+
+    document.getElementById('totalPrizeAcumulado').textContent = `R$ ${totalPrize.toFixed(2)}`;
+
+    document.getElementById('totalRakeAcumulado').dataset.valor = `R$ ${totalRake.toFixed(2)}`;
+    atualizarExibicaoRake();
+
+    atualizarBotoesPagamento();
+    atualizarMovimentacoesAbertas();
+  }
+
+  function renderizarListaTorneios() {
+
+    const lista = document.getElementById('listaTorneios');
+
+    lista.innerHTML = '';
+
+    if (todosTorneios.length === 0) {
+      lista.innerHTML = '<p style="color:#666;">Nenhum torneio cadastrado ainda.</p>';
+      return;
+    }
+
+    todosTorneios.forEach(torneio => {
+
+      const valoresDoTorneio = todosValoresTorneios.filter(v => v.torneio_id === torneio.id);
+      const primeiroValor = valoresDoTorneio[0];
+
+      const ehAtual = !!(torneioAtual && torneioAtual.id === torneio.id);
+
+      const div = document.createElement('div');
+
+      div.className = 'torneio-card' + (ehAtual ? ' atual' : '');
+
+      const dataFormatada = new Date(torneio.criado_em).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      div.innerHTML = `
+        <div class="torneio-data">${dataFormatada}</div>
+        <h3>${escapeHtml(torneio.nome)}</h3>
+        <div class="torneio-info">
+          ${primeiroValor ? `${escapeHtml(primeiroValor.tipo)}: R$ ${Number(primeiroValor.valor_total).toFixed(2)}` : 'Sem valores configurados'}
+        </div>
+      `;
+
+      const btn = document.createElement('button');
+
+      if (ehAtual) {
+        btn.className = 'btn-gray disabled';
+        btn.textContent = 'Torneio Atual';
+      } else {
+        btn.className = 'btn-dark' + (adminLiberado ? '' : ' disabled');
+        btn.textContent = 'Selecionar';
+        btn.onclick = () => selecionarTorneio(torneio.id);
+      }
+
+      div.appendChild(btn);
+
+      lista.appendChild(div);
+    });
+  }
+
+  async function selecionarTorneio(torneioId) {
+
+    if (!adminLiberado) return;
+
+    if (!confirm('Tornar este o torneio atual? Os pagamentos passam a ser registrados nele.')) return;
+
+    const { error } = await client
+      .from('configuracoes')
+      .update({ torneio_atual_id: torneioId })
+      .eq('id', 1);
+
+    if (error) {
+      alert('Erro ao selecionar torneio');
+      console.error(error);
+      return;
+    }
+
+    console.log('Torneio atual alterado para:', torneioId);
+
+    carregarDados();
+  }
+
+  function atualizarBotoesPagamento() {
+
+    const container = document.getElementById('botoesPagamento');
+    const semTipo = document.getElementById('semTipoPagamento');
+
+    container.innerHTML = '';
+
+    if (!torneioAtual || valoresTorneio.length === 0) {
+      container.classList.add('oculto');
+      semTipo.classList.remove('oculto');
+      return;
+    }
+
+    container.classList.remove('oculto');
+    semTipo.classList.add('oculto');
+
+    valoresTorneio.forEach(v => {
+
+      const btn = document.createElement('button');
+
+      btn.className = 'btn-blue' + (adminLiberado ? '' : ' disabled');
+      btn.textContent = `${v.tipo} — R$ ${Number(v.valor_total).toFixed(2)}`;
+      btn.onclick = () => abrirModalSelecionarJogador(v);
+
+      container.appendChild(btn);
+    });
+  }
+
+  function atualizarMovimentacoesAbertas() {
+
+    const tabela = document.getElementById('tabelaMovimentacoesAbertas');
+    const filtroSelect = document.getElementById('filtroModalidadeAbertoTorneio');
+
+    tabela.innerHTML = '';
+
+    const movimentacoesAbertas = movimentacoes.filter(
+      mov => Number(mov.mesa_id || 1) === Number(mesaAtualIdCash) && !mov.pago
+    );
+
+    const modalidadeAtualFiltro = filtroSelect.value;
+
+    const modalidadesDisponiveis = Array.from(
+      new Set(movimentacoesAbertas.map(mov => mov.modalidade).filter(Boolean))
+    ).sort();
+
+    filtroSelect.innerHTML = '<option value="">Todas as modalidades</option>' +
+      modalidadesDisponiveis.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+
+    filtroSelect.value = modalidadesDisponiveis.includes(modalidadeAtualFiltro) ? modalidadeAtualFiltro : '';
+
+    const movimentacoesFiltradas = filtroSelect.value
+      ? movimentacoesAbertas.filter(mov => mov.modalidade === filtroSelect.value)
+      : movimentacoesAbertas;
+
+    jogadores.forEach(jogador => {
+
+      const movsDoJogador = movimentacoesFiltradas.filter(mov => mov.jogador === jogador.nome);
+
+      let entrada = 0;
+      let saida = 0;
+      let qtdEntradas = 0;
+
+      movsDoJogador.forEach(mov => {
+
+        if (mov.tipo === 'Entrada') {
+          entrada += Number(mov.valor);
+          qtdEntradas++;
+        }
+
+        if (mov.tipo === 'Saída') {
+          saida += Number(mov.valor);
+        }
+      });
+
+      if (entrada > 0 || saida > 0) {
+
+        const saldo = saida - entrada;
+        const rebuys = Math.max(qtdEntradas - 1, 0);
+
+        tabela.innerHTML += `
+          <tr>
+            <td>${escapeHtml(jogador.nome)}</td>
+            <td>R$ ${entrada.toFixed(2)}</td>
+            <td>R$ ${saida.toFixed(2)}</td>
+            <td>${rebuys}</td>
+            <td class="${saldo >= 0 ? 'positivo' : 'negativo'}">
+              ${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}
+            </td>
+          </tr>
+        `;
+      }
+    });
+  }
+
+  function abrirModalSelecionarJogador(valorTipo) {
+
+    if (!adminLiberado || !torneioAtual) return;
+
+    pagamentoTipoSelecionado = valorTipo;
+
+    document.getElementById('modalSelecionarJogadorTitulo').textContent =
+      `Selecionar Jogador — ${valorTipo.tipo} (R$ ${Number(valorTipo.valor_total).toFixed(2)})`;
+
+    document.getElementById('pesquisaJogadorModal').value = '';
+
+    renderizarListaJogadoresModal('');
+
+    document.getElementById('modalSelecionarJogador').classList.add('aberto');
+
+    document.getElementById('pesquisaJogadorModal').focus();
+  }
+
+  function fecharModalSelecionarJogador() {
+
+    pagamentoTipoSelecionado = null;
+
+    document.getElementById('modalSelecionarJogador').classList.remove('aberto');
+  }
+
+  function filtrarJogadoresModal() {
+
+    const pesquisa = document.getElementById('pesquisaJogadorModal').value;
+
+    renderizarListaJogadoresModal(pesquisa);
+  }
+
+  function renderizarListaJogadoresModal(pesquisa) {
+
+    const lista = document.getElementById('listaJogadoresModal');
+
+    lista.innerHTML = '';
+
+    const termo = pesquisa.trim().toLowerCase();
+
+    let nomesParaMostrar;
+
+    if (!termo) {
+
+      const movimentacoesAbertas = movimentacoes.filter(
+        mov => Number(mov.mesa_id || 1) === Number(mesaAtualIdCash) && !mov.pago
+      );
+
+      nomesParaMostrar = Array.from(new Set(movimentacoesAbertas.map(mov => mov.jogador))).sort();
+
+    } else {
+
+      nomesParaMostrar = jogadores
+        .map(j => j.nome)
+        .filter(nome => nome.toLowerCase().includes(termo))
+        .sort((a, b) => a.localeCompare(b));
+    }
+
+    if (nomesParaMostrar.length === 0) {
+      lista.innerHTML = `<p style="color:#666;padding:8px 0;">${termo ? 'Nenhum jogador encontrado.' : 'Nenhum jogador em aberto no momento. Pesquise para encontrar um jogador.'}</p>`;
+      return;
+    }
+
+    nomesParaMostrar.forEach(nome => {
+
+      const div = document.createElement('div');
+
+      div.className = 'sugestao-item';
+      div.innerHTML = `<strong>${escapeHtml(nome)}</strong>`;
+
+      div.onclick = () => {
+        selecionarJogadorModal(nome);
+      };
+
+      lista.appendChild(div);
+    });
+  }
+
+  function selecionarJogadorModal(nomeJogador) {
+
+    const jogador = jogadores.find(j => j.nome === nomeJogador);
+
+    if (!jogador || !pagamentoTipoSelecionado) return;
+
+    const valorTipo = pagamentoTipoSelecionado;
+
+    fecharModalSelecionarJogador();
+
+    abrirModalPagamento(jogador, valorTipo);
+  }
+
+  document.getElementById('pesquisaJogadorModal')
+    .addEventListener('keydown', function(e) {
+
+      if (e.key === 'Enter') {
+
+        e.preventDefault();
+
+        const primeiro = document.querySelector('#listaJogadoresModal .sugestao-item');
+
+        if (primeiro) {
+          primeiro.click();
+        }
+      }
+  });
+
+  let contadorLinhaTipo = 0;
+
+  function criarLinhaTipo(nome, total, rake) {
+
+    contadorLinhaTipo++;
+
+    const div = document.createElement('div');
+
+    div.className = 'linha-tipo-pagamento';
+    div.dataset.linhaId = contadorLinhaTipo;
+
+    div.innerHTML = `
+      <input type="text" class="tipo-nome" placeholder="Tipo (ex: Buy-in)" value="${escapeHtml(nome)}">
+      <input type="number" class="tipo-total" placeholder="Valor total" min="0" value="${total}">
+      <input type="number" class="tipo-rake" placeholder="Rake" min="0" value="${rake}">
+      <span class="tipo-prize">R$ 0,00</span>
+      <button type="button" class="btn-red" onclick="removerLinhaTipo(this)">×</button>
+    `;
+
+    const inputTotal = div.querySelector('.tipo-total');
+    const inputRake = div.querySelector('.tipo-rake');
+    const spanPrize = div.querySelector('.tipo-prize');
+
+    function recalcular() {
+      const total = parseFloat(inputTotal.value) || 0;
+      const rake = parseFloat(inputRake.value) || 0;
+      const prize = Math.max(total - rake, 0);
+      spanPrize.textContent = `R$ ${prize.toFixed(2)}`;
+    }
+
+    inputTotal.addEventListener('input', recalcular);
+    inputRake.addEventListener('input', recalcular);
+
+    recalcular();
+
+    document.getElementById('linhasTiposPagamento').appendChild(div);
+  }
+
+  function adicionarLinhaTipo() {
+    criarLinhaTipo('', 0, 0);
+  }
+
+  function removerLinhaTipo(botao) {
+    botao.closest('.linha-tipo-pagamento').remove();
+  }
+
+  function abrirModalNovoTorneio() {
+
+    if (!adminLiberado) return;
+
+    if (torneioAtual && !confirm(`Já existe o torneio "${torneioAtual.nome}" em andamento. Iniciar um novo torneio agora?`)) {
+      return;
+    }
+
+    document.getElementById('novoTorneioNome').value = '';
+
+    document.getElementById('linhasTiposPagamento').innerHTML = '';
+    contadorLinhaTipo = 0;
+
+    criarLinhaTipo('Buy-in', 0, 0);
+    criarLinhaTipo('Rebuy', 0, 0);
+    criarLinhaTipo('Rebuy Duplo', 0, 0);
+    criarLinhaTipo('Add-on', 0, 0);
+
+    document.getElementById('modalNovoTorneio').classList.add('aberto');
+  }
+
+  function fecharModalNovoTorneio() {
+
+    document.getElementById('modalNovoTorneio').classList.remove('aberto');
+  }
+
+  async function confirmarNovoTorneio() {
+
+    const nome = document.getElementById('novoTorneioNome').value.trim();
+
+    if (!nome) {
+      alert('Informe o nome do torneio');
+      return;
+    }
+
+    const linhas = Array.from(document.querySelectorAll('.linha-tipo-pagamento'));
+
+    const tipos = linhas
+      .map((linha, index) => {
+
+        const tipoNome = linha.querySelector('.tipo-nome').value.trim();
+        const total = parseFloat(linha.querySelector('.tipo-total').value) || 0;
+        const rake = parseFloat(linha.querySelector('.tipo-rake').value) || 0;
+
+        return {
+          tipo: tipoNome,
+          valor_total: total,
+          valor_rake: rake,
+          valor_prize: Math.max(total - rake, 0),
+          ordem: index
+        };
+      })
+      .filter(t => t.tipo && t.valor_total > 0);
+
+    if (tipos.length === 0) {
+      alert('Adicione ao menos um tipo de pagamento com valor');
+      return;
+    }
+
+    const btn = document.getElementById('btnCriarTorneio');
+    btn.classList.add('disabled');
+
+    const { data: torneioCriado, error: erroTorneio } = await client
+      .from('torneios')
+      .insert([{ nome, status: 'aberto' }])
+      .select()
+      .single();
+
+    if (erroTorneio) {
+      btn.classList.remove('disabled');
+      alert('Erro ao criar torneio');
+      console.error(erroTorneio);
+      return;
+    }
+
+    const tiposComTorneio = tipos.map(t => ({ ...t, torneio_id: torneioCriado.id }));
+
+    const { error: erroValores } = await client
+      .from('torneio_valores')
+      .insert(tiposComTorneio);
+
+    if (erroValores) {
+      btn.classList.remove('disabled');
+      alert('Erro ao salvar tipos de pagamento');
+      console.error(erroValores);
+      return;
+    }
+
+    const { error: erroConfig } = await client
+      .from('configuracoes')
+      .update({ torneio_atual_id: torneioCriado.id })
+      .eq('id', 1);
+
+    btn.classList.remove('disabled');
+
+    if (erroConfig) {
+      alert('Erro ao definir torneio atual');
+      console.error(erroConfig);
+      return;
+    }
+
+    console.log('Torneio criado:', torneioCriado.id);
+
+    fecharModalNovoTorneio();
+
+    carregarDados();
+  }
+
+  let pagamentoPendente = null;
+
+  function abrirModalPagamento(jogador, valorTipo) {
+
+    if (!adminLiberado || !torneioAtual) return;
+
+    pagamentoPendente = { jogador, valorTipo };
+
+    document.getElementById('modalPagamentoResumo').textContent =
+      `${jogador.nome} — ${valorTipo.tipo} de R$ ${Number(valorTipo.valor_total).toFixed(2)}`;
+
+    document.getElementById('modalPagamento').classList.add('aberto');
+  }
+
+  function fecharModalPagamento() {
+
+    pagamentoPendente = null;
+
+    document.getElementById('modalPagamento').classList.remove('aberto');
+  }
+
+  async function confirmarPagamento() {
+
+    if (!pagamentoPendente) return;
+
+    const { jogador, valorTipo } = pagamentoPendente;
+
+    const btn = document.getElementById('btnConfirmarPagamento');
+    btn.classList.add('disabled');
+
+    const { error: erroMov } = await client
+      .from('movimentacoes')
+      .insert([
+        {
+          jogador: jogador.nome,
+          tipo: 'Entrada',
+          valor: valorTipo.valor_total,
+          modalidade: 'Torneio',
+          torneio_id: torneioAtual.id,
+          valor_prize: valorTipo.valor_prize,
+          valor_rake: valorTipo.valor_rake,
+          mesa_id: mesaAtualIdCash,
+          pago: false,
+          data: new Date().toISOString(),
+          cpf: jogador.cpf,
+          telefone: jogador.telefone
+        }
+      ]);
+
+    if (erroMov) {
+      btn.classList.remove('disabled');
+      alert('Erro ao registrar pagamento');
+      console.error(erroMov);
+      return;
+    }
+
+    btn.classList.remove('disabled');
+
+    console.log('Pagamento registrado:', jogador.nome, valorTipo.tipo);
+
+    fecharModalPagamento();
+
+    carregarDados();
+  }
+
+  async function toggleAdmin() {
+
+    console.log('Alternando modo ADM');
+
+    if (adminLiberado) {
+
+      await client.auth.signOut();
+
+      console.log('ADM desativado');
+
+      return;
+    }
+
+    abrirModalLogin();
+  }
+
+  function abrirModalLogin() {
+
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginSenha').value = '';
+
+    document.getElementById('modalLogin').classList.add('aberto');
+
+    document.getElementById('loginEmail').focus();
+  }
+
+  function fecharModalLogin() {
+
+    document.getElementById('modalLogin').classList.remove('aberto');
+  }
+
+  async function confirmarLogin() {
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value;
+
+    if (!email || !senha) {
+      alert('Informe e-mail e senha');
+      return;
+    }
+
+    const btn = document.getElementById('btnConfirmarLogin');
+    btn.classList.add('disabled');
+
+    const { error } = await client.auth.signInWithPassword({
+      email,
+      password: senha
+    });
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      console.log('Falha no login ADM:', error.message);
+      alert('E-mail ou senha incorretos');
+      return;
+    }
+
+    console.log('ADM liberado');
+
+    fecharModalLogin();
+  }
+
+  document.getElementById('loginEmail')
+    .addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('loginSenha').focus();
+      }
+    });
+
+  document.getElementById('loginSenha')
+    .addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmarLogin();
+      }
+    });
+
+  document.addEventListener('keydown', function(e) {
+
+    if (e.key !== 'Escape') return;
+
+    fecharModalLogin();
+    fecharModalNovoTorneio();
+    fecharModalSelecionarJogador();
+    fecharModalPagamento();
+  });
+
+  function liberarAcoes() {
+
+    console.log('Liberando ações ADM');
+
+    document.getElementById('btnAdmin').textContent = 'Sair';
+
+    document.getElementById('btnNovoTorneio').classList.remove('disabled');
+
+    atualizarBotoesPagamento();
+    atualizarMovimentacoesAbertas();
+    renderizarListaTorneios();
+  }
+
+  function bloquearAcoes() {
+
+    console.log('Bloqueando ações ADM');
+
+    document.getElementById('btnAdmin').textContent = 'Login';
+
+    document.getElementById('btnNovoTorneio').classList.add('disabled');
+
+    fecharModalLogin();
+    fecharModalNovoTorneio();
+    fecharModalSelecionarJogador();
+    fecharModalPagamento();
+
+    atualizarBotoesPagamento();
+    atualizarMovimentacoesAbertas();
+    renderizarListaTorneios();
+  }
+
+  carregarDados();
+</script>
+
+</body>
+</html>
