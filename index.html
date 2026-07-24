@@ -15,9 +15,10 @@
     body {
       margin: 0;
       padding: 24px;
-      background: #f3f3f3;
-      font-family: Arial, sans-serif;
-      color: #111;
+      background: #f2f3f7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #16181d;
+      -webkit-font-smoothing: antialiased;
     }
 
     .container {
@@ -27,33 +28,69 @@
 
     .card {
       background: white;
-      border: 1px solid #ddd;
-      padding: 20px;
-      margin-bottom: 16px;
+      border: 1px solid #e9eaef;
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 1px 8px rgba(16,24,40,0.04);
     }
 
     h1, h2 {
       margin-top: 0;
     }
 
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    h2 {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
     input, select {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #ccc;
+      padding: 11px 14px;
+      border: 1px solid #d9dbe1;
+      border-radius: 10px;
       margin-bottom: 10px;
       font-size: 14px;
+      font-family: inherit;
+      background: white;
+      color: #16181d;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
     }
 
     button {
-      padding: 9px 13px;
+      padding: 10px 16px;
       border: none;
+      border-radius: 10px;
       cursor: pointer;
-      font-weight: bold;
-      box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+      font-weight: 600;
+      font-family: inherit;
+      font-size: 14px;
+      box-shadow: 0 1px 2px rgba(16,24,40,0.08);
+      transition: opacity 0.15s ease, transform 0.05s ease;
+    }
+
+    button:hover {
+      opacity: 0.92;
+    }
+
+    button:active {
+      transform: scale(0.98);
     }
 
     .btn-dark {
-      background: #111;
+      background: #16181d;
       color: white;
     }
 
@@ -73,12 +110,23 @@
     }
 
     .btn-gray {
-      background: #444;
-      color: white;
+      background: #eef0f4;
+      color: #374151;
+      box-shadow: none;
+    }
+
+    .btn-icone {
+      background: none;
+      border: none;
+      box-shadow: none;
+      padding: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
     }
 
     .disabled {
-      opacity: 0.5;
+      opacity: 0.45;
       pointer-events: none;
     }
 
@@ -92,7 +140,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(15,17,23,0.55);
       display: none;
       align-items: center;
       justify-content: center;
@@ -104,15 +152,72 @@
       display: flex;
     }
 
+    .menu-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15,17,23,0.55);
+      display: none;
+      z-index: 3000;
+    }
+
+    .menu-overlay.aberto {
+      display: block;
+    }
+
+    .menu-lateral {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 280px;
+      max-width: 85vw;
+      background: white;
+      padding: 20px;
+      border-radius: 0 18px 18px 0;
+      box-shadow: 4px 0 30px rgba(16,24,40,0.18);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+
+    .menu-lateral .menu-item {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px 14px;
+      font-weight: 600;
+      font-size: 14px;
+      font-family: inherit;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: none;
+      border: none;
+      border-radius: 10px;
+      background: #f6f7f9;
+      color: #16181d;
+      transition: background 0.15s ease;
+    }
+
+    .menu-lateral .menu-item:hover {
+      background: #eef0f4;
+    }
+
     .modal-box {
       background: white;
-      padding: 24px;
+      padding: 26px;
+      border-radius: 16px;
       max-width: 400px;
       width: 100%;
+      box-shadow: 0 20px 50px rgba(16,24,40,0.25);
     }
 
     .modal-resumo {
-      color: #444;
+      color: #565c66;
       margin-bottom: 16px;
     }
 
@@ -124,10 +229,11 @@
 
     .modalidade-btn {
       flex: 1;
-      background: #eee;
-      color: #111;
+      background: #f0f1f4;
+      color: #16181d;
       box-shadow: none;
       padding: 12px;
+      border-radius: 10px;
     }
 
     .modalidade-btn.ativo {
@@ -150,9 +256,21 @@
     th, td {
       text-align: left;
       padding: 12px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #eef0f3;
       word-break: break-word;
       overflow-wrap: break-word;
+    }
+
+    th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #767c88;
+      font-weight: 700;
+    }
+
+    tbody tr:hover {
+      background: #fafbfd;
     }
 
     .pesquisa-wrapper {
@@ -186,13 +304,42 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
+    .jogador-clicavel {
+      cursor: pointer;
+      color: #2563eb;
+      font-weight: 600;
+    }
+
+    .jogador-clicavel:hover {
+      text-decoration: underline;
+    }
+
+    .linha-desfazer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f1f3;
+    }
+
+    .linha-desfazer .linha-desfazer-info {
+      font-size: 13px;
+      color: #464c56;
+    }
+
+    .linha-desfazer .linha-desfazer-info strong {
+      display: block;
+      font-size: 14px;
+    }
+
     .positivo {
-      color: green;
+      color: #16a34a;
       font-weight: bold;
     }
 
     .negativo {
-      color: red;
+      color: #dc2626;
       font-weight: bold;
     }
 
@@ -200,9 +347,9 @@
     #sugestoesJogadoresRelatorio {
       position: absolute;
       background: white;
-      border: 1px solid #ddd;
+      border: 1px solid #e9eaef;
       border-radius: 12px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.15);
+      box-shadow: 0 10px 30px rgba(16,24,40,0.15);
       margin-top: 6px;
       width: 100%;
       z-index: 1000;
@@ -215,7 +362,7 @@
     .sugestao-item {
       padding: 10px 14px;
       cursor: pointer;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #f0f1f3;
     }
 
     .sugestao-item:hover,
@@ -249,15 +396,15 @@
       }
 
       .card {
-        padding: 14px;
+        padding: 16px;
       }
 
       h1 {
-        font-size: 28px;
+        font-size: 22px;
       }
 
       h2 {
-        font-size: 24px;
+        font-size: 16px;
       }
 
       th, td {
@@ -295,15 +442,9 @@
   <div class="topbar">
     <h1>RPG Poker Club</h1>
 
-    <div style="display:flex;gap:8px;">
-      <button id="btnAbrirCadastro" class="btn-dark disabled" onclick="abrirModalCadastro()">
-        Cadastrar Jogador
-      </button>
-
-      <button id="btnAdmin" class="btn-gray" onclick="toggleAdmin()">
-        Login
-      </button>
-    </div>
+    <button id="btnMenu" class="btn-gray" onclick="abrirMenu()">
+      ☰
+    </button>
   </div>
 
   <div class="card">
@@ -347,11 +488,11 @@
 
   <div class="card">
     <div class="topbar">
-      <h2>Mesa Atual</h2>
+      <h2>Movimentações em Aberto</h2>
 
       <div style="display:flex;gap:8px;">
-        <button id="btnDesfazer" class="btn-gray disabled" onclick="desfazerUltimaMovimentacao()">
-          Desfazer Última
+        <button id="btnDesfazer" class="btn-gray disabled" onclick="abrirModalDesfazer()">
+          Desfazer
         </button>
 
         <button id="btnZerar" class="btn-red disabled" onclick="zerarMesa()">
@@ -360,12 +501,17 @@
       </div>
     </div>
 
+    <select id="filtroModalidadeAberto" onchange="atualizarTela()" style="max-width:260px;">
+      <option value="">Todas as modalidades</option>
+    </select>
+
     <table>
       <thead>
         <tr>
           <th>Jogador</th>
           <th>Entrou</th>
           <th>Saiu</th>
+          <th>Rebuys</th>
           <th>Resultado</th>
         </tr>
       </thead>
@@ -421,6 +567,77 @@
 
 </div>
 
+<div id="menuOverlay" class="menu-overlay" onclick="fecharMenuSeClicouFora(event)">
+  <div class="menu-lateral">
+    <div class="topbar" style="margin-bottom:16px;">
+      <h2 style="margin:0;font-size:20px;">Menu</h2>
+
+      <button class="btn-icone" style="font-size:22px;" onclick="fecharMenu()">
+        ×
+      </button>
+    </div>
+
+    <button class="btn-gray menu-item" onclick="fecharMenu()">
+      Mesa Cash
+    </button>
+
+    <a href="torneio.html" class="btn-gray menu-item">
+      Torneio Ativo
+    </a>
+
+    <a href="torneio.html" class="btn-gray menu-item">
+      Torneios
+    </a>
+
+    <button id="btnAbrirCadastro" class="btn-dark disabled menu-item" onclick="fecharMenu(); abrirModalCadastro();">
+      Cadastrar Jogador
+    </button>
+
+    <a href="torneio.html" class="btn-gray menu-item">
+      Configurações de Torneio
+    </a>
+
+    <button id="btnAdmin" class="btn-gray menu-item" onclick="toggleAdmin()">
+      Login
+    </button>
+  </div>
+</div>
+
+<div id="modalDesfazer" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px;">
+    <h2>Desfazer Movimentação</h2>
+
+    <p style="color:#666;font-size:13px;margin-top:-8px;">
+      Mostrando todas as movimentações em aberto da mesa atual.
+    </p>
+
+    <div id="listaDesfazer" style="max-height:340px;overflow-y:auto;"></div>
+
+    <div class="modal-acoes" style="margin-top:16px;">
+      <button class="btn-gray" onclick="fecharModalDesfazer()">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalHistoricoJogador" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px;">
+    <h2 id="historicoJogadorNome">Histórico</h2>
+
+    <p style="color:#666;margin-bottom:4px;">Resultado</p>
+    <p id="historicoJogadorResultado" style="font-size:22px;margin-top:0;margin-bottom:16px;">R$ 0,00</p>
+
+    <div id="listaHistoricoJogador" style="max-height:340px;overflow-y:auto;"></div>
+
+    <div class="modal-acoes" style="margin-top:16px;">
+      <button class="btn-gray" onclick="fecharModalHistoricoJogador()">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="modalCadastro" class="modal-overlay">
   <div class="modal-box">
     <h2>Cadastrar Jogador</h2>
@@ -448,12 +665,12 @@
     <p id="modalResumo" class="modal-resumo"></p>
 
     <div class="modalidade-opcoes">
-      <button type="button" id="btnModalidadeCash" class="modalidade-btn ativo" onclick="selecionarModalidade('Cash')">
-        Cash
+      <button type="button" id="btnModalidadeCash" class="modalidade-btn ativo" onclick="selecionarModalidade('Não Pago')">
+        Não Pago
       </button>
 
-      <button type="button" id="btnModalidadeTorneio" class="modalidade-btn" onclick="selecionarModalidade('Torneio')">
-        Torneio
+      <button type="button" id="btnModalidadeTorneio" class="modalidade-btn" onclick="selecionarModalidade('Pago')">
+        Pago
       </button>
     </div>
 
@@ -474,16 +691,6 @@
     <h2>Confirmar Saída</h2>
 
     <p id="modalResumoSaida" class="modal-resumo"></p>
-
-    <div class="modalidade-opcoes">
-      <button type="button" id="btnModalidadeSaidaPagamento" class="modalidade-btn ativo" onclick="selecionarModalidadeSaida('Pagamento')">
-        Pagamento
-      </button>
-
-      <button type="button" id="btnModalidadeSaidaCashout" class="modalidade-btn" onclick="selecionarModalidadeSaida('Cashout')">
-        Cashout
-      </button>
-    </div>
 
     <div class="modal-acoes">
       <button class="btn-gray" onclick="fecharModalConfirmacaoSaida()">
@@ -511,6 +718,38 @@
 
       <button id="btnConfirmarLogin" class="btn-blue" onclick="confirmarLogin()">
         Entrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalAlerta" class="modal-overlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2>Aviso</h2>
+
+    <p id="alertaMensagem" class="modal-resumo"></p>
+
+    <div class="modal-acoes">
+      <button class="btn-dark" style="flex:1;" onclick="confirmarAlerta()">
+        OK
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalConfirm" class="modal-overlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2>Confirmar</h2>
+
+    <p id="confirmMensagem" class="modal-resumo"></p>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="responderConfirm(false)">
+        Cancelar
+      </button>
+
+      <button class="btn-dark" onclick="responderConfirm(true)">
+        Confirmar
       </button>
     </div>
   </div>
@@ -577,6 +816,20 @@
       console.log('Status do canal Realtime:', status);
     });
 
+  function abrirMenu() {
+    document.getElementById('menuOverlay').classList.add('aberto');
+  }
+
+  function fecharMenu() {
+    document.getElementById('menuOverlay').classList.remove('aberto');
+  }
+
+  function fecharMenuSeClicouFora(e) {
+    if (e.target.id === 'menuOverlay') {
+      fecharMenu();
+    }
+  }
+
   function escapeHtml(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
       '&': '&amp;',
@@ -586,6 +839,188 @@
       "'": '&#39;'
     }[c]));
   }
+
+  let _resolveAlerta = null;
+  let _resolveConfirm = null;
+
+  function mostrarAlerta(mensagem) {
+
+    return new Promise(resolve => {
+
+      document.getElementById('alertaMensagem').textContent = mensagem;
+      document.getElementById('modalAlerta').classList.add('aberto');
+
+      _resolveAlerta = resolve;
+    });
+  }
+
+  function confirmarAlerta() {
+
+    document.getElementById('modalAlerta').classList.remove('aberto');
+
+    if (_resolveAlerta) {
+      const resolver = _resolveAlerta;
+      _resolveAlerta = null;
+      resolver();
+    }
+  }
+
+  function mostrarConfirm(mensagem) {
+
+    return new Promise(resolve => {
+
+      document.getElementById('confirmMensagem').textContent = mensagem;
+      document.getElementById('modalConfirm').classList.add('aberto');
+
+      _resolveConfirm = resolve;
+    });
+  }
+
+  function responderConfirm(valor) {
+
+    document.getElementById('modalConfirm').classList.remove('aberto');
+
+    if (_resolveConfirm) {
+      const resolver = _resolveConfirm;
+      _resolveConfirm = null;
+      resolver(valor);
+    }
+  }
+
+  let historicoJogadorAtual = null;
+
+  function abrirModalHistoricoJogador(nome, idsCsv) {
+
+    const ids = idsCsv.split(',').filter(Boolean).map(Number);
+
+    historicoJogadorAtual = { nome, ids };
+
+    document.getElementById('historicoJogadorNome').textContent = `Histórico — ${nome}`;
+
+    renderizarHistoricoJogador();
+
+    document.getElementById('modalHistoricoJogador').classList.add('aberto');
+  }
+
+  function fecharModalHistoricoJogador() {
+
+    historicoJogadorAtual = null;
+
+    document.getElementById('modalHistoricoJogador').classList.remove('aberto');
+  }
+
+  function renderizarHistoricoJogador() {
+
+    if (!historicoJogadorAtual) return;
+
+    const movs = movimentacoes
+      .filter(mov => historicoJogadorAtual.ids.includes(mov.id))
+      .sort((a, b) => new Date(b.data) - new Date(a.data));
+
+    let entradaParaSaldo = 0;
+    let saida = 0;
+
+    movs.forEach(mov => {
+
+      if (mov.tipo === 'Entrada' && !mov.pago) {
+        entradaParaSaldo += Number(mov.valor);
+      }
+
+      if (mov.tipo === 'Saída') {
+        saida += Number(mov.valor);
+      }
+    });
+
+    const saldo = saida - entradaParaSaldo;
+    const resultadoEl = document.getElementById('historicoJogadorResultado');
+
+    resultadoEl.textContent = `${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}`;
+    resultadoEl.className = saldo >= 0 ? 'positivo' : 'negativo';
+
+    const lista = document.getElementById('listaHistoricoJogador');
+    lista.innerHTML = '';
+
+    if (movs.length === 0) {
+      lista.innerHTML = '<p style="color:#666;">Nenhuma movimentação em aberto.</p>';
+      return;
+    }
+
+    movs.forEach(mov => {
+
+      const dataFormatada = new Date(mov.data).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      const div = document.createElement('div');
+
+      div.className = 'linha-desfazer';
+
+      div.innerHTML = `
+        <div class="linha-desfazer-info">
+          <strong>${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')}</strong>
+          R$ ${Number(mov.valor).toFixed(2)}<br>
+          <span style="color:#999;">${dataFormatada}</span>
+        </div>
+      `;
+
+      if (mov.tipo === 'Entrada') {
+
+        const pago = !!mov.pago;
+
+        const btn = document.createElement('button');
+
+        btn.className = (pago ? 'btn-green' : 'btn-red') + (adminLiberado ? '' : ' disabled');
+        btn.style.flex = '0 0 auto';
+        btn.textContent = pago ? 'Pago' : 'Pendente';
+        btn.onclick = () => alternarPagamentoHistorico(mov.id, !pago);
+
+        div.appendChild(btn);
+      }
+
+      lista.appendChild(div);
+    });
+  }
+
+  async function alternarPagamentoHistorico(id, novoPago) {
+
+    if (!adminLiberado) return;
+
+    const mensagem = novoPago
+      ? 'Confirmar que essa entrada já foi paga? Ela deixa de contar no Resultado.'
+      : 'Voltar essa entrada para pendente? Ela volta a contar no Resultado.';
+
+    if (!await mostrarConfirm(mensagem)) return;
+
+    const { error } = await client
+      .from('movimentacoes')
+      .update({ pago: novoPago })
+      .eq('id', id);
+
+    if (error) {
+      await mostrarAlerta('Erro ao atualizar pagamento');
+      console.error(error);
+      return;
+    }
+
+    console.log('Pagamento atualizado:', id, novoPago);
+
+    await carregarDados();
+
+    renderizarHistoricoJogador();
+  }
+
+  document.getElementById('mesaAtual').addEventListener('click', function(e) {
+
+    const el = e.target.closest('.jogador-clicavel');
+
+    if (!el) return;
+
+    abrirModalHistoricoJogador(el.dataset.nome, el.dataset.ids);
+  });
 
   async function carregarDados() {
 
@@ -607,6 +1042,7 @@
       .single();
 
     jogadores = jogadoresDB || [];
+    jogadores.sort((a, b) => a.nome.localeCompare(b.nome));
     movimentacoes = movimentacoesDB || [];
 
     mesaAtualId = configuracaoDB?.mesa_atual_id || 1;
@@ -630,37 +1066,64 @@
 
     select.innerHTML = '<option value="">Selecione o jogador</option>';
 
-    const movimentacoesMesa = movimentacoes.filter(
+    const filtroSelect = document.getElementById('filtroModalidadeAberto');
+
+    const movimentacoesAbertas = movimentacoes.filter(
       mov => Number(mov.mesa_id || 1) === Number(mesaAtualId)
     );
 
+    const modalidadeAtualFiltro = filtroSelect.value;
+
+    const modalidadesDisponiveis = Array.from(
+      new Set(movimentacoesAbertas.map(mov => mov.modalidade).filter(Boolean))
+    ).sort();
+
+    filtroSelect.innerHTML = '<option value="">Todas as modalidades</option>' +
+      modalidadesDisponiveis.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+
+    filtroSelect.value = modalidadesDisponiveis.includes(modalidadeAtualFiltro) ? modalidadeAtualFiltro : '';
+
+    const movimentacoesMesa = filtroSelect.value
+      ? movimentacoesAbertas.filter(mov => mov.modalidade === filtroSelect.value)
+      : movimentacoesAbertas;
+
     jogadores.forEach((jogador, index) => {
 
+      const movsDoJogador = movimentacoesMesa.filter(mov => mov.jogador === jogador.nome);
+
       let entrada = 0;
+      let entradaParaSaldo = 0;
       let saida = 0;
+      let qtdEntradas = 0;
 
-      movimentacoesMesa.forEach(mov => {
-        if (mov.jogador === jogador.nome) {
+      movsDoJogador.forEach(mov => {
 
-          if (mov.tipo === 'Entrada') {
-            entrada += Number(mov.valor);
+        if (mov.tipo === 'Entrada') {
+          entrada += Number(mov.valor);
+          qtdEntradas++;
+
+          if (!mov.pago) {
+            entradaParaSaldo += Number(mov.valor);
           }
+        }
 
-          if (mov.tipo === 'Saída') {
-            saida += Number(mov.valor);
-          }
+        if (mov.tipo === 'Saída') {
+          saida += Number(mov.valor);
         }
       });
 
       if (entrada > 0 || saida > 0) {
 
-        const saldo = saida - entrada;
+        const saldo = saida - entradaParaSaldo;
+        const rebuys = Math.max(qtdEntradas - 1, 0);
+        const idsHistorico = movsDoJogador.map(mov => mov.id).join(',');
 
         mesa.innerHTML += `
           <tr>
-            <td>${escapeHtml(jogador.nome)}</td>
+            <td class="jogador-clicavel" data-ids="${idsHistorico}" data-nome="${escapeHtml(jogador.nome)}">${escapeHtml(jogador.nome)}</td>
             <td>R$ ${entrada.toFixed(2)}</td>
             <td>R$ ${saida.toFixed(2)}</td>
+            <td>${rebuys}</td>
             <td class="${saldo >= 0 ? 'positivo' : 'negativo'}">
               ${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}
             </td>
@@ -729,7 +1192,7 @@
     console.log('Tentando cadastrar jogador');
 
     if (!adminLiberado) {
-      alert('Modo ADM necessário');
+      await mostrarAlerta('Modo ADM necessário');
       return;
     }
 
@@ -746,7 +1209,7 @@
 
     if (existe) {
       console.log('Jogador duplicado detectado');
-      alert('Jogador já cadastrado');
+      await mostrarAlerta('Jogador já cadastrado');
       return;
     }
 
@@ -766,7 +1229,7 @@
     btn.classList.remove('disabled');
 
     if (error) {
-      alert('Erro ao cadastrar jogador');
+      await mostrarAlerta('Erro ao cadastrar jogador');
       console.error(error);
       return;
     }
@@ -1033,9 +1496,9 @@
   });
 
   let entradaPendente = null;
-  let modalidadeSelecionada = 'Cash';
+  let modalidadeSelecionada = 'Não Pago';
 
-  function adicionarEntrada() {
+  async function adicionarEntrada() {
 
     console.log('Adicionando entrada');
 
@@ -1050,12 +1513,12 @@
     );
 
     if (!jogador) {
-      alert('Selecione um jogador antes de continuar');
+      await mostrarAlerta('Selecione um jogador antes de continuar');
       return;
     }
 
     if (isNaN(valor) || valor <= 0) {
-      alert('Informe um valor válido');
+      await mostrarAlerta('Informe um valor válido');
       return;
     }
 
@@ -1066,7 +1529,7 @@
 
   function abrirModalConfirmacao() {
 
-    selecionarModalidade('Cash');
+    selecionarModalidade('Não Pago');
 
     document.getElementById('modalResumo').textContent =
       `${entradaPendente.jogador.nome} — Entrada de R$ ${entradaPendente.valor.toFixed(2)}`;
@@ -1085,8 +1548,8 @@
 
     modalidadeSelecionada = modalidade;
 
-    document.getElementById('btnModalidadeCash').classList.toggle('ativo', modalidade === 'Cash');
-    document.getElementById('btnModalidadeTorneio').classList.toggle('ativo', modalidade === 'Torneio');
+    document.getElementById('btnModalidadeCash').classList.toggle('ativo', modalidade === 'Não Pago');
+    document.getElementById('btnModalidadeTorneio').classList.toggle('ativo', modalidade === 'Pago');
   }
 
   async function confirmarEntradaComModalidade() {
@@ -1094,7 +1557,7 @@
     if (!entradaPendente) return;
 
     const { jogador, valor } = entradaPendente;
-    const modalidade = modalidadeSelecionada;
+    const pago = modalidadeSelecionada === 'Pago';
 
     const btn = document.getElementById('btnConfirmarEntrada');
     btn.classList.add('disabled');
@@ -1106,7 +1569,8 @@
           jogador: jogador.nome,
           tipo: 'Entrada',
           valor,
-          modalidade,
+          modalidade: 'Cash',
+          pago,
           data: new Date().toISOString(),
           mesa_id: mesaAtualId,
           cpf: jogador.cpf,
@@ -1117,12 +1581,12 @@
     btn.classList.remove('disabled');
 
     if (error) {
-      alert('Erro ao registrar entrada');
+      await mostrarAlerta('Erro ao registrar entrada');
       console.error(error);
       return;
     }
 
-    console.log('Entrada registrada:', valor, modalidade);
+    console.log('Entrada registrada:', valor, 'pago:', pago);
 
     document.getElementById('entrada').value = '';
     document.getElementById('pesquisaJogador').value = '';
@@ -1133,9 +1597,7 @@
   }
 
   let saidaPendente = null;
-  let modalidadeSaidaSelecionada = 'Pagamento';
-
-  function adicionarSaida() {
+  async function adicionarSaida() {
 
     console.log('Adicionando saída');
 
@@ -1150,12 +1612,12 @@
     );
 
     if (!jogador) {
-      alert('Selecione um jogador antes de continuar');
+      await mostrarAlerta('Selecione um jogador antes de continuar');
       return;
     }
 
     if (isNaN(valor) || valor <= 0) {
-      alert('Informe um valor válido');
+      await mostrarAlerta('Informe um valor válido');
       return;
     }
 
@@ -1165,8 +1627,6 @@
   }
 
   function abrirModalConfirmacaoSaida() {
-
-    selecionarModalidadeSaida('Pagamento');
 
     document.getElementById('modalResumoSaida').textContent =
       `${saidaPendente.jogador.nome} — Saída de R$ ${saidaPendente.valor.toFixed(2)}`;
@@ -1181,20 +1641,12 @@
     document.getElementById('modalConfirmacaoSaida').classList.remove('aberto');
   }
 
-  function selecionarModalidadeSaida(modalidade) {
-
-    modalidadeSaidaSelecionada = modalidade;
-
-    document.getElementById('btnModalidadeSaidaPagamento').classList.toggle('ativo', modalidade === 'Pagamento');
-    document.getElementById('btnModalidadeSaidaCashout').classList.toggle('ativo', modalidade === 'Cashout');
-  }
-
   async function confirmarSaidaComModalidade() {
 
     if (!saidaPendente) return;
 
     const { jogador, valor } = saidaPendente;
-    const modalidade = modalidadeSaidaSelecionada;
+    const modalidade = 'Cash';
 
     const btn = document.getElementById('btnConfirmarSaida');
     btn.classList.add('disabled');
@@ -1217,7 +1669,7 @@
     btn.classList.remove('disabled');
 
     if (error) {
-      alert('Erro ao registrar saída');
+      await mostrarAlerta('Erro ao registrar saída');
       console.error(error);
       return;
     }
@@ -1273,14 +1725,6 @@
           h2, p {
             margin: 0;
             padding: 0;
-          }
-
-          .center {
-            text-align: center;
-          }
-
-          .space {
-            margin-top: 10px;
           }
         </style>
       </head>
@@ -1377,7 +1821,7 @@
     const senha = document.getElementById('loginSenha').value;
 
     if (!email || !senha) {
-      alert('Informe e-mail e senha');
+      await mostrarAlerta('Informe e-mail e senha');
       return;
     }
 
@@ -1393,7 +1837,7 @@
 
     if (error) {
       console.log('Falha no login ADM:', error.message);
-      alert('E-mail ou senha incorretos');
+      await mostrarAlerta('E-mail ou senha incorretos');
       return;
     }
 
@@ -1422,7 +1866,20 @@
 
     if (e.key !== 'Escape') return;
 
+    if (document.getElementById('modalConfirm').classList.contains('aberto')) {
+      responderConfirm(false);
+      return;
+    }
+
+    if (document.getElementById('modalAlerta').classList.contains('aberto')) {
+      confirmarAlerta();
+      return;
+    }
+
+    fecharMenu();
     fecharModalLogin();
+    fecharModalHistoricoJogador();
+    fecharModalDesfazer();
     fecharModalCadastro();
     fecharModalConfirmacao();
     fecharModalConfirmacaoSaida();
@@ -1461,37 +1918,99 @@
     fecharModalCadastro();
     fecharModalConfirmacao();
     fecharModalConfirmacaoSaida();
+    fecharModalDesfazer();
   }
 
-  async function desfazerUltimaMovimentacao() {
+  function obterMovimentacoesAbertasMesa() {
 
-    console.log('Tentando desfazer movimentação');
+    return movimentacoes
+      .filter(mov => Number(mov.mesa_id || 1) === Number(mesaAtualId) && !mov.pago)
+      .sort((a, b) => b.id - a.id);
+  }
+
+  function abrirModalDesfazer() {
 
     if (!adminLiberado) return;
 
-    if (movimentacoes.length === 0) {
-      alert('Nenhuma movimentação encontrada');
+    renderizarListaDesfazer();
+
+    document.getElementById('modalDesfazer').classList.add('aberto');
+  }
+
+  function fecharModalDesfazer() {
+
+    document.getElementById('modalDesfazer').classList.remove('aberto');
+  }
+
+  function renderizarListaDesfazer() {
+
+    const lista = document.getElementById('listaDesfazer');
+
+    lista.innerHTML = '';
+
+    const abertas = obterMovimentacoesAbertasMesa();
+
+    if (abertas.length === 0) {
+      lista.innerHTML = '<p style="color:#666;padding:8px 0;">Nenhuma movimentação em aberto.</p>';
       return;
     }
 
-    if (!confirm('Desfazer última movimentação?')) return;
+    abertas.forEach(mov => {
 
-    const ultima = movimentacoes[0];
+      const div = document.createElement('div');
+
+      div.className = 'linha-desfazer';
+
+      const dataFormatada = new Date(mov.data).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      div.innerHTML = `
+        <div class="linha-desfazer-info">
+          <strong>${escapeHtml(mov.jogador)}</strong>
+          ${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')} · R$ ${Number(mov.valor).toFixed(2)}<br>
+          <span style="color:#999;">${dataFormatada}</span>
+        </div>
+      `;
+
+      const btn = document.createElement('button');
+
+      btn.className = 'btn-red';
+      btn.textContent = 'Desfazer';
+      btn.onclick = () => desfazerMovimentacaoPorId(mov.id);
+
+      div.appendChild(btn);
+
+      lista.appendChild(div);
+    });
+  }
+
+  async function desfazerMovimentacaoPorId(id) {
+
+    if (!adminLiberado) return;
+
+    if (!await mostrarConfirm('Desfazer esta movimentação? Essa ação não pode ser desfeita.')) return;
 
     const { error } = await client
       .from('movimentacoes')
       .delete()
-      .eq('id', ultima.id);
+      .eq('id', id);
 
     if (error) {
-      alert('Erro ao desfazer movimentação');
+      await mostrarAlerta('Erro ao desfazer movimentação');
       console.error(error);
       return;
     }
 
-    console.log('Movimentação desfeita:', ultima.id);
+    console.log('Movimentação desfeita:', id);
 
-    carregarDados();
+    await carregarDados();
+
+    renderizarListaDesfazer();
   }
 
   function verMaisRelatorio() {
@@ -1511,7 +2030,7 @@
 
     if (!adminLiberado) return;
 
-    if (!confirm('Deseja realmente zerar a mesa?')) return;
+    if (!await mostrarConfirm('Deseja realmente zerar a mesa?')) return;
 
     const novoMesaId = Number(mesaAtualId) + 1;
 
@@ -1524,7 +2043,7 @@
 
     if (error) {
       console.error(error);
-      alert('Erro ao zerar mesa');
+      await mostrarAlerta('Erro ao zerar mesa');
       return;
     }
 
