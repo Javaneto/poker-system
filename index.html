@@ -304,6 +304,74 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
+    .grid-torneios {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .torneio-card {
+      border: 1px solid #e9eaef;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+    }
+
+    .torneio-card.atual {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    .torneio-card h3 {
+      margin: 4px 0 8px 0;
+      font-size: 16px;
+    }
+
+    .torneio-card .torneio-data {
+      color: #767c88;
+      font-size: 12px;
+    }
+
+    .torneio-card .btn-excluir-torneio {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 8px;
+      font-size: 12px;
+      box-shadow: none;
+      border-radius: 8px;
+    }
+
+    .torneio-card .status-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .status-badge.aberto {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .status-badge.encerrado {
+      background: #eef0f4;
+      color: #767c88;
+    }
+
+    .torneio-card .torneio-info {
+      font-size: 13px;
+      color: #464c56;
+      margin-bottom: 12px;
+      flex-grow: 1;
+    }
+
     .jogador-clicavel {
       cursor: pointer;
       color: #2563eb;
@@ -585,9 +653,9 @@
       Torneio Ativo
     </a>
 
-    <a href="torneio.html" class="btn-gray menu-item">
+    <button class="btn-gray menu-item" onclick="fecharMenu(); abrirModalTorneios();">
       Torneios
-    </a>
+    </button>
 
     <button id="btnAbrirCadastro" class="btn-dark disabled menu-item" onclick="fecharMenu(); abrirModalCadastro();">
       Cadastrar Jogador
@@ -615,6 +683,26 @@
 
     <div class="modal-acoes" style="margin-top:16px;">
       <button class="btn-gray" onclick="fecharModalDesfazer()">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalTorneios" class="modal-overlay">
+  <div class="modal-box" style="max-width:900px;">
+    <h2>Torneios</h2>
+
+    <select id="filtroStatusTorneios" onchange="renderizarListaTorneios()" style="max-width:220px;">
+      <option value="aberto">Ativos</option>
+      <option value="encerrado">Encerrados</option>
+      <option value="">Todos</option>
+    </select>
+
+    <div id="listaTorneios" class="grid-torneios"></div>
+
+    <div class="modal-acoes" style="margin-top:16px;">
+      <button class="btn-gray" onclick="fecharModalTorneios()">
         Fechar
       </button>
     </div>
@@ -774,6 +862,9 @@
   let adminLiberado = false;
   let limiteRelatorio = 10;
   let mesaAtualId = 1;
+  let torneioAtualId = null;
+  let todosTorneios = [];
+  let todosValoresTorneios = [];
   let filtroRelatorioJogador = '';
 
   const adminExpira = localStorage.getItem('adminExpira');
@@ -885,6 +976,145 @@
       _resolveConfirm = null;
       resolver(valor);
     }
+  }
+
+  function abrirModalTorneios() {
+
+    renderizarListaTorneios();
+
+    document.getElementById('modalTorneios').classList.add('aberto');
+  }
+
+  function fecharModalTorneios() {
+
+    document.getElementById('modalTorneios').classList.remove('aberto');
+  }
+
+  function renderizarListaTorneios() {
+
+    const lista = document.getElementById('listaTorneios');
+    const filtroStatus = document.getElementById('filtroStatusTorneios').value;
+
+    lista.innerHTML = '';
+
+    const torneiosFiltrados = filtroStatus
+      ? todosTorneios.filter(t => (t.status || 'aberto') === filtroStatus)
+      : todosTorneios;
+
+    if (todosTorneios.length === 0) {
+      lista.innerHTML = '<p style="color:#666;">Nenhum torneio cadastrado ainda.</p>';
+      return;
+    }
+
+    if (torneiosFiltrados.length === 0) {
+      lista.innerHTML = '<p style="color:#666;">Nenhum torneio encontrado com esse filtro.</p>';
+      return;
+    }
+
+    torneiosFiltrados.forEach(torneio => {
+
+      const valoresDoTorneio = todosValoresTorneios.filter(v => v.torneio_id === torneio.id);
+      const primeiroValor = valoresDoTorneio[0];
+
+      const ehAtual = torneioAtualId === torneio.id;
+      const estaEncerrado = torneio.status === 'encerrado';
+
+      const div = document.createElement('div');
+
+      div.className = 'torneio-card' + (ehAtual ? ' atual' : '');
+
+      const dataFormatada = new Date(torneio.criado_em).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      div.innerHTML = `
+        <span class="status-badge ${estaEncerrado ? 'encerrado' : 'aberto'}">${estaEncerrado ? 'Encerrado' : 'Aberto'}</span>
+        <div class="torneio-data">${dataFormatada}</div>
+        <h3>${escapeHtml(torneio.nome)}</h3>
+        <div class="torneio-info">
+          ${primeiroValor ? `${escapeHtml(primeiroValor.tipo)}: R$ ${Number(primeiroValor.valor_total).toFixed(2)}` : 'Sem valores configurados'}
+        </div>
+      `;
+
+      const btnExcluir = document.createElement('button');
+
+      btnExcluir.className = 'btn-red btn-excluir-torneio' + (adminLiberado && estaEncerrado ? '' : ' disabled');
+      btnExcluir.textContent = '🗑️';
+      btnExcluir.title = estaEncerrado ? 'Excluir torneio' : 'Encerre o torneio antes de excluir';
+      btnExcluir.onclick = () => excluirTorneio(torneio.id, torneio.nome);
+
+      div.appendChild(btnExcluir);
+
+      const btn = document.createElement('button');
+
+      btn.className = 'btn-dark' + (adminLiberado ? '' : ' disabled');
+      btn.textContent = 'Selecionar';
+      btn.onclick = () => selecionarTorneio(torneio.id);
+
+      div.appendChild(btn);
+
+      lista.appendChild(div);
+    });
+  }
+
+  async function selecionarTorneio(torneioId) {
+
+    if (!adminLiberado) return;
+
+    if (!await mostrarConfirm('Tornar este o torneio atual? Você será levado para a página do torneio.')) return;
+
+    const { error } = await client
+      .from('configuracoes')
+      .update({ torneio_atual_id: torneioId })
+      .eq('id', 1);
+
+    if (error) {
+      await mostrarAlerta('Erro ao selecionar torneio');
+      console.error(error);
+      return;
+    }
+
+    console.log('Torneio atual alterado para:', torneioId);
+
+    window.location.href = 'torneio.html';
+  }
+
+  async function excluirTorneio(torneioId, nomeTorneio) {
+
+    if (!adminLiberado) return;
+
+    if (torneioAtualId === torneioId) {
+      await mostrarAlerta('Esse é o torneio ativo. Encerre-o antes de excluir.');
+      return;
+    }
+
+    const torneio = todosTorneios.find(t => t.id === torneioId);
+
+    if (!torneio || torneio.status !== 'encerrado') {
+      await mostrarAlerta('Só é possível excluir torneios encerrados.');
+      return;
+    }
+
+    if (!await mostrarConfirm(`Excluir permanentemente o torneio "${nomeTorneio}"? Essa ação não pode ser desfeita. As movimentações financeiras continuam no relatório, só deixam de estar vinculadas a esse torneio.`)) return;
+
+    const { error } = await client
+      .from('torneios')
+      .delete()
+      .eq('id', torneioId);
+
+    if (error) {
+      await mostrarAlerta('Erro ao excluir torneio');
+      console.error(error);
+      return;
+    }
+
+    console.log('Torneio excluído:', torneioId);
+
+    carregarDados();
   }
 
   let historicoJogadorAtual = null;
@@ -1046,6 +1276,21 @@
     movimentacoes = movimentacoesDB || [];
 
     mesaAtualId = configuracaoDB?.mesa_atual_id || 1;
+    torneioAtualId = configuracaoDB?.torneio_atual_id || null;
+
+    const { data: torneiosDB } = await client
+      .from('torneios')
+      .select('*')
+      .order('criado_em', { ascending: false });
+
+    todosTorneios = torneiosDB || [];
+
+    const { data: valoresDB } = await client
+      .from('torneio_valores')
+      .select('*')
+      .order('ordem', { ascending: true });
+
+    todosValoresTorneios = valoresDB || [];
 
     console.log('Jogadores carregados:', jogadores.length);
     console.log('Movimentações carregadas:', movimentacoes.length);
@@ -1056,6 +1301,8 @@
   function atualizarTela() {
 
     console.log('Atualizando tela');
+
+    renderizarListaTorneios();
 
     const mesa = document.getElementById('mesaAtual');
     const relatorio = document.getElementById('relatorio');
@@ -1880,6 +2127,7 @@
     fecharModalLogin();
     fecharModalHistoricoJogador();
     fecharModalDesfazer();
+    fecharModalTorneios();
     fecharModalCadastro();
     fecharModalConfirmacao();
     fecharModalConfirmacaoSaida();
@@ -1898,6 +2146,8 @@
     document.getElementById('btnEntrada').classList.remove('disabled');
     document.getElementById('btnSaida').classList.remove('disabled');
     document.getElementById('btnZerar').classList.remove('disabled');
+
+    renderizarListaTorneios();
   }
 
   function bloquearAcoes() {
@@ -1919,6 +2169,9 @@
     fecharModalConfirmacao();
     fecharModalConfirmacaoSaida();
     fecharModalDesfazer();
+    fecharModalTorneios();
+
+    renderizarListaTorneios();
   }
 
   function obterMovimentacoesAbertasMesa() {
