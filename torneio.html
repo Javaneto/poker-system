@@ -499,6 +499,9 @@
       th, td {
         padding: 8px;
         font-size: 14px;
+        white-space: nowrap;
+        word-break: normal;
+        overflow-wrap: normal;
       }
 
       button {
@@ -519,6 +522,10 @@
       }
 
       table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        table-layout: auto;
         font-size: 13px;
       }
 
