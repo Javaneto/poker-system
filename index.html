@@ -219,14 +219,42 @@
   <div class="modal-box" style="max-width:560px;">
     <h2 id="historicoJogadorNome">Histórico</h2>
 
-    <p style="color:#666;margin-bottom:4px;">Resultado</p>
-    <p id="historicoJogadorResultado" style="font-size:22px;margin-top:0;margin-bottom:16px;">R$ 0,00</p>
+    <div class="topbar" style="margin-bottom:16px;">
+      <div>
+        <p style="color:#666;margin-bottom:4px;">Resultado</p>
+        <p id="historicoJogadorResultado" style="font-size:22px;margin:0;">R$ 0,00</p>
+      </div>
+
+      <button id="btnPagarHistorico" class="btn-green" onclick="abrirModalPagarHistorico()">
+        Pagar
+      </button>
+    </div>
 
     <div id="listaHistoricoJogador" style="max-height:340px;overflow-y:auto;"></div>
 
     <div class="modal-acoes" style="margin-top:16px;">
       <button class="btn-gray" onclick="fecharModalHistoricoJogador()">
         Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalPagarHistorico" class="modal-overlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2>Registrar Pagamento</h2>
+
+    <p id="pagarHistoricoResumo" class="modal-resumo"></p>
+
+    <input type="number" id="valorPagarHistorico" placeholder="Valor" min="0">
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalPagarHistorico()">
+        Cancelar
+      </button>
+
+      <button id="btnConfirmarPagarHistorico" class="btn-green" onclick="confirmarPagarHistorico()">
+        Confirmar
       </button>
     </div>
   </div>
@@ -593,11 +621,6 @@
 
     if (!adminLiberado) return;
 
-    if (torneioAtualId === torneioId) {
-      await mostrarAlerta('Esse é o torneio ativo. Encerre-o antes de excluir.');
-      return;
-    }
-
     const torneio = todosTorneios.find(t => t.id === torneioId);
 
     if (!torneio || torneio.status !== 'encerrado') {
@@ -665,6 +688,10 @@
       if (mov.tipo === 'Saída') {
         saida += Number(mov.valor);
       }
+
+      if (mov.tipo === 'Pagamento') {
+        entradaParaSaldo -= Number(mov.valor);
+      }
     });
 
     const saldo = saida - entradaParaSaldo;
@@ -672,6 +699,8 @@
 
     resultadoEl.textContent = `${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}`;
     resultadoEl.className = saldo >= 0 ? 'positivo' : 'negativo';
+
+    document.getElementById('btnPagarHistorico').classList.toggle('disabled', !adminLiberado);
 
     const lista = document.getElementById('listaHistoricoJogador');
     lista.innerHTML = '';
@@ -703,46 +732,79 @@
         </div>
       `;
 
-      if (mov.tipo === 'Entrada') {
-
-        const pago = !!mov.pago;
-
-        const btn = document.createElement('button');
-
-        btn.className = (pago ? 'btn-green' : 'btn-red') + (adminLiberado ? '' : ' disabled');
-        btn.style.flex = '0 0 auto';
-        btn.textContent = pago ? 'Pago' : 'Pendente';
-        btn.onclick = () => alternarPagamentoHistorico(mov.id, !pago);
-
-        div.appendChild(btn);
-      }
-
       lista.appendChild(div);
     });
   }
 
-  async function alternarPagamentoHistorico(id, novoPago) {
+  function abrirModalPagarHistorico() {
 
-    if (!adminLiberado) return;
+    if (!adminLiberado || !historicoJogadorAtual) return;
 
-    const mensagem = novoPago
-      ? 'Confirmar que essa entrada já foi paga? Ela deixa de contar no Resultado.'
-      : 'Voltar essa entrada para pendente? Ela volta a contar no Resultado.';
+    document.getElementById('pagarHistoricoResumo').textContent = `Jogador: ${historicoJogadorAtual.nome}`;
+    document.getElementById('valorPagarHistorico').value = '';
 
-    if (!await mostrarConfirm(mensagem)) return;
+    document.getElementById('modalPagarHistorico').classList.add('aberto');
+  }
 
-    const { error } = await client
+  function fecharModalPagarHistorico() {
+
+    document.getElementById('modalPagarHistorico').classList.remove('aberto');
+  }
+
+  async function confirmarPagarHistorico() {
+
+    if (!adminLiberado || !historicoJogadorAtual) return;
+
+    const valor = parseFloat(document.getElementById('valorPagarHistorico').value);
+
+    if (isNaN(valor) || valor <= 0) {
+      await mostrarAlerta('Informe um valor válido');
+      return;
+    }
+
+    const jogador = jogadores.find(j => j.nome === historicoJogadorAtual.nome);
+
+    if (!jogador) {
+      await mostrarAlerta('Jogador não encontrado');
+      return;
+    }
+
+    const btn = document.getElementById('btnConfirmarPagarHistorico');
+    btn.classList.add('disabled');
+
+    const { data: novaMovimentacao, error } = await client
       .from('movimentacoes')
-      .update({ pago: novoPago })
-      .eq('id', id);
+      .insert([
+        {
+          jogador: jogador.nome,
+          tipo: 'Pagamento',
+          valor,
+          modalidade: 'Cash',
+          pago: false,
+          mesa_id: mesaAtualId,
+          data: new Date().toISOString(),
+          cpf: jogador.cpf,
+          telefone: jogador.telefone
+        }
+      ])
+      .select()
+      .single();
+
+    btn.classList.remove('disabled');
 
     if (error) {
-      await mostrarAlerta('Erro ao atualizar pagamento');
+      await mostrarAlerta('Erro ao registrar pagamento');
       console.error(error);
       return;
     }
 
-    console.log('Pagamento atualizado:', id, novoPago);
+    console.log('Pagamento registrado:', jogador.nome, valor);
+
+    if (novaMovimentacao) {
+      historicoJogadorAtual.ids.push(novaMovimentacao.id);
+    }
+
+    fecharModalPagarHistorico();
 
     await carregarDados();
 
@@ -848,6 +910,7 @@
       let entradaParaSaldo = 0;
       let saida = 0;
       let qtdEntradas = 0;
+      let temPagamento = false;
 
       movsDoJogador.forEach(mov => {
 
@@ -863,9 +926,14 @@
         if (mov.tipo === 'Saída') {
           saida += Number(mov.valor);
         }
+
+        if (mov.tipo === 'Pagamento') {
+          entradaParaSaldo -= Number(mov.valor);
+          temPagamento = true;
+        }
       });
 
-      if (entrada > 0 || saida > 0) {
+      if (entrada > 0 || saida > 0 || temPagamento) {
 
         const saldo = saida - entradaParaSaldo;
         const rebuys = Math.max(qtdEntradas - 1, 0);
@@ -1631,6 +1699,7 @@
 
     fecharMenu();
     fecharModalLogin();
+    fecharModalPagarHistorico();
     fecharModalHistoricoJogador();
     fecharModalDesfazer();
     fecharModalTorneios();
@@ -1676,6 +1745,7 @@
     fecharModalConfirmacaoSaida();
     fecharModalDesfazer();
     fecharModalTorneios();
+    fecharModalPagarHistorico();
 
     renderizarListaTorneios();
   }
@@ -1683,7 +1753,7 @@
   function obterMovimentacoesAbertasMesa() {
 
     return movimentacoes
-      .filter(mov => Number(mov.mesa_id || 1) === Number(mesaAtualId) && !mov.pago)
+      .filter(mov => Number(mov.mesa_id || 1) === Number(mesaAtualId))
       .sort((a, b) => b.id - a.id);
   }
 
