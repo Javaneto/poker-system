@@ -478,6 +478,9 @@
       th, td {
         padding: 8px;
         font-size: 14px;
+        white-space: nowrap;
+        word-break: normal;
+        overflow-wrap: normal;
       }
 
       button {
@@ -492,12 +495,27 @@
         flex-direction: column;
       }
 
+      .flex-lado-a-lado {
+        flex-direction: row;
+      }
+
+      .flex-lado-a-lado button {
+        width: 100%;
+        padding-left: 6px;
+        padding-right: 6px;
+        font-size: 13px;
+      }
+
       .topbar {
         flex-direction: row;
         align-items: center;
       }
 
       table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        table-layout: auto;
         font-size: 13px;
       }
     }
@@ -535,7 +553,7 @@
 
     <select id="jogadorSelect" class="oculto"></select>
 
-    <div class="flex">
+    <div class="flex flex-lado-a-lado">
       <div>
         <input type="number" id="entrada" placeholder="Entrada" min="0">
 
