@@ -1136,11 +1136,6 @@
 
     if (!adminLiberado) return;
 
-    if (torneioAtual && torneioAtual.id === torneioId) {
-      await mostrarAlerta('Esse é o torneio ativo. Encerre-o antes de excluir.');
-      return;
-    }
-
     const torneio = todosTorneios.find(t => t.id === torneioId);
 
     if (!torneio || torneio.status !== 'encerrado') {
