@@ -1588,14 +1588,9 @@
 
       const btn = document.createElement('button');
 
-      if (ehAtual) {
-        btn.className = 'btn-gray disabled';
-        btn.textContent = 'Torneio Atual';
-      } else {
-        btn.className = 'btn-dark' + (adminLiberado ? '' : ' disabled');
-        btn.textContent = 'Selecionar';
-        btn.onclick = () => selecionarTorneio(torneio.id);
-      }
+      btn.className = 'btn-dark' + (adminLiberado ? '' : ' disabled');
+      btn.textContent = 'Selecionar';
+      btn.onclick = () => selecionarTorneio(torneio.id);
 
       div.appendChild(btn);
 
