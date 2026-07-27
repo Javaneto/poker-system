@@ -289,6 +289,20 @@ a.btn-gray {
   flex: 0 0 auto;
 }
 
+.linha-desfazer-valor {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.linha-desfazer-valor strong {
+  font-size: 15px;
+  white-space: nowrap;
+  color: #16181d;
+}
+
 .btn-icone {
   background: none;
   border: none;
