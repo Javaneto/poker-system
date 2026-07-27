@@ -95,7 +95,7 @@
   </div>
 
   <div class="card">
-    <h2>Relatório de Movimentações</h2>
+    <h2>Histórico de Movimentações</h2>
 
     <div class="pesquisa-wrapper">
       <input
@@ -120,7 +120,6 @@
           <th>Tipo</th>
           <th>Modalidade</th>
           <th>Valor</th>
-          <th>Imprimir</th>
         </tr>
       </thead>
 
@@ -729,8 +728,13 @@
       div.innerHTML = `
         <div class="linha-desfazer-info">
           <strong>${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')}</strong>
-          R$ ${Number(mov.valor).toFixed(2)}<br>
           <span style="color:#999;">${dataFormatada}</span>
+        </div>
+        <div class="linha-desfazer-valor">
+          <strong>R$ ${Number(mov.valor).toFixed(2)}</strong>
+          <button class="btn-dark" onclick="imprimirMovimentacaoPorId(${mov.id})">
+            Imprimir
+          </button>
         </div>
       `;
 
@@ -985,12 +989,12 @@
         <div class="linha-desfazer">
           <div class="linha-desfazer-info">
             <strong>${escapeHtml(mov.jogador)}</strong>
-            ${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')} · R$ ${Number(mov.valor).toFixed(2)}<br>
+            ${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')}<br>
             <span style="color:#999;">${dataFormatada}</span>
           </div>
-          <button class="btn-dark" onclick="imprimirMovimentacaoPorId(${mov.id})">
-            Imprimir
-          </button>
+          <div class="linha-desfazer-valor">
+            <strong>R$ ${Number(mov.valor).toFixed(2)}</strong>
+          </div>
         </div>
       `;
 
@@ -1001,11 +1005,6 @@
           <td>${escapeHtml(mov.tipo)}</td>
           <td>${escapeHtml(mov.modalidade || '-')}</td>
           <td>R$ ${Number(mov.valor).toFixed(2)}</td>
-          <td>
-            <button class="btn-dark" onclick="imprimirMovimentacaoPorId(${mov.id})">
-              Imprimir
-            </button>
-          </td>
         </tr>
       `;
     });
