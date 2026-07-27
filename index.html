@@ -112,7 +112,22 @@
       <div id="sugestoesJogadoresRelatorio"></div>
     </div>
 
-    <div id="relatorio"></div>
+    <table class="relatorio-desktop">
+      <thead>
+        <tr>
+          <th>Data/Hora</th>
+          <th>Jogador</th>
+          <th>Tipo</th>
+          <th>Modalidade</th>
+          <th>Valor</th>
+          <th>Imprimir</th>
+        </tr>
+      </thead>
+
+      <tbody id="relatorioTabela"></tbody>
+    </table>
+
+    <div id="relatorio" class="relatorio-mobile"></div>
 
     <div style="margin-top:12px;text-align:center;">
       <button
@@ -861,10 +876,12 @@
 
     const mesa = document.getElementById('mesaAtual');
     const relatorio = document.getElementById('relatorio');
+    const relatorioTabela = document.getElementById('relatorioTabela');
     const select = document.getElementById('jogadorSelect');
 
     mesa.innerHTML = '';
     relatorio.innerHTML = '';
+    relatorioTabela.innerHTML = '';
 
     select.innerHTML = '<option value="">Selecione o jogador</option>';
 
@@ -975,6 +992,21 @@
             Imprimir
           </button>
         </div>
+      `;
+
+      relatorioTabela.innerHTML += `
+        <tr>
+          <td>${dataFormatada}</td>
+          <td>${escapeHtml(mov.jogador)}</td>
+          <td>${escapeHtml(mov.tipo)}</td>
+          <td>${escapeHtml(mov.modalidade || '-')}</td>
+          <td>R$ ${Number(mov.valor).toFixed(2)}</td>
+          <td>
+            <button class="btn-dark" onclick="imprimirMovimentacaoPorId(${mov.id})">
+              Imprimir
+            </button>
+          </td>
+        </tr>
       `;
     });
   }
