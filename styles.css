@@ -367,6 +367,10 @@ tbody tr:hover {
   background: #fafbfd;
 }
 
+.relatorio-mobile {
+  display: none;
+}
+
 .pesquisa-wrapper {
   position: relative;
   margin-bottom: 10px;
@@ -506,6 +510,14 @@ tbody tr:hover {
 }
 
 @media (max-width: 768px) {
+
+  .relatorio-desktop {
+    display: none;
+  }
+
+  .relatorio-mobile {
+    display: block;
+  }
 
   body {
     padding: 12px;
