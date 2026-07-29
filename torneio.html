@@ -27,21 +27,20 @@
         <div class="topbar" style="margin-bottom:8px;">
           <h2 style="margin:0;">Relógio — Nível <span id="relogioNivelNumero">1</span></h2>
 
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button id="btnRelogioPlayPause" class="btn-green disabled" onclick="alternarRelogio()">
-              ▶️ Iniciar
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button id="btnRelogioPlayPause" class="btn-tile btn-green disabled" onclick="alternarRelogio()">
+              <span class="btn-tile-icone" id="relogioPlayPauseIcone">▶️</span>
+              <span id="relogioPlayPauseTexto">Iniciar</span>
             </button>
 
-            <button id="btnRelogioAnterior" class="btn-gray disabled" onclick="voltarNivelClock()">
-              ⏮️ Nível Anterior
+            <button id="btnIniciarIntervalo" class="btn-tile btn-red disabled" onclick="alternarIntervalo()">
+              <span class="btn-tile-icone" id="intervaloIcone">☕</span>
+              <span id="intervaloTexto">Intervalo</span>
             </button>
 
-            <button id="btnRelogioProximo" class="btn-gray disabled" onclick="avancarNivelClock()">
-              ⏭️ Próximo Nível
-            </button>
-
-            <button id="btnEditarRelogio" class="btn-gray disabled" onclick="abrirModalEditarRelogio()">
-              ✏️ Editar Relógio
+            <button id="btnEditarRelogio" class="btn-tile btn-gray disabled" onclick="abrirModalEditarRelogio()">
+              <span class="btn-tile-icone">🕐</span>
+              <span>Editar Relógio</span>
             </button>
           </div>
         </div>
@@ -79,17 +78,20 @@
       <div id="infoTorneio" class="oculto">
         <h3 id="nomeTorneioAtual" style="margin-top:0;margin-bottom:12px;"></h3>
 
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <button id="btnConfigTorneioAtual" class="btn-gray disabled" onclick="abrirModalConfigTorneioAtual()">
-            ⚙️ Configurar Torneio
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button id="btnConfigTorneioAtual" class="btn-tile btn-gray disabled" onclick="abrirModalConfigTorneioAtual()">
+            <span class="btn-tile-icone">⚙️</span>
+            <span>Configurar</span>
           </button>
 
-          <button id="btnAjustarPremiacao" class="btn-gray disabled" onclick="abrirModalAjustarPremiacao()">
-            Ajustar Premiação
+          <button id="btnAjustarPremiacao" class="btn-tile btn-gray disabled" onclick="abrirModalAjustarPremiacao()">
+            <span class="btn-tile-icone">💰</span>
+            <span>Ajustar Prêmio</span>
           </button>
 
-          <button id="btnEncerrarTorneio" class="btn-red disabled" onclick="encerrarTorneio()">
-            Encerrar Torneio
+          <button id="btnEncerrarTorneio" class="btn-tile btn-red disabled" onclick="encerrarTorneio()">
+            <span class="btn-tile-icone">🏁</span>
+            <span id="textoEncerrarTorneio">Encerrar</span>
           </button>
         </div>
       </div>
@@ -124,7 +126,7 @@
 
       <p id="semTipoPagamento" style="color:#666;">Nenhum torneio em andamento.</p>
 
-      <div id="botoesPagamento" class="grid-botoes-pagamento oculto"></div>
+      <div id="botoesPagamento" class="oculto" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
     </div>
   </div>
 
@@ -353,6 +355,12 @@
             Gerenciar
           </button>
         </div>
+
+        <p style="color:#666;font-size:12px;margin-top:10px;margin-bottom:4px;">
+          Duração do Intervalo Manual (min)
+        </p>
+
+        <input type="number" id="inputIntervaloManualMinutos" min="1" placeholder="10">
       </div>
     </div>
 
@@ -759,7 +767,7 @@
 
     const { data, error } = await client
       .from('torneios')
-      .select('status, relogio_nivel_atual, relogio_segundos_restantes, relogio_iniciado_em, relogio_rodando, relogio_em_intervalo')
+      .select('status, relogio_nivel_atual, relogio_segundos_restantes, relogio_iniciado_em, relogio_rodando, relogio_em_intervalo, relogio_intervalo_avanca_nivel, relogio_segundos_pre_intervalo')
       .eq('id', idConsultado)
       .single();
 
@@ -846,16 +854,21 @@
     }
 
     const btnPlayPause = document.getElementById('btnRelogioPlayPause');
-    const btnAnterior = document.getElementById('btnRelogioAnterior');
-    const btnProximo = document.getElementById('btnRelogioProximo');
+    const btnIniciarIntervalo = document.getElementById('btnIniciarIntervalo');
     const btnEditar = document.getElementById('btnEditarRelogio');
 
-    btnPlayPause.textContent = torneioAtual.relogio_rodando ? '⏸️ Pausar' : '▶️ Iniciar';
-    btnPlayPause.className = (torneioAtual.relogio_rodando ? 'btn-gray' : 'btn-green')
+    document.getElementById('relogioPlayPauseIcone').textContent = torneioAtual.relogio_rodando ? '⏸️' : '▶️';
+    document.getElementById('relogioPlayPauseTexto').textContent = torneioAtual.relogio_rodando ? 'Pausar' : 'Iniciar';
+
+    btnPlayPause.className = 'btn-tile ' + (torneioAtual.relogio_rodando ? 'btn-gray' : 'btn-green')
       + (adminLiberado && !estaEncerrado ? '' : ' disabled');
 
-    btnAnterior.classList.toggle('disabled', !adminLiberado || estaEncerrado || indiceAtual === 0);
-    btnProximo.classList.toggle('disabled', !adminLiberado || estaEncerrado);
+    document.getElementById('intervaloIcone').textContent = emIntervalo ? '⏹️' : '☕';
+    document.getElementById('intervaloTexto').textContent = emIntervalo ? 'Encerrar' : 'Intervalo';
+
+    btnIniciarIntervalo.className = 'btn-tile ' + (emIntervalo ? 'btn-gray' : 'btn-red')
+      + (adminLiberado && !estaEncerrado ? '' : ' disabled');
+
     btnEditar.classList.toggle('disabled', !adminLiberado || estaEncerrado);
 
     if (adminLiberado && !estaEncerrado && torneioAtual.relogio_rodando && restante <= 0 && !avancoNivelEmAndamento) {
@@ -919,10 +932,40 @@
 
     let novosDados;
 
-    if (!emIntervalo && nivelAtual && Number(nivelAtual.pausa) > 0) {
+    if (emIntervalo && !torneioAtual.relogio_intervalo_avanca_nivel) {
+
+      // intervalo manual termina (ou é encerrado) -> retoma o nível de onde parou
+      novosDados = {
+        relogio_em_intervalo: false,
+        relogio_intervalo_avanca_nivel: false,
+        relogio_segundos_restantes: torneioAtual.relogio_segundos_pre_intervalo ?? ((nivelAtual?.duracao || 0) * 60),
+        relogio_segundos_pre_intervalo: null,
+        relogio_iniciado_em: new Date().toISOString(),
+        relogio_rodando: true
+      };
+
+    } else if (emIntervalo) {
+
+      // intervalo estruturado (entre níveis) termina -> avança de nível
+      const proximoIndice = Math.min(indiceAtual + 1, niveis.length - 1);
+      const proximoNivel = niveis[proximoIndice];
 
       novosDados = {
+        relogio_nivel_atual: proximoIndice,
+        relogio_em_intervalo: false,
+        relogio_intervalo_avanca_nivel: false,
+        relogio_segundos_pre_intervalo: null,
+        relogio_segundos_restantes: (proximoNivel?.duracao || 0) * 60,
+        relogio_iniciado_em: new Date().toISOString(),
+        relogio_rodando: true
+      };
+
+    } else if (nivelAtual && Number(nivelAtual.pausa) > 0) {
+
+      // nível termina e tem pausa configurada -> entra em intervalo estruturado
+      novosDados = {
         relogio_em_intervalo: true,
+        relogio_intervalo_avanca_nivel: true,
         relogio_segundos_restantes: Number(nivelAtual.pausa) * 60,
         relogio_iniciado_em: new Date().toISOString(),
         relogio_rodando: true
@@ -930,6 +973,7 @@
 
     } else {
 
+      // nível termina sem pausa -> avança direto
       const proximoIndice = Math.min(indiceAtual + 1, niveis.length - 1);
       const proximoNivel = niveis[proximoIndice];
 
@@ -957,46 +1001,59 @@
     await carregarDados();
   }
 
-  async function avancarNivelClock() {
+  async function iniciarIntervaloManual() {
 
     if (!adminLiberado || !torneioAtual) return;
 
     if (torneioAtual.status === 'encerrado') return;
 
-    await executarAvancoNivelClock();
-  }
+    if (torneioAtual.relogio_em_intervalo) return;
 
-  async function voltarNivelClock() {
+    const minutos = Number(torneioAtual.intervalo_manual_minutos) || 10;
 
-    if (!adminLiberado || !torneioAtual) return;
+    if (!await mostrarConfirm(`Iniciar um intervalo de ${minutos} minutos agora? O nível atual retoma de onde parou quando o intervalo terminar.`)) return;
 
-    if (torneioAtual.status === 'encerrado') return;
-
-    const niveis = obterNiveisTorneioAtual();
-
-    if (niveis.length === 0) return;
-
-    const indiceAtual = torneioAtual.relogio_nivel_atual || 0;
-    const novoIndice = Math.max(indiceAtual - 1, 0);
-    const nivel = niveis[novoIndice];
+    const restanteAtual = calcularSegundosRestantesClock();
 
     const { error } = await client
       .from('torneios')
       .update({
-        relogio_nivel_atual: novoIndice,
-        relogio_em_intervalo: false,
-        relogio_segundos_restantes: (nivel?.duracao || 0) * 60,
-        relogio_iniciado_em: torneioAtual.relogio_rodando ? new Date().toISOString() : null
+        relogio_em_intervalo: true,
+        relogio_intervalo_avanca_nivel: false,
+        relogio_segundos_pre_intervalo: restanteAtual,
+        relogio_segundos_restantes: minutos * 60,
+        relogio_iniciado_em: new Date().toISOString(),
+        relogio_rodando: true
       })
       .eq('id', torneioAtual.id);
 
     if (error) {
-      await mostrarAlerta('Erro ao voltar nível');
+      await mostrarAlerta('Erro ao iniciar intervalo');
       console.error(error);
       return;
     }
 
     await carregarDados();
+  }
+
+  async function encerrarIntervaloManual() {
+
+    if (!adminLiberado || !torneioAtual) return;
+
+    if (torneioAtual.status === 'encerrado') return;
+
+    if (!torneioAtual.relogio_em_intervalo) return;
+
+    await executarAvancoNivelClock();
+  }
+
+  function alternarIntervalo() {
+
+    if (torneioAtual && torneioAtual.relogio_em_intervalo) {
+      encerrarIntervaloManual();
+    } else {
+      iniciarIntervaloManual();
+    }
   }
 
   async function abrirModalEditarRelogio() {
@@ -1367,9 +1424,9 @@
       btnConfig.classList.add('disabled');
       btnAjustar.classList.add('disabled');
       btnEncerrar.classList.add('disabled');
-      btnEncerrar.textContent = 'Torneio Encerrado';
+      document.getElementById('textoEncerrarTorneio').textContent = 'Encerrado';
     } else {
-      btnEncerrar.textContent = 'Encerrar Torneio';
+      document.getElementById('textoEncerrarTorneio').textContent = 'Encerrar';
       if (adminLiberado) {
         btnConfig.classList.remove('disabled');
         btnAjustar.classList.remove('disabled');
@@ -1467,11 +1524,13 @@
 
     selectBlinds.value = torneioAtual.estrutura_blinds_id || '';
 
+    document.getElementById('inputIntervaloManualMinutos').value = torneioAtual.intervalo_manual_minutos || 10;
+
     const estruturaBlindsAtual = estruturasBlinds.find(e => e.id === torneioAtual.estrutura_blinds_id);
 
     document.getElementById('blindsResumoTexto').textContent = estruturaBlindsAtual
-      ? `${estruturaBlindsAtual.nome} (${(estruturaBlindsAtual.niveis || []).length} níveis)`
-      : 'Nenhuma estrutura selecionada.';
+      ? `${estruturaBlindsAtual.nome} (${(estruturaBlindsAtual.niveis || []).length} níveis) · Intervalo manual: ${torneioAtual.intervalo_manual_minutos || 10} min`
+      : `Nenhuma estrutura selecionada. · Intervalo manual: ${torneioAtual.intervalo_manual_minutos || 10} min`;
 
     document.getElementById('premiacaoEdicao').classList.add('oculto');
     document.getElementById('valoresEdicao').classList.add('oculto');
@@ -1569,6 +1628,8 @@
     const selectBlinds = document.getElementById('selectEstruturaBlindsModal');
     const novaEstruturaBlindsId = selectBlinds.value ? Number(selectBlinds.value) : null;
 
+    const intervaloManual = parseInt(document.getElementById('inputIntervaloManualMinutos').value, 10) || 10;
+
     const btn = document.getElementById('btnSalvarConfigTorneio');
     btn.classList.add('disabled');
 
@@ -1599,7 +1660,8 @@
       .from('torneios')
       .update({
         premiacao_estrutura_id: novaEstruturaId,
-        estrutura_blinds_id: novaEstruturaBlindsId
+        estrutura_blinds_id: novaEstruturaBlindsId,
+        intervalo_manual_minutos: intervaloManual
       })
       .eq('id', torneioAtual.id);
 
@@ -1822,37 +1884,27 @@
     const rebuys = variantesRebuy();
     const outros = valoresTorneio.filter(v => v.tipo === 'Add-on');
 
+    function criarBotaoTilePagamento(icone, texto, onclick) {
+
+      const btn = document.createElement('button');
+
+      btn.className = 'btn-tile btn-blue' + (adminLiberado ? '' : ' disabled');
+      btn.innerHTML = `<span class="btn-tile-icone">${icone}</span><span>${escapeHtml(texto)}</span>`;
+      btn.onclick = onclick;
+
+      container.appendChild(btn);
+    }
+
     if (registros.length > 0) {
-
-      const btnRegistro = document.createElement('button');
-
-      btnRegistro.className = 'btn-blue' + (adminLiberado ? '' : ' disabled');
-      btnRegistro.textContent = 'Registro/Inscrição';
-      btnRegistro.onclick = () => abrirModalSelecionarJogador('REGISTRO');
-
-      container.appendChild(btnRegistro);
+      criarBotaoTilePagamento('📝', 'Registro', () => abrirModalSelecionarJogador('REGISTRO'));
     }
 
     rebuys.forEach(v => {
-
-      const btn = document.createElement('button');
-
-      btn.className = 'btn-blue' + (adminLiberado ? '' : ' disabled');
-      btn.textContent = `${v.tipo} — R$ ${Number(v.valor_total).toFixed(2)}`;
-      btn.onclick = () => abrirModalSelecionarJogador(v);
-
-      container.appendChild(btn);
+      criarBotaoTilePagamento('🔄', v.tipo, () => abrirModalSelecionarJogador(v));
     });
 
     outros.forEach(v => {
-
-      const btn = document.createElement('button');
-
-      btn.className = 'btn-blue' + (adminLiberado ? '' : ' disabled');
-      btn.textContent = `${v.tipo} — R$ ${Number(v.valor_total).toFixed(2)}`;
-      btn.onclick = () => abrirModalSelecionarJogador(v);
-
-      container.appendChild(btn);
+      criarBotaoTilePagamento('➕', v.tipo, () => abrirModalSelecionarJogador(v));
     });
   }
 
