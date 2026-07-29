@@ -75,11 +75,17 @@
       </div>
     </div>
 
-    <select id="filtroModalidadeAberto" onchange="atualizarTela()" style="max-width:260px;">
-      <option value="">Todas as modalidades</option>
-    </select>
+    <div class="flex" style="align-items:flex-start;">
+      <div class="pesquisa-wrapper" style="flex:1;margin-bottom:0;">
+        <input type="text" id="pesquisaJogadorAberto" placeholder="Pesquisar jogador" oninput="atualizarTela()">
+      </div>
 
-    <table>
+      <select id="filtroModalidadeAberto" onchange="atualizarTela()" style="max-width:260px;margin-bottom:0;">
+        <option value="">Todas as modalidades</option>
+      </select>
+    </div>
+
+    <table class="relatorio-desktop">
       <thead>
         <tr>
           <th>Jogador</th>
@@ -92,6 +98,8 @@
 
       <tbody id="mesaAtual"></tbody>
     </table>
+
+    <div id="mesaAtualMobile" class="relatorio-mobile"></div>
   </div>
 
   <div class="card">
@@ -118,8 +126,8 @@
           <th>Data/Hora</th>
           <th>Jogador</th>
           <th>Tipo</th>
-          <th>Modalidade</th>
-          <th>Valor</th>
+          <th>Pagamento</th>
+          <th>Resultado</th>
         </tr>
       </thead>
 
@@ -216,6 +224,20 @@
   </div>
 </div>
 
+<div id="modalDetalheHistorico" class="modal-overlay">
+  <div class="modal-box" style="max-width:400px;">
+    <h2 id="detalheHistoricoTitulo">Detalhe</h2>
+
+    <div id="detalheHistoricoConteudo"></div>
+
+    <div class="modal-acoes" style="margin-top:16px;">
+      <button class="btn-gray" onclick="fecharModalDetalheHistorico()">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="modalHistoricoJogador" class="modal-overlay">
   <div class="modal-box" style="max-width:560px;">
     <h2 id="historicoJogadorNome">Histórico</h2>
@@ -233,9 +255,13 @@
 
     <div id="listaHistoricoJogador" style="max-height:340px;overflow-y:auto;"></div>
 
-    <div class="modal-acoes" style="margin-top:16px;">
+    <div class="modal-acoes" style="margin-top:16px;justify-content:space-between;">
       <button class="btn-gray" onclick="fecharModalHistoricoJogador()">
         Fechar
+      </button>
+
+      <button id="btnFinalizarSessao" class="btn-red" onclick="finalizarSessaoJogador()">
+        Finalizar
       </button>
     </div>
   </div>
@@ -466,6 +492,153 @@
     }[c]));
   }
 
+  function calcularResultado(movs) {
+
+    let entrada = 0;
+    let entradaParaSaldo = 0;
+    let saida = 0;
+    let qtdEntradas = 0;
+    let temPagamento = false;
+
+    movs.forEach(mov => {
+
+      if (mov.tipo === 'Entrada') {
+        entrada += Number(mov.valor);
+        qtdEntradas++;
+
+        if (!mov.pago) {
+          entradaParaSaldo += Number(mov.valor);
+        }
+      }
+
+      if (mov.tipo === 'Saída') {
+        saida += Number(mov.valor);
+      }
+
+      if (mov.tipo === 'Pagamento') {
+        entradaParaSaldo -= Number(mov.valor);
+        temPagamento = true;
+      }
+    });
+
+    return { entrada, entradaParaSaldo, saida, qtdEntradas, temPagamento, resultado: saida - entradaParaSaldo };
+  }
+
+  function abrirModalDetalheSessao(jogador, sessaoFinalizadaEm) {
+
+    const movsGrupo = movimentacoes
+      .filter(m => m.jogador === jogador && m.sessao_finalizada_em === sessaoFinalizadaEm)
+      .sort((a, b) => new Date(a.data) - new Date(b.data));
+
+    if (movsGrupo.length === 0) return;
+
+    const { entrada, saida, resultado } = calcularResultado(movsGrupo);
+
+    const dataFinal = new Date(sessaoFinalizadaEm).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    document.getElementById('detalheHistoricoTitulo').textContent = jogador;
+
+    const listaHtml = movsGrupo.map(m => {
+
+      const dataMov = new Date(m.data).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      return `
+        <div class="linha-desfazer">
+          <div class="linha-desfazer-info">
+            <strong>${escapeHtml(m.tipo)} · ${escapeHtml(m.modalidade || '-')}</strong>
+            <span style="color:#999;">${dataMov}</span>
+          </div>
+          <div class="linha-desfazer-valor">
+            <strong>R$ ${Number(m.valor).toFixed(2)}</strong>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('detalheHistoricoConteudo').innerHTML = `
+      <p style="color:#666;margin-bottom:4px;">Sessão finalizada em</p>
+      <p style="margin-top:0;">${dataFinal}</p>
+
+      <p style="color:#666;margin-bottom:4px;">Resultado</p>
+      <p style="margin-top:0;font-size:22px;" class="${resultado >= 0 ? 'positivo' : 'negativo'}">
+        ${resultado >= 0 ? '+' : '-'} R$ ${Math.abs(resultado).toFixed(2)}
+      </p>
+
+      <p style="color:#666;margin-bottom:8px;">Entrou R$ ${entrada.toFixed(2)} · Saiu R$ ${saida.toFixed(2)}</p>
+      <div style="max-height:260px;overflow-y:auto;">${listaHtml}</div>
+    `;
+
+    document.getElementById('modalDetalheHistorico').classList.add('aberto');
+  }
+
+  function fecharModalDetalheHistorico() {
+
+    document.getElementById('modalDetalheHistorico').classList.remove('aberto');
+  }
+
+  function agruparParaHistorico(lista) {
+
+    const chavesProcessadas = new Set();
+    const itens = [];
+
+    lista.forEach(mov => {
+
+      if (!mov.sessao_finalizada_em) {
+        return;
+      }
+
+      const chave = `${mov.jogador}||${mov.sessao_finalizada_em}`;
+
+      if (chavesProcessadas.has(chave)) return;
+
+      chavesProcessadas.add(chave);
+
+      const movsGrupo = lista.filter(m =>
+        m.jogador === mov.jogador && m.sessao_finalizada_em === mov.sessao_finalizada_em
+      );
+
+      const { entrada, saida, resultado } = calcularResultado(movsGrupo);
+
+      itens.push({
+        tipo: 'grupo',
+        jogador: mov.jogador,
+        sessaoFinalizadaEm: mov.sessao_finalizada_em,
+        movs: movsGrupo,
+        entrada,
+        saida,
+        resultado
+      });
+    });
+
+    return itens;
+  }
+
+  function tratarCliqueHistorico(e) {
+
+    const el = e.target.closest('.jogador-clicavel');
+
+    if (!el) return;
+
+    if (el.dataset.jogador && el.dataset.sessao) {
+      abrirModalDetalheSessao(el.dataset.jogador, el.dataset.sessao);
+    }
+  }
+
+  document.getElementById('relatorio').addEventListener('click', tratarCliqueHistorico);
+  document.getElementById('relatorioTabela').addEventListener('click', tratarCliqueHistorico);
+
   let _resolveAlerta = null;
   let _resolveConfirm = null;
 
@@ -669,6 +842,37 @@
     document.getElementById('modalHistoricoJogador').classList.remove('aberto');
   }
 
+  async function finalizarSessaoJogador() {
+
+    if (!adminLiberado || !historicoJogadorAtual) return;
+
+    if (historicoJogadorAtual.ids.length === 0) return;
+
+    if (!await mostrarConfirm(`Finalizar a sessão de ${historicoJogadorAtual.nome}? As movimentações saem de "Movimentações em Aberto" e passam a aparecer agrupadas no histórico (com o detalhe de cada uma preservado).`)) return;
+
+    const btn = document.getElementById('btnFinalizarSessao');
+    btn.classList.add('disabled');
+
+    const { error } = await client
+      .from('movimentacoes')
+      .update({ sessao_finalizada_em: new Date().toISOString() })
+      .in('id', historicoJogadorAtual.ids);
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      await mostrarAlerta('Erro ao finalizar sessão');
+      console.error(error);
+      return;
+    }
+
+    console.log('Sessão finalizada:', historicoJogadorAtual.nome);
+
+    fecharModalHistoricoJogador();
+
+    await carregarDados();
+  }
+
   function renderizarHistoricoJogador() {
 
     if (!historicoJogadorAtual) return;
@@ -677,25 +881,7 @@
       .filter(mov => historicoJogadorAtual.ids.includes(mov.id))
       .sort((a, b) => new Date(b.data) - new Date(a.data));
 
-    let entradaParaSaldo = 0;
-    let saida = 0;
-
-    movs.forEach(mov => {
-
-      if (mov.tipo === 'Entrada' && !mov.pago) {
-        entradaParaSaldo += Number(mov.valor);
-      }
-
-      if (mov.tipo === 'Saída') {
-        saida += Number(mov.valor);
-      }
-
-      if (mov.tipo === 'Pagamento') {
-        entradaParaSaldo -= Number(mov.valor);
-      }
-    });
-
-    const saldo = saida - entradaParaSaldo;
+    const { resultado: saldo } = calcularResultado(movs);
     const resultadoEl = document.getElementById('historicoJogadorResultado');
 
     resultadoEl.textContent = `${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}`;
@@ -817,14 +1003,17 @@
     renderizarHistoricoJogador();
   }
 
-  document.getElementById('mesaAtual').addEventListener('click', function(e) {
+  function tratarCliqueJogadorMesa(e) {
 
     const el = e.target.closest('.jogador-clicavel');
 
     if (!el) return;
 
     abrirModalHistoricoJogador(el.dataset.nome, el.dataset.ids);
-  });
+  }
+
+  document.getElementById('mesaAtual').addEventListener('click', tratarCliqueJogadorMesa);
+  document.getElementById('mesaAtualMobile').addEventListener('click', tratarCliqueJogadorMesa);
 
   async function carregarDados() {
 
@@ -879,11 +1068,13 @@
     renderizarListaTorneios();
 
     const mesa = document.getElementById('mesaAtual');
+    const mesaMobile = document.getElementById('mesaAtualMobile');
     const relatorio = document.getElementById('relatorio');
     const relatorioTabela = document.getElementById('relatorioTabela');
     const select = document.getElementById('jogadorSelect');
 
     mesa.innerHTML = '';
+    mesaMobile.innerHTML = '';
     relatorio.innerHTML = '';
     relatorioTabela.innerHTML = '';
 
@@ -892,7 +1083,7 @@
     const filtroSelect = document.getElementById('filtroModalidadeAberto');
 
     const movimentacoesAbertas = movimentacoes.filter(
-      mov => Number(mov.mesa_id || 1) === Number(mesaAtualId)
+      mov => Number(mov.mesa_id || 1) === Number(mesaAtualId) && !mov.sessao_finalizada_em
     );
 
     const modalidadeAtualFiltro = filtroSelect.value;
@@ -910,42 +1101,24 @@
       ? movimentacoesAbertas.filter(mov => mov.modalidade === filtroSelect.value)
       : movimentacoesAbertas;
 
-    jogadores.forEach((jogador, index) => {
+    const termoPesquisaAberto = document.getElementById('pesquisaJogadorAberto').value.trim().toLowerCase();
+
+    const jogadoresFiltrados = termoPesquisaAberto
+      ? jogadores.filter(j => j.nome.toLowerCase().includes(termoPesquisaAberto))
+      : jogadores;
+
+    jogadoresFiltrados.forEach((jogador, index) => {
 
       const movsDoJogador = movimentacoesMesa.filter(mov => mov.jogador === jogador.nome);
 
-      let entrada = 0;
-      let entradaParaSaldo = 0;
-      let saida = 0;
-      let qtdEntradas = 0;
-      let temPagamento = false;
-
-      movsDoJogador.forEach(mov => {
-
-        if (mov.tipo === 'Entrada') {
-          entrada += Number(mov.valor);
-          qtdEntradas++;
-
-          if (!mov.pago) {
-            entradaParaSaldo += Number(mov.valor);
-          }
-        }
-
-        if (mov.tipo === 'Saída') {
-          saida += Number(mov.valor);
-        }
-
-        if (mov.tipo === 'Pagamento') {
-          entradaParaSaldo -= Number(mov.valor);
-          temPagamento = true;
-        }
-      });
+      const { entrada, saida, qtdEntradas, temPagamento, resultado: saldo } = calcularResultado(movsDoJogador);
 
       if (entrada > 0 || saida > 0 || temPagamento) {
 
-        const saldo = saida - entradaParaSaldo;
         const rebuys = Math.max(qtdEntradas - 1, 0);
         const idsHistorico = movsDoJogador.map(mov => mov.id).join(',');
+        const classeSaldo = saldo >= 0 ? 'positivo' : 'negativo';
+        const sinalSaldo = saldo >= 0 ? '+' : '-';
 
         mesa.innerHTML += `
           <tr>
@@ -953,10 +1126,22 @@
             <td>R$ ${entrada.toFixed(2)}</td>
             <td>R$ ${saida.toFixed(2)}</td>
             <td>${rebuys}</td>
-            <td class="${saldo >= 0 ? 'positivo' : 'negativo'}">
-              ${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}
+            <td class="${classeSaldo}">
+              ${sinalSaldo} R$ ${Math.abs(saldo).toFixed(2)}
             </td>
           </tr>
+        `;
+
+        mesaMobile.innerHTML += `
+          <div class="linha-desfazer">
+            <div class="linha-desfazer-info">
+              <strong class="jogador-clicavel" data-ids="${idsHistorico}" data-nome="${escapeHtml(jogador.nome)}">${escapeHtml(jogador.nome)}</strong>
+              Entrou R$ ${entrada.toFixed(2)} · Saiu R$ ${saida.toFixed(2)} · Rebuys ${rebuys}
+            </div>
+            <div class="linha-desfazer-valor">
+              <strong class="${classeSaldo}">${sinalSaldo} R$ ${Math.abs(saldo).toFixed(2)}</strong>
+            </div>
+          </div>
         `;
       }
 
@@ -971,13 +1156,18 @@
         )
       : movimentacoes;
 
-    const movimentacoesVisiveis = movimentacoesFiltradas.slice(0, limiteRelatorio);
+    const itensHistorico = agruparParaHistorico(movimentacoesFiltradas);
+    const itensVisiveis = itensHistorico.slice(0, limiteRelatorio);
 
-    console.log('Renderizando movimentações:', movimentacoesVisiveis.length);
+    console.log('Renderizando itens do histórico:', itensVisiveis.length);
 
-    movimentacoesVisiveis.forEach(mov => {
+    if (itensVisiveis.length === 0) {
+      relatorio.innerHTML = '<p style="color:#666;padding:8px 0;">Nenhuma sessão finalizada ainda.</p>';
+    }
 
-      const dataFormatada = new Date(mov.data).toLocaleString('pt-BR', {
+    itensVisiveis.forEach(item => {
+
+      const dataFormatada = new Date(item.sessaoFinalizadaEm).toLocaleString('pt-BR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -985,15 +1175,35 @@
         minute: '2-digit'
       });
 
+      const sinal = item.resultado >= 0 ? '+ ' : '- ';
+      const classeValor = item.resultado >= 0 ? 'positivo' : 'negativo';
+
+      let statusPagamento;
+      let classeStatus;
+
+      if (item.resultado < 0) {
+        statusPagamento = 'Pendente';
+        classeStatus = 'negativo';
+      } else if (item.resultado === 0) {
+        statusPagamento = 'Realizado';
+        classeStatus = '';
+      } else {
+        statusPagamento = 'Em Saldo';
+        classeStatus = 'positivo';
+      }
+
+      const statusTipo = item.resultado === 0 ? 'Finalizado' : 'Em Aberto';
+
       relatorio.innerHTML += `
         <div class="linha-desfazer">
           <div class="linha-desfazer-info">
-            <strong>${escapeHtml(mov.jogador)}</strong>
-            ${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')}<br>
+            <strong class="jogador-clicavel" data-jogador="${escapeHtml(item.jogador)}" data-sessao="${item.sessaoFinalizadaEm}">${escapeHtml(item.jogador)}</strong>
+            ${statusTipo} · <span class="${classeStatus}">${statusPagamento}</span><br>
+            Entrou R$ ${item.entrada.toFixed(2)} · Saiu R$ ${item.saida.toFixed(2)}<br>
             <span style="color:#999;">${dataFormatada}</span>
           </div>
           <div class="linha-desfazer-valor">
-            <strong>R$ ${Number(mov.valor).toFixed(2)}</strong>
+            <strong class="${classeValor}">${sinal}R$ ${Math.abs(item.resultado).toFixed(2)}</strong>
           </div>
         </div>
       `;
@@ -1001,10 +1211,10 @@
       relatorioTabela.innerHTML += `
         <tr>
           <td>${dataFormatada}</td>
-          <td>${escapeHtml(mov.jogador)}</td>
-          <td>${escapeHtml(mov.tipo)}</td>
-          <td>${escapeHtml(mov.modalidade || '-')}</td>
-          <td>R$ ${Number(mov.valor).toFixed(2)}</td>
+          <td class="jogador-clicavel" data-jogador="${escapeHtml(item.jogador)}" data-sessao="${item.sessaoFinalizadaEm}">${escapeHtml(item.jogador)}</td>
+          <td>${statusTipo}</td>
+          <td class="${classeStatus}">${statusPagamento}</td>
+          <td class="${classeValor}">${sinal}R$ ${Math.abs(item.resultado).toFixed(2)}</td>
         </tr>
       `;
     });
@@ -1717,6 +1927,7 @@
 
     fecharMenu();
     fecharModalLogin();
+    fecharModalDetalheHistorico();
     fecharModalPagarHistorico();
     fecharModalHistoricoJogador();
     fecharModalDesfazer();
@@ -1771,7 +1982,7 @@
   function obterMovimentacoesAbertasMesa() {
 
     return movimentacoes
-      .filter(mov => Number(mov.mesa_id || 1) === Number(mesaAtualId))
+      .filter(mov => Number(mov.mesa_id || 1) === Number(mesaAtualId) && !mov.sessao_finalizada_em)
       .sort((a, b) => b.id - a.id);
   }
 
