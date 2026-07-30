@@ -22,28 +22,9 @@
   </div>
 
   <div class="flex" style="align-items:flex-start;">
-    <div class="card" style="flex:1;min-width:260px;">
+    <div class="card" style="flex:1;min-width:200px;">
       <div id="relogioTorneio" class="oculto">
-        <div class="topbar" style="margin-bottom:8px;">
-          <h2 style="margin:0;">Relógio — Nível <span id="relogioNivelNumero">1</span></h2>
-
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button id="btnRelogioPlayPause" class="btn-tile btn-green disabled" onclick="alternarRelogio()">
-              <span class="btn-tile-icone" id="relogioPlayPauseIcone">▶️</span>
-              <span id="relogioPlayPauseTexto">Iniciar</span>
-            </button>
-
-            <button id="btnIniciarIntervalo" class="btn-tile btn-red disabled" onclick="alternarIntervalo()">
-              <span class="btn-tile-icone" id="intervaloIcone">☕</span>
-              <span id="intervaloTexto">Intervalo</span>
-            </button>
-
-            <button id="btnEditarRelogio" class="btn-tile btn-gray disabled" onclick="abrirModalEditarRelogio()">
-              <span class="btn-tile-icone">🕐</span>
-              <span>Editar Relógio</span>
-            </button>
-          </div>
-        </div>
+        <h2 style="margin-top:0;">Relógio — Nível <span id="relogioNivelNumero">1</span></h2>
 
         <div style="text-align:center;padding:16px 0;">
           <p id="relogioContador" style="font-size:56px;font-weight:800;margin:0;font-variant-numeric:tabular-nums;">
@@ -70,30 +51,64 @@
       <p id="relogioSemEstrutura" style="color:#666;">Selecione um torneio com Estrutura de Blinds configurada.</p>
     </div>
 
-    <div class="card" style="flex:1;min-width:220px;">
+    <div class="card" style="flex:0 0 auto;width:225px;">
       <div id="semTorneio">
         <p style="color:#666;">Nenhum torneio selecionado.</p>
       </div>
 
       <div id="infoTorneio" class="oculto">
-        <h3 id="nomeTorneioAtual" style="margin-top:0;margin-bottom:12px;"></h3>
+        <h2 style="margin-top:0;margin-bottom:12px;text-align:center;">Torneio Opções</h2>
 
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="grid-tiles-2col">
           <button id="btnConfigTorneioAtual" class="btn-tile btn-gray disabled" onclick="abrirModalConfigTorneioAtual()">
-            <span class="btn-tile-icone">⚙️</span>
+            <span class="btn-tile-icone" id="configTorneioIcone"></span>
             <span>Configurar</span>
           </button>
 
           <button id="btnAjustarPremiacao" class="btn-tile btn-gray disabled" onclick="abrirModalAjustarPremiacao()">
-            <span class="btn-tile-icone">💰</span>
+            <span class="btn-tile-icone" id="ajustarPremiacaoIcone"></span>
             <span>Ajustar Prêmio</span>
           </button>
 
           <button id="btnEncerrarTorneio" class="btn-tile btn-red disabled" onclick="encerrarTorneio()">
-            <span class="btn-tile-icone">🏁</span>
+            <span class="btn-tile-icone" id="encerrarTorneioIcone"></span>
             <span id="textoEncerrarTorneio">Encerrar</span>
           </button>
+
+          <button id="btnDesfazerTorneio" class="btn-tile btn-gray disabled" onclick="abrirModalDesfazer()">
+            <span class="btn-tile-icone" id="desfazerTorneioIcone"></span>
+            <span>Desfazer</span>
+          </button>
         </div>
+      </div>
+    </div>
+
+    <div class="card oculto" id="painelRegistrarPagamento" style="flex:0 0 auto;width:225px;">
+      <h2 style="text-align:center;">Registrar Pagamento</h2>
+
+      <p id="semTipoPagamento" style="color:#666;">Nenhum torneio em andamento.</p>
+
+      <div id="botoesPagamento" class="grid-tiles-2col oculto"></div>
+    </div>
+
+    <div class="card" style="flex:0 0 auto;width:225px;">
+      <h2 style="text-align:center;">Relógio e Nível</h2>
+
+      <div class="grid-tiles-2col">
+        <button id="btnRelogioPlayPause" class="btn-tile btn-green disabled" onclick="alternarRelogio()">
+          <span class="btn-tile-icone" id="relogioPlayPauseIcone"></span>
+          <span id="relogioPlayPauseTexto">Iniciar</span>
+        </button>
+
+        <button id="btnIniciarIntervalo" class="btn-tile btn-red disabled" onclick="alternarIntervalo()">
+          <span class="btn-tile-icone" id="intervaloIcone"></span>
+          <span id="intervaloTexto">Intervalo</span>
+        </button>
+
+        <button id="btnEditarRelogio" class="btn-tile btn-gray disabled" onclick="abrirModalEditarRelogio()">
+          <span class="btn-tile-icone" id="editarRelogioIcone"></span>
+          <span>Editar Relógio</span>
+        </button>
       </div>
     </div>
   </div>
@@ -120,14 +135,6 @@
         <tbody id="tabelaPremiacao"></tbody>
       </table>
     </div>
-
-    <div class="card oculto" id="painelRegistrarPagamento" style="flex:1;min-width:220px;">
-      <h2>Registrar Pagamento</h2>
-
-      <p id="semTipoPagamento" style="color:#666;">Nenhum torneio em andamento.</p>
-
-      <div id="botoesPagamento" class="oculto" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
-    </div>
   </div>
 
   <div class="card">
@@ -151,10 +158,6 @@
   <div class="card">
     <div class="topbar">
       <h2>Movimentações em Aberto</h2>
-
-      <button id="btnDesfazerTorneio" class="btn-gray disabled" onclick="abrirModalDesfazer()">
-        Desfazer
-      </button>
     </div>
 
     <select id="filtroModalidadeAbertoTorneio" onchange="atualizarMovimentacoesAbertas()" style="max-width:260px;">
@@ -691,6 +694,30 @@
 
   console.log('Supabase conectado');
 
+  const ICONES_SVG = {
+    play: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+    coffee: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>',
+    stop: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>',
+    gear: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+    money: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+    flag: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+    register: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H8a2 2 0 0 0-2 2v16l6-3 6 3V5a2 2 0 0 0-2-2z"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    undo: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>'
+  };
+
+  function inicializarIconesEstaticos() {
+
+    document.getElementById('editarRelogioIcone').innerHTML = ICONES_SVG.clock;
+    document.getElementById('configTorneioIcone').innerHTML = ICONES_SVG.gear;
+    document.getElementById('ajustarPremiacaoIcone').innerHTML = ICONES_SVG.money;
+    document.getElementById('encerrarTorneioIcone').innerHTML = ICONES_SVG.flag;
+    document.getElementById('desfazerTorneioIcone').innerHTML = ICONES_SVG.undo;
+  }
+
   const TIPOS_REGISTRO_FIXOS = [
     { chave: 'buy-in', nome: 'Buy-in' },
     { chave: 'rebuy', nome: 'Rebuy' },
@@ -857,13 +884,13 @@
     const btnIniciarIntervalo = document.getElementById('btnIniciarIntervalo');
     const btnEditar = document.getElementById('btnEditarRelogio');
 
-    document.getElementById('relogioPlayPauseIcone').textContent = torneioAtual.relogio_rodando ? '⏸️' : '▶️';
+    document.getElementById('relogioPlayPauseIcone').innerHTML = torneioAtual.relogio_rodando ? ICONES_SVG.pause : ICONES_SVG.play;
     document.getElementById('relogioPlayPauseTexto').textContent = torneioAtual.relogio_rodando ? 'Pausar' : 'Iniciar';
 
     btnPlayPause.className = 'btn-tile ' + (torneioAtual.relogio_rodando ? 'btn-gray' : 'btn-green')
       + (adminLiberado && !estaEncerrado ? '' : ' disabled');
 
-    document.getElementById('intervaloIcone').textContent = emIntervalo ? '⏹️' : '☕';
+    document.getElementById('intervaloIcone').innerHTML = emIntervalo ? ICONES_SVG.stop : ICONES_SVG.coffee;
     document.getElementById('intervaloTexto').textContent = emIntervalo ? 'Encerrar' : 'Intervalo';
 
     btnIniciarIntervalo.className = 'btn-tile ' + (emIntervalo ? 'btn-gray' : 'btn-red')
@@ -1412,8 +1439,6 @@
     painelPagamento.classList.remove('oculto');
     painelPremiacao.classList.remove('oculto');
 
-    document.getElementById('nomeTorneioAtual').textContent = torneioAtual.nome;
-
     const estaEncerrado = torneioAtual.status === 'encerrado';
 
     const btnConfig = document.getElementById('btnConfigTorneioAtual');
@@ -1896,15 +1921,15 @@
     }
 
     if (registros.length > 0) {
-      criarBotaoTilePagamento('📝', 'Registro', () => abrirModalSelecionarJogador('REGISTRO'));
+      criarBotaoTilePagamento(ICONES_SVG.register, 'Registro', () => abrirModalSelecionarJogador('REGISTRO'));
     }
 
     rebuys.forEach(v => {
-      criarBotaoTilePagamento('🔄', v.tipo, () => abrirModalSelecionarJogador(v));
+      criarBotaoTilePagamento(ICONES_SVG.refresh, v.tipo, () => abrirModalSelecionarJogador(v));
     });
 
     outros.forEach(v => {
-      criarBotaoTilePagamento('➕', v.tipo, () => abrirModalSelecionarJogador(v));
+      criarBotaoTilePagamento(ICONES_SVG.plus, v.tipo, () => abrirModalSelecionarJogador(v));
     });
   }
 
@@ -3276,6 +3301,7 @@
 
   carregarDados().then(tratarHashInicial);
   iniciarTickerRelogio();
+  inicializarIconesEstaticos();
 </script>
 
 </body>
