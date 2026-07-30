@@ -663,6 +663,11 @@ tbody tr:hover {
   justify-content: center;
 }
 
+.card-botoes-fixo {
+  flex: 0 0 auto;
+  width: 225px;
+}
+
 @media (max-width: 768px) {
 
   .relatorio-desktop {
@@ -673,12 +678,36 @@ tbody tr:hover {
     display: block;
   }
 
+  .card-botoes-fixo {
+    flex: 1 1 100%;
+  }
+
+  .grid-tiles-2col {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .btn-tile {
+    width: auto;
+    height: auto;
+    aspect-ratio: 1;
+    font-size: 8px;
+    padding: 4px;
+    gap: 2px;
+  }
+
+  .btn-tile .btn-tile-icone svg {
+    width: 16px;
+    height: 16px;
+  }
+
   body {
     padding: 12px;
   }
 
   .card {
     padding: 16px;
+    width: 100%;
   }
 
   h1 {
