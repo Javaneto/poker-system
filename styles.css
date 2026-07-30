@@ -73,15 +73,18 @@ button {
   font-family: inherit;
   font-size: 14px;
   box-shadow: 0 1px 2px rgba(16,24,40,0.08);
-  transition: opacity 0.15s ease, transform 0.05s ease;
+  transition: opacity 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
 }
 
 button:hover {
   opacity: 0.92;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(16,24,40,0.16);
 }
 
 button:active {
-  transform: scale(0.98);
+  transform: scale(0.98) translateY(0);
+  box-shadow: 0 1px 2px rgba(16,24,40,0.08);
 }
 
 a.btn-gray {
@@ -609,16 +612,24 @@ tbody tr:hover {
 
 .btn-tile:hover {
   opacity: 1;
-  box-shadow: 0 5px 12px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.2);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.25);
 }
 
 .btn-tile:active {
-  transform: scale(0.96);
+  transform: scale(0.95) translateY(0);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .btn-tile .btn-tile-icone {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
+}
+
+.btn-tile .btn-tile-icone svg {
+  display: block;
 }
 
 .btn-tile.btn-green {
@@ -643,6 +654,12 @@ tbody tr:hover {
 
 .btn-tile.disabled {
   opacity: 0.4;
+}
+
+.grid-tiles-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 70px);
+  gap: 10px;
 }
 
 @media (max-width: 768px) {
