@@ -720,6 +720,7 @@
 
   const TIPOS_REGISTRO_FIXOS = [
     { chave: 'buy-in', nome: 'Buy-in' },
+    { chave: 'free', nome: 'Free' },
     { chave: 'rebuy', nome: 'Rebuy' },
     { chave: 'duplo', nome: 'Duplo' },
     { chave: 'triplo', nome: 'Triplo' },
@@ -727,7 +728,7 @@
     { chave: 'bounty', nome: 'Bounty (K.O.)' }
   ];
 
-  const NOMES_BUYIN = ['Buy-in', 'Buy-in Duplo', 'Buy-in Triplo'];
+  const NOMES_BUYIN = ['Buy-in', 'Free', 'Buy-in Duplo', 'Buy-in Triplo'];
   const NOMES_REBUY = ['Rebuy', 'Rebuy Duplo', 'Rebuy Triplo'];
 
   let jogadores = [];
@@ -1870,8 +1871,11 @@
   function variantesRegistro() {
 
     return valoresTorneio
-      .filter(v => ['Buy-in', 'Duplo', 'Triplo'].includes(v.tipo))
-      .map(v => ({ ...v, tipo: v.tipo === 'Buy-in' ? 'Buy-in' : `Buy-in ${v.tipo}` }));
+      .filter(v => ['Buy-in', 'Free', 'Duplo', 'Triplo'].includes(v.tipo))
+      .map(v => {
+        if (v.tipo === 'Buy-in' || v.tipo === 'Free') return { ...v };
+        return { ...v, tipo: `Buy-in ${v.tipo}` };
+      });
   }
 
   function variantesRebuy() {
