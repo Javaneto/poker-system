@@ -160,11 +160,17 @@
       <h2>Movimentações em Aberto</h2>
     </div>
 
-    <select id="filtroModalidadeAbertoTorneio" onchange="atualizarMovimentacoesAbertas()" style="max-width:260px;">
-      <option value="">Todas as modalidades</option>
-    </select>
+    <div class="flex" style="align-items:flex-start;">
+      <div class="pesquisa-wrapper" style="flex:1;margin-bottom:0;">
+        <input type="text" id="pesquisaJogadorAbertoTorneio" placeholder="Pesquisar jogador" oninput="atualizarMovimentacoesAbertas()">
+      </div>
 
-    <table>
+      <select id="filtroModalidadeAbertoTorneio" onchange="atualizarMovimentacoesAbertas()" style="max-width:260px;margin-bottom:0;">
+        <option value="">Todas as modalidades</option>
+      </select>
+    </div>
+
+    <table class="relatorio-desktop">
       <thead>
         <tr>
           <th>Jogador</th>
@@ -177,6 +183,8 @@
 
       <tbody id="tabelaMovimentacoesAbertas"></tbody>
     </table>
+
+    <div id="tabelaMovimentacoesAbertasMobile" class="relatorio-mobile"></div>
   </div>
 
 </div>
@@ -221,11 +229,46 @@
   <div class="modal-box" style="max-width:560px;">
     <h2 id="historicoJogadorNome">Histórico</h2>
 
-    <div id="listaHistoricoJogador" style="max-height:400px;overflow-y:auto;"></div>
+    <div class="topbar" style="margin-bottom:16px;">
+      <div>
+        <p style="color:#666;margin-bottom:4px;">Resultado</p>
+        <p id="historicoJogadorResultado" style="font-size:22px;margin:0;">R$ 0,00</p>
+      </div>
 
-    <div class="modal-acoes" style="margin-top:16px;">
+      <button id="btnPagarHistorico" class="btn-green" onclick="abrirModalPagarHistorico()">
+        Pagar
+      </button>
+    </div>
+
+    <div id="listaHistoricoJogador" style="max-height:340px;overflow-y:auto;"></div>
+
+    <div class="modal-acoes" style="margin-top:16px;justify-content:space-between;">
       <button class="btn-gray" onclick="fecharModalHistoricoJogador()">
         Fechar
+      </button>
+
+      <button id="btnFinalizarSessao" class="btn-red" onclick="finalizarSessaoJogador()">
+        Finalizar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalPagarHistorico" class="modal-overlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2>Registrar Pagamento</h2>
+
+    <p id="pagarHistoricoResumo" class="modal-resumo"></p>
+
+    <input type="number" id="valorPagarHistorico" placeholder="Valor" min="0">
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalPagarHistorico()">
+        Cancelar
+      </button>
+
+      <button id="btnConfirmarPagarHistorico" class="btn-green" onclick="confirmarPagarHistorico()">
+        Confirmar
       </button>
     </div>
   </div>
@@ -1184,6 +1227,40 @@
     }[c]));
   }
 
+  let historicoJogadorAtual = null;
+
+  function calcularResultado(movs) {
+
+    let entrada = 0;
+    let entradaParaSaldo = 0;
+    let saida = 0;
+    let qtdEntradas = 0;
+    let temPagamento = false;
+
+    movs.forEach(mov => {
+
+      if (mov.tipo === 'Entrada') {
+        entrada += Number(mov.valor);
+        qtdEntradas++;
+
+        if (!mov.pago) {
+          entradaParaSaldo += Number(mov.valor);
+        }
+      }
+
+      if (mov.tipo === 'Saída') {
+        saida += Number(mov.valor);
+      }
+
+      if (mov.tipo === 'Pagamento') {
+        entradaParaSaldo -= Number(mov.valor);
+        temPagamento = true;
+      }
+    });
+
+    return { entrada, entradaParaSaldo, saida, qtdEntradas, temPagamento, resultado: saida - entradaParaSaldo };
+  }
+
   let _resolveAlerta = null;
   let _resolveConfirm = null;
 
@@ -1235,61 +1312,191 @@
 
     const ids = idsCsv.split(',').filter(Boolean).map(Number);
 
-    const movs = movimentacoes
-      .filter(mov => ids.includes(mov.id))
-      .sort((a, b) => new Date(b.data) - new Date(a.data));
+    historicoJogadorAtual = { nome, ids };
 
     document.getElementById('historicoJogadorNome').textContent = `Histórico — ${nome}`;
 
-    const lista = document.getElementById('listaHistoricoJogador');
-    lista.innerHTML = '';
-
-    if (movs.length === 0) {
-      lista.innerHTML = '<p style="color:#666;">Nenhuma movimentação em aberto.</p>';
-    } else {
-
-      movs.forEach(mov => {
-
-        const dataFormatada = new Date(mov.data).toLocaleString('pt-BR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-
-        const div = document.createElement('div');
-
-        div.className = 'linha-desfazer';
-
-        div.innerHTML = `
-          <div class="linha-desfazer-info">
-            <strong>${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')}</strong>
-            R$ ${Number(mov.valor).toFixed(2)}<br>
-            <span style="color:#999;">${dataFormatada}</span>
-          </div>
-        `;
-
-        lista.appendChild(div);
-      });
-    }
+    renderizarHistoricoJogador();
 
     document.getElementById('modalHistoricoJogador').classList.add('aberto');
   }
 
   function fecharModalHistoricoJogador() {
 
+    historicoJogadorAtual = null;
+
     document.getElementById('modalHistoricoJogador').classList.remove('aberto');
   }
 
-  document.getElementById('tabelaMovimentacoesAbertas').addEventListener('click', function(e) {
+  function renderizarHistoricoJogador() {
+
+    if (!historicoJogadorAtual) return;
+
+    const movs = movimentacoes
+      .filter(mov => historicoJogadorAtual.ids.includes(mov.id))
+      .sort((a, b) => new Date(b.data) - new Date(a.data));
+
+    const { resultado: saldo } = calcularResultado(movs);
+    const resultadoEl = document.getElementById('historicoJogadorResultado');
+
+    resultadoEl.textContent = `${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}`;
+    resultadoEl.className = saldo >= 0 ? 'positivo' : 'negativo';
+
+    document.getElementById('btnPagarHistorico').classList.toggle('disabled', !adminLiberado);
+
+    const lista = document.getElementById('listaHistoricoJogador');
+    lista.innerHTML = '';
+
+    if (movs.length === 0) {
+      lista.innerHTML = '<p style="color:#666;">Nenhuma movimentação em aberto.</p>';
+      return;
+    }
+
+    movs.forEach(mov => {
+
+      const dataFormatada = new Date(mov.data).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      const div = document.createElement('div');
+
+      div.className = 'linha-desfazer';
+
+      div.innerHTML = `
+        <div class="linha-desfazer-info">
+          <strong>${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')}</strong>
+          <span style="color:#999;">${dataFormatada}</span>
+        </div>
+        <div class="linha-desfazer-valor">
+          <strong>R$ ${Number(mov.valor).toFixed(2)}</strong>
+        </div>
+      `;
+
+      lista.appendChild(div);
+    });
+  }
+
+  function abrirModalPagarHistorico() {
+
+    if (!adminLiberado || !historicoJogadorAtual) return;
+
+    document.getElementById('pagarHistoricoResumo').textContent = `Jogador: ${historicoJogadorAtual.nome}`;
+    document.getElementById('valorPagarHistorico').value = '';
+
+    document.getElementById('modalPagarHistorico').classList.add('aberto');
+  }
+
+  function fecharModalPagarHistorico() {
+
+    document.getElementById('modalPagarHistorico').classList.remove('aberto');
+  }
+
+  async function confirmarPagarHistorico() {
+
+    if (!adminLiberado || !historicoJogadorAtual) return;
+
+    const valor = parseFloat(document.getElementById('valorPagarHistorico').value);
+
+    if (isNaN(valor) || valor <= 0) {
+      await mostrarAlerta('Informe um valor válido');
+      return;
+    }
+
+    const jogador = jogadores.find(j => j.nome === historicoJogadorAtual.nome);
+
+    if (!jogador) {
+      await mostrarAlerta('Jogador não encontrado');
+      return;
+    }
+
+    const btn = document.getElementById('btnConfirmarPagarHistorico');
+    btn.classList.add('disabled');
+
+    const { data: novaMovimentacao, error } = await client
+      .from('movimentacoes')
+      .insert([
+        {
+          jogador: jogador.nome,
+          tipo: 'Pagamento',
+          valor,
+          modalidade: 'Cash',
+          pago: false,
+          mesa_id: mesaAtualIdCash,
+          data: new Date().toISOString(),
+          cpf: jogador.cpf,
+          telefone: jogador.telefone
+        }
+      ])
+      .select()
+      .single();
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      await mostrarAlerta('Erro ao registrar pagamento');
+      console.error(error);
+      return;
+    }
+
+    console.log('Pagamento registrado:', jogador.nome, valor);
+
+    if (novaMovimentacao) {
+      historicoJogadorAtual.ids.push(novaMovimentacao.id);
+    }
+
+    fecharModalPagarHistorico();
+
+    await carregarDados();
+
+    renderizarHistoricoJogador();
+  }
+
+  async function finalizarSessaoJogador() {
+
+    if (!adminLiberado || !historicoJogadorAtual) return;
+
+    if (historicoJogadorAtual.ids.length === 0) return;
+
+    if (!await mostrarConfirm(`Finalizar a sessão de ${historicoJogadorAtual.nome}? As movimentações saem de "Movimentações em Aberto" e passam a aparecer agrupadas no histórico (com o detalhe de cada uma preservado).`)) return;
+
+    const btn = document.getElementById('btnFinalizarSessao');
+    btn.classList.add('disabled');
+
+    const { error } = await client
+      .from('movimentacoes')
+      .update({ sessao_finalizada_em: new Date().toISOString() })
+      .in('id', historicoJogadorAtual.ids);
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      await mostrarAlerta('Erro ao finalizar sessão');
+      console.error(error);
+      return;
+    }
+
+    console.log('Sessão finalizada:', historicoJogadorAtual.nome);
+
+    fecharModalHistoricoJogador();
+
+    await carregarDados();
+  }
+
+  function tratarCliqueJogadorAberto(e) {
 
     const el = e.target.closest('.jogador-clicavel');
 
     if (!el) return;
 
     abrirModalHistoricoJogador(el.dataset.nome, el.dataset.ids);
-  });
+  }
+
+  document.getElementById('tabelaMovimentacoesAbertas').addEventListener('click', tratarCliqueJogadorAberto);
+  document.getElementById('tabelaMovimentacoesAbertasMobile').addEventListener('click', tratarCliqueJogadorAberto);
 
   client.auth.onAuthStateChange((event, session) => {
 
@@ -1940,9 +2147,11 @@
   function atualizarMovimentacoesAbertas() {
 
     const tabela = document.getElementById('tabelaMovimentacoesAbertas');
+    const tabelaMobile = document.getElementById('tabelaMovimentacoesAbertasMobile');
     const filtroSelect = document.getElementById('filtroModalidadeAbertoTorneio');
 
     tabela.innerHTML = '';
+    tabelaMobile.innerHTML = '';
 
     const movimentacoesAbertas = movimentacoes.filter(
       mov => Number(mov.mesa_id || 1) === Number(mesaAtualIdCash) && !mov.pago && !mov.sessao_finalizada_em
@@ -1963,7 +2172,13 @@
       ? movimentacoesAbertas.filter(mov => mov.modalidade === filtroSelect.value)
       : movimentacoesAbertas;
 
-    jogadores.forEach(jogador => {
+    const termoPesquisaAberto = document.getElementById('pesquisaJogadorAbertoTorneio').value.trim().toLowerCase();
+
+    const jogadoresFiltrados = termoPesquisaAberto
+      ? jogadores.filter(j => j.nome.toLowerCase().includes(termoPesquisaAberto))
+      : jogadores;
+
+    jogadoresFiltrados.forEach(jogador => {
 
       const movsDoJogador = movimentacoesFiltradas.filter(mov => mov.jogador === jogador.nome);
 
@@ -1988,6 +2203,8 @@
         const saldo = saida - entrada;
         const rebuys = Math.max(qtdEntradas - 1, 0);
         const idsHistorico = movsDoJogador.map(mov => mov.id).join(',');
+        const classeSaldo = saldo >= 0 ? 'positivo' : 'negativo';
+        const sinalSaldo = saldo >= 0 ? '+' : '-';
 
         tabela.innerHTML += `
           <tr>
@@ -1995,10 +2212,22 @@
             <td>R$ ${entrada.toFixed(2)}</td>
             <td>R$ ${saida.toFixed(2)}</td>
             <td>${rebuys}</td>
-            <td class="${saldo >= 0 ? 'positivo' : 'negativo'}">
-              ${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}
+            <td class="${classeSaldo}">
+              ${sinalSaldo} R$ ${Math.abs(saldo).toFixed(2)}
             </td>
           </tr>
+        `;
+
+        tabelaMobile.innerHTML += `
+          <div class="linha-desfazer">
+            <div class="linha-desfazer-info">
+              <strong class="jogador-clicavel" data-ids="${idsHistorico}" data-nome="${escapeHtml(jogador.nome)}">${escapeHtml(jogador.nome)}</strong>
+              Entrou R$ ${entrada.toFixed(2)} · Saiu R$ ${saida.toFixed(2)} · Rebuys ${rebuys}
+            </div>
+            <div class="linha-desfazer-valor">
+              <strong class="${classeSaldo}">${sinalSaldo} R$ ${Math.abs(saldo).toFixed(2)}</strong>
+            </div>
+          </div>
         `;
       }
     });
@@ -2178,8 +2407,10 @@
 
     const termo = pesquisa.trim().toLowerCase();
 
+    const ehRegistro = pagamentoTipoSelecionado === 'REGISTRO';
+
     const restringirARegistrados = pagamentoTipoSelecionado
-      && pagamentoTipoSelecionado !== 'REGISTRO'
+      && !ehRegistro
       && (pagamentoTipoSelecionado.tipo === 'Add-on' || NOMES_REBUY.includes(pagamentoTipoSelecionado.tipo));
 
     const nomesRegistrados = restringirARegistrados
@@ -2190,11 +2421,22 @@
 
     if (!termo) {
 
-      const movimentacoesAbertas = movimentacoes.filter(
-        mov => Number(mov.mesa_id || 1) === Number(mesaAtualIdCash) && !mov.pago && !mov.sessao_finalizada_em
-      );
+      if (ehRegistro) {
 
-      nomesParaMostrar = Array.from(new Set(movimentacoesAbertas.map(mov => mov.jogador))).sort();
+        nomesParaMostrar = [];
+
+      } else if (restringirARegistrados) {
+
+        nomesParaMostrar = Array.from(nomesRegistrados).sort();
+
+      } else {
+
+        const movimentacoesAbertas = movimentacoes.filter(
+          mov => Number(mov.mesa_id || 1) === Number(mesaAtualIdCash) && !mov.pago && !mov.sessao_finalizada_em
+        );
+
+        nomesParaMostrar = Array.from(new Set(movimentacoesAbertas.map(mov => mov.jogador))).sort();
+      }
 
     } else {
 
@@ -2202,17 +2444,19 @@
         .map(j => j.nome)
         .filter(nome => nome.toLowerCase().includes(termo))
         .sort((a, b) => a.localeCompare(b));
-    }
 
-    if (restringirARegistrados) {
-      nomesParaMostrar = nomesParaMostrar.filter(nome => nomesRegistrados.has(nome));
+      if (restringirARegistrados) {
+        nomesParaMostrar = nomesParaMostrar.filter(nome => nomesRegistrados.has(nome));
+      }
     }
 
     if (nomesParaMostrar.length === 0) {
       lista.innerHTML = `<p style="color:#666;padding:8px 0;">${
-        restringirARegistrados
-          ? 'Nenhum jogador registrado neste torneio ainda.'
-          : (termo ? 'Nenhum jogador encontrado.' : 'Nenhum jogador em aberto no momento. Pesquise para encontrar um jogador.')
+        ehRegistro
+          ? (termo ? 'Nenhum jogador encontrado.' : 'Pesquise o nome do jogador para registrar.')
+          : restringirARegistrados
+            ? 'Nenhum jogador registrado neste torneio ainda.'
+            : (termo ? 'Nenhum jogador encontrado.' : 'Nenhum jogador em aberto no momento. Pesquise para encontrar um jogador.')
       }</p>`;
       return;
     }
@@ -3219,6 +3463,7 @@
     fecharMenu();
     fecharModalLogin();
     fecharModalHistoricoJogador();
+    fecharModalPagarHistorico();
     fecharModalTorneios();
     fecharModalNovoTorneio();
     fecharModalEstruturas();
@@ -3268,6 +3513,7 @@
     document.getElementById('btnEncerrarTorneio').classList.add('disabled');
 
     fecharModalLogin();
+    fecharModalPagarHistorico();
     fecharModalNovoTorneio();
     fecharModalEstruturas();
     fecharModalTiposPagamento();
