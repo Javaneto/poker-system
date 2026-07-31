@@ -68,10 +68,6 @@
         <button id="btnDesfazer" class="btn-gray disabled" onclick="abrirModalDesfazer()">
           Desfazer
         </button>
-
-        <button id="btnZerar" class="btn-red disabled" onclick="zerarMesa()">
-          Zerar Mesa
-        </button>
       </div>
     </div>
 
@@ -1949,7 +1945,6 @@
 
     document.getElementById('btnEntrada').classList.remove('disabled');
     document.getElementById('btnSaida').classList.remove('disabled');
-    document.getElementById('btnZerar').classList.remove('disabled');
 
     renderizarListaTorneios();
   }
@@ -1966,7 +1961,6 @@
 
     document.getElementById('btnEntrada').classList.add('disabled');
     document.getElementById('btnSaida').classList.add('disabled');
-    document.getElementById('btnZerar').classList.add('disabled');
 
     fecharModalLogin();
     fecharModalCadastro();
@@ -2080,36 +2074,6 @@
     console.log('Novo limite:', limiteRelatorio);
 
     atualizarTela();
-  }
-
-  async function zerarMesa() {
-
-    console.log('Zerando mesa');
-
-    if (!adminLiberado) return;
-
-    if (!await mostrarConfirm('Deseja realmente zerar a mesa?')) return;
-
-    const novoMesaId = Number(mesaAtualId) + 1;
-
-    const { error } = await client
-      .from('configuracoes')
-      .update({
-        mesa_atual_id: novoMesaId
-      })
-      .eq('id', 1);
-
-    if (error) {
-      console.error(error);
-      await mostrarAlerta('Erro ao zerar mesa');
-      return;
-    }
-
-    mesaAtualId = novoMesaId;
-
-    console.log('Nova mesa atual:', mesaAtualId);
-
-    carregarDados();
   }
 
   async function tratarHashInicial() {
