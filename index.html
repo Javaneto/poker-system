@@ -418,7 +418,6 @@
   let movimentacoes = [];
   let adminLiberado = false;
   let limiteRelatorio = 10;
-  let mesaAtualId = 1;
   let torneioAtualId = null;
   let todosTorneios = [];
   let todosValoresTorneios = [];
@@ -969,7 +968,6 @@
           valor,
           modalidade: 'Cash',
           pago: false,
-          mesa_id: mesaAtualId,
           data: new Date().toISOString(),
           cpf: jogador.cpf,
           telefone: jogador.telefone
@@ -1034,7 +1032,6 @@
     jogadores.sort((a, b) => a.nome.localeCompare(b.nome));
     movimentacoes = movimentacoesDB || [];
 
-    mesaAtualId = configuracaoDB?.mesa_atual_id || 1;
     torneioAtualId = configuracaoDB?.torneio_atual_id || null;
 
     const { data: torneiosDB } = await client
@@ -1079,7 +1076,7 @@
     const filtroSelect = document.getElementById('filtroModalidadeAberto');
 
     const movimentacoesAbertas = movimentacoes.filter(
-      mov => Number(mov.mesa_id || 1) === Number(mesaAtualId) && !mov.sessao_finalizada_em
+      mov => !mov.sessao_finalizada_em
     );
 
     const modalidadeAtualFiltro = filtroSelect.value;
@@ -1617,7 +1614,6 @@
           modalidade: 'Cash',
           pago,
           data: new Date().toISOString(),
-          mesa_id: mesaAtualId,
           cpf: jogador.cpf,
           telefone: jogador.telefone
         }
@@ -1705,7 +1701,6 @@
           valor,
           modalidade,
           data: new Date().toISOString(),
-          mesa_id: mesaAtualId,
           cpf: jogador.cpf,
           telefone: jogador.telefone
         }
@@ -1976,7 +1971,7 @@
   function obterMovimentacoesAbertasMesa() {
 
     return movimentacoes
-      .filter(mov => Number(mov.mesa_id || 1) === Number(mesaAtualId) && !mov.sessao_finalizada_em)
+      .filter(mov => !mov.sessao_finalizada_em)
       .sort((a, b) => b.id - a.id);
   }
 
