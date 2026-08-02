@@ -1200,7 +1200,6 @@
     await carregarDados();
   }
 
-  let mesaAtualIdCash = 1;
   let adminLiberado = false;
 
   function abrirMenu() {
@@ -1425,7 +1424,6 @@
           valor,
           modalidade: 'Cash',
           pago: false,
-          mesa_id: mesaAtualIdCash,
           data: new Date().toISOString(),
           cpf: jogador.cpf,
           telefone: jogador.telefone
@@ -1549,7 +1547,6 @@
       .eq('id', 1)
       .single();
 
-    mesaAtualIdCash = configuracaoDB?.mesa_atual_id || 1;
     tiposRegistroAtivos = configuracaoDB?.tipos_registro_ativos || TIPOS_REGISTRO_FIXOS.map(t => t.chave);
 
     const { data: movimentacoesTodasDB } = await client
@@ -2154,7 +2151,7 @@
     tabelaMobile.innerHTML = '';
 
     const movimentacoesAbertas = movimentacoes.filter(
-      mov => Number(mov.mesa_id || 1) === Number(mesaAtualIdCash) && !mov.pago && !mov.sessao_finalizada_em
+      mov => !mov.pago && !mov.sessao_finalizada_em
     );
 
     const modalidadeAtualFiltro = filtroSelect.value;
@@ -2277,7 +2274,7 @@
     if (!torneioAtual) return [];
 
     return movimentacoes
-      .filter(mov => Number(mov.mesa_id || 1) === Number(mesaAtualIdCash) && !mov.pago && !mov.sessao_finalizada_em && mov.torneio_id === torneioAtual.id)
+      .filter(mov => !mov.pago && !mov.sessao_finalizada_em && mov.torneio_id === torneioAtual.id)
       .sort((a, b) => b.id - a.id);
   }
 
@@ -2432,7 +2429,7 @@
       } else {
 
         const movimentacoesAbertas = movimentacoes.filter(
-          mov => Number(mov.mesa_id || 1) === Number(mesaAtualIdCash) && !mov.pago && !mov.sessao_finalizada_em
+          mov => !mov.pago && !mov.sessao_finalizada_em
         );
 
         nomesParaMostrar = Array.from(new Set(movimentacoesAbertas.map(mov => mov.jogador))).sort();
@@ -3344,7 +3341,6 @@
           torneio_id: torneioAtual.id,
           valor_prize: valorPrize,
           valor_rake: valorTipo.valor_rake,
-          mesa_id: mesaAtualIdCash,
           pago: false,
           data: new Date().toISOString(),
           cpf: jogador.cpf,
