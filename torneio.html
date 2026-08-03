@@ -1613,6 +1613,21 @@
     atualizarTela();
   }
 
+  function atualizarModaisAbertosSeNecessario() {
+
+    if (document.getElementById('modalHistoricoJogador').classList.contains('aberto')) {
+      renderizarHistoricoJogador();
+    }
+
+    if (document.getElementById('modalSelecionarJogador').classList.contains('aberto')) {
+      filtrarJogadoresModal();
+    }
+
+    if (document.getElementById('modalDesfazer').classList.contains('aberto')) {
+      renderizarListaDesfazer();
+    }
+  }
+
   function atualizarTela() {
 
     console.log('Atualizando tela do torneio');
@@ -1635,6 +1650,7 @@
       atualizarBotoesPagamento();
       atualizarMovimentacoesAbertas();
       renderizarTabelaJogadoresTorneio();
+      atualizarModaisAbertosSeNecessario();
 
       return;
     }
@@ -1674,6 +1690,7 @@
     atualizarBotoesPagamento();
     atualizarMovimentacoesAbertas();
     renderizarTabelaJogadoresTorneio();
+    atualizarModaisAbertosSeNecessario();
   }
 
   function renderizarTabelaPremiacao(totalPrize) {
