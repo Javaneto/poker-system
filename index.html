@@ -1211,6 +1211,19 @@
         </tr>
       `;
     });
+
+    atualizarModaisAbertosSeNecessario();
+  }
+
+  function atualizarModaisAbertosSeNecessario() {
+
+    if (document.getElementById('modalHistoricoJogador').classList.contains('aberto')) {
+      renderizarHistoricoJogador();
+    }
+
+    if (document.getElementById('modalDesfazer').classList.contains('aberto')) {
+      renderizarListaDesfazer();
+    }
   }
 
   function abrirModalCadastro() {
