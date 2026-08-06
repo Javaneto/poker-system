@@ -2196,25 +2196,10 @@
 
       const movsDoJogador = movimentacoesFiltradas.filter(mov => mov.jogador === jogador.nome);
 
-      let entrada = 0;
-      let saida = 0;
-      let qtdEntradas = 0;
+      const { entrada, saida, qtdEntradas, temPagamento, resultado: saldo } = calcularResultado(movsDoJogador);
 
-      movsDoJogador.forEach(mov => {
+      if (entrada > 0 || saida > 0 || temPagamento) {
 
-        if (mov.tipo === 'Entrada') {
-          entrada += Number(mov.valor);
-          qtdEntradas++;
-        }
-
-        if (mov.tipo === 'Saída') {
-          saida += Number(mov.valor);
-        }
-      });
-
-      if (entrada > 0 || saida > 0) {
-
-        const saldo = saida - entrada;
         const rebuys = Math.max(qtdEntradas - 1, 0);
         const idsHistorico = movsDoJogador.map(mov => mov.id).join(',');
         const classeSaldo = saldo >= 0 ? 'positivo' : 'negativo';
