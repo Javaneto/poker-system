@@ -1045,15 +1045,21 @@
     }
   }
 
+  let relogioAcaoEmAndamento = false;
+
   async function alternarRelogio() {
 
     if (!adminLiberado || !torneioAtual) return;
 
     if (torneioAtual.status === 'encerrado') return;
 
+    if (relogioAcaoEmAndamento) return;
+
     const niveis = obterNiveisTorneioAtual();
 
     if (niveis.length === 0) return;
+
+    relogioAcaoEmAndamento = true;
 
     let novosDados;
 
@@ -1074,14 +1080,21 @@
       };
     }
 
+    // Atualização otimista: reflete na tela imediatamente, sem esperar o carregarDados()
+    torneioAtual = { ...torneioAtual, ...novosDados };
+    atualizarRelogioTorneio();
+
     const { error } = await client
       .from('torneios')
       .update(novosDados)
       .eq('id', torneioAtual.id);
 
+    relogioAcaoEmAndamento = false;
+
     if (error) {
       await mostrarAlerta('Erro ao atualizar o relógio');
       console.error(error);
+      await carregarDados();
       return;
     }
 
@@ -1092,6 +1105,9 @@
 
     if (!torneioAtual) return;
 
+    if (relogioAcaoEmAndamento) return;
+
+    relogioAcaoEmAndamento = true;
     avancoNivelEmAndamento = true;
 
     const niveis = obterNiveisTorneioAtual();
@@ -1155,15 +1171,21 @@
       };
     }
 
+    // Atualização otimista: reflete na tela imediatamente, sem esperar o carregarDados()
+    torneioAtual = { ...torneioAtual, ...novosDados };
+    atualizarRelogioTorneio();
+
     const { error } = await client
       .from('torneios')
       .update(novosDados)
       .eq('id', torneioAtual.id);
 
     avancoNivelEmAndamento = false;
+    relogioAcaoEmAndamento = false;
 
     if (error) {
       console.error(error);
+      await carregarDados();
       return;
     }
 
@@ -1178,27 +1200,41 @@
 
     if (torneioAtual.relogio_em_intervalo) return;
 
+    if (relogioAcaoEmAndamento) return;
+
     const minutos = Number(torneioAtual.intervalo_manual_minutos) || 10;
 
     if (!await mostrarConfirm(`Iniciar um intervalo de ${minutos} minutos agora? O nível atual retoma de onde parou quando o intervalo terminar.`)) return;
 
+    if (relogioAcaoEmAndamento) return;
+
+    relogioAcaoEmAndamento = true;
+
     const restanteAtual = calcularSegundosRestantesClock();
+
+    const novosDados = {
+      relogio_em_intervalo: true,
+      relogio_intervalo_avanca_nivel: false,
+      relogio_segundos_pre_intervalo: restanteAtual,
+      relogio_segundos_restantes: minutos * 60,
+      relogio_iniciado_em: new Date().toISOString(),
+      relogio_rodando: true
+    };
+
+    torneioAtual = { ...torneioAtual, ...novosDados };
+    atualizarRelogioTorneio();
 
     const { error } = await client
       .from('torneios')
-      .update({
-        relogio_em_intervalo: true,
-        relogio_intervalo_avanca_nivel: false,
-        relogio_segundos_pre_intervalo: restanteAtual,
-        relogio_segundos_restantes: minutos * 60,
-        relogio_iniciado_em: new Date().toISOString(),
-        relogio_rodando: true
-      })
+      .update(novosDados)
       .eq('id', torneioAtual.id);
+
+    relogioAcaoEmAndamento = false;
 
     if (error) {
       await mostrarAlerta('Erro ao iniciar intervalo');
       console.error(error);
+      await carregarDados();
       return;
     }
 
