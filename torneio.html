@@ -842,6 +842,21 @@
     return Math.max(base - decorrido, 0);
   }
 
+  function calcularNovoTempoDecorridoAcumulado() {
+
+    if (!torneioAtual) return 0;
+
+    const acumulado = Number(torneioAtual.tempo_decorrido_segundos) || 0;
+
+    if (!torneioAtual.relogio_rodando || !torneioAtual.relogio_iniciado_em) {
+      return acumulado;
+    }
+
+    const decorridoDesdeInicio = Math.floor((Date.now() - new Date(torneioAtual.relogio_iniciado_em).getTime()) / 1000);
+
+    return acumulado + Math.max(decorridoDesdeInicio, 0);
+  }
+
   function formatarTempoRelogio(segundos) {
 
     const s = Math.max(Math.floor(segundos), 0);
@@ -913,9 +928,7 @@
 
     document.getElementById('statEntradas').textContent = entradas;
 
-    const segundosDecorridos = torneioAtual.criado_em
-      ? Math.floor((Date.now() - new Date(torneioAtual.criado_em).getTime()) / 1000)
-      : 0;
+    const segundosDecorridos = calcularNovoTempoDecorridoAcumulado();
 
     document.getElementById('statTempoDecorrido').textContent = formatarTempoDecorrido(segundosDecorridos);
 
@@ -934,7 +947,7 @@
 
     const { data, error } = await client
       .from('torneios')
-      .select('status, relogio_nivel_atual, relogio_segundos_restantes, relogio_iniciado_em, relogio_rodando, relogio_em_intervalo, relogio_intervalo_avanca_nivel, relogio_segundos_pre_intervalo')
+      .select('status, relogio_nivel_atual, relogio_segundos_restantes, relogio_iniciado_em, relogio_rodando, relogio_em_intervalo, relogio_intervalo_avanca_nivel, relogio_segundos_pre_intervalo, tempo_decorrido_segundos')
       .eq('id', idConsultado)
       .single();
 
@@ -1068,7 +1081,8 @@
       novosDados = {
         relogio_rodando: false,
         relogio_segundos_restantes: calcularSegundosRestantesClock(),
-        relogio_iniciado_em: null
+        relogio_iniciado_em: null,
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
       };
 
     } else {
@@ -1076,7 +1090,8 @@
       novosDados = {
         relogio_rodando: true,
         relogio_segundos_restantes: calcularSegundosRestantesClock(),
-        relogio_iniciado_em: new Date().toISOString()
+        relogio_iniciado_em: new Date().toISOString(),
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
       };
     }
 
@@ -1126,7 +1141,8 @@
         relogio_segundos_restantes: torneioAtual.relogio_segundos_pre_intervalo ?? ((nivelAtual?.duracao || 0) * 60),
         relogio_segundos_pre_intervalo: null,
         relogio_iniciado_em: new Date().toISOString(),
-        relogio_rodando: true
+        relogio_rodando: true,
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
       };
 
     } else if (emIntervalo) {
@@ -1142,7 +1158,8 @@
         relogio_segundos_pre_intervalo: null,
         relogio_segundos_restantes: (proximoNivel?.duracao || 0) * 60,
         relogio_iniciado_em: new Date().toISOString(),
-        relogio_rodando: true
+        relogio_rodando: true,
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
       };
 
     } else if (nivelAtual && Number(nivelAtual.pausa) > 0) {
@@ -1153,7 +1170,8 @@
         relogio_intervalo_avanca_nivel: true,
         relogio_segundos_restantes: Number(nivelAtual.pausa) * 60,
         relogio_iniciado_em: new Date().toISOString(),
-        relogio_rodando: true
+        relogio_rodando: true,
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
       };
 
     } else {
@@ -1167,7 +1185,8 @@
         relogio_em_intervalo: false,
         relogio_segundos_restantes: (proximoNivel?.duracao || 0) * 60,
         relogio_iniciado_em: new Date().toISOString(),
-        relogio_rodando: true
+        relogio_rodando: true,
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
       };
     }
 
@@ -1218,7 +1237,8 @@
       relogio_segundos_pre_intervalo: restanteAtual,
       relogio_segundos_restantes: minutos * 60,
       relogio_iniciado_em: new Date().toISOString(),
-      relogio_rodando: true
+      relogio_rodando: true,
+      tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
     };
 
     torneioAtual = { ...torneioAtual, ...novosDados };
@@ -1317,7 +1337,8 @@
         relogio_nivel_atual: indiceEscolhido,
         relogio_em_intervalo: false,
         relogio_segundos_restantes: Math.round(minutos * 60),
-        relogio_iniciado_em: torneioAtual.relogio_rodando ? new Date().toISOString() : null
+        relogio_iniciado_em: torneioAtual.relogio_rodando ? new Date().toISOString() : null,
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
       })
       .eq('id', torneioAtual.id);
 
