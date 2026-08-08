@@ -135,6 +135,27 @@
         <tbody id="tabelaPremiacao"></tbody>
       </table>
     </div>
+
+    <div class="card oculto" id="painelEstatisticasTorneio" style="flex:1;min-width:260px;">
+      <h3 style="margin-top:0;margin-bottom:12px;">Estatísticas</h3>
+
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <p style="color:#666;margin-bottom:2px;">Entradas (sem Add-on)</p>
+          <p id="statEntradas" style="font-size:22px;font-weight:bold;margin:0;">0</p>
+        </div>
+
+        <div>
+          <p style="color:#666;margin-bottom:2px;">Tempo Decorrido</p>
+          <p id="statTempoDecorrido" style="font-size:22px;font-weight:bold;margin:0;">00:00</p>
+        </div>
+
+        <div>
+          <p style="color:#666;margin-bottom:2px;">Próximo Intervalo em</p>
+          <p id="statProximoIntervalo" style="font-size:22px;font-weight:bold;margin:0;">-</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -830,6 +851,81 @@
     return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
   }
 
+  function formatarTempoDecorrido(segundos) {
+
+    const s = Math.max(Math.floor(segundos), 0);
+    const h = Math.floor(s / 3600);
+    const min = Math.floor((s % 3600) / 60);
+
+    return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+  }
+
+  function calcularSegundosAteProximoIntervalo() {
+
+    if (!torneioAtual) return null;
+
+    const niveis = obterNiveisTorneioAtual();
+
+    if (niveis.length === 0) return null;
+
+    const indiceAtual = Math.min(torneioAtual.relogio_nivel_atual || 0, niveis.length - 1);
+    const emIntervalo = !!torneioAtual.relogio_em_intervalo;
+
+    if (emIntervalo) return 0;
+
+    const restanteAtual = calcularSegundosRestantesClock();
+    const nivelAtual = niveis[indiceAtual];
+
+    if (Number(nivelAtual?.pausa) > 0) {
+      return restanteAtual;
+    }
+
+    let acumulado = restanteAtual;
+
+    for (let i = indiceAtual + 1; i < niveis.length; i++) {
+
+      if (Number(niveis[i].pausa) > 0) {
+        return acumulado;
+      }
+
+      acumulado += (niveis[i].duracao || 0) * 60;
+    }
+
+    return null;
+  }
+
+  function atualizarEstatisticasTorneio() {
+
+    const painel = document.getElementById('painelEstatisticasTorneio');
+
+    if (!painel) return;
+
+    if (!torneioAtual) {
+      painel.classList.add('oculto');
+      return;
+    }
+
+    painel.classList.remove('oculto');
+
+    const entradas = movimentacoesTorneio.filter(
+      m => m.tipo === 'Entrada' && m.tipo_registro !== 'Add-on'
+    ).length;
+
+    document.getElementById('statEntradas').textContent = entradas;
+
+    const segundosDecorridos = torneioAtual.criado_em
+      ? Math.floor((Date.now() - new Date(torneioAtual.criado_em).getTime()) / 1000)
+      : 0;
+
+    document.getElementById('statTempoDecorrido').textContent = formatarTempoDecorrido(segundosDecorridos);
+
+    const segundosProximoIntervalo = calcularSegundosAteProximoIntervalo();
+
+    document.getElementById('statProximoIntervalo').textContent = segundosProximoIntervalo === null
+      ? 'Nenhum programado'
+      : formatarTempoRelogio(segundosProximoIntervalo);
+  }
+
   async function sincronizarRelogioTorneio() {
 
     if (!torneioAtual) return;
@@ -866,6 +962,8 @@
   }
 
   function atualizarRelogioTorneio() {
+
+    atualizarEstatisticasTorneio();
 
     const painel = document.getElementById('relogioTorneio');
     const semEstrutura = document.getElementById('relogioSemEstrutura');
