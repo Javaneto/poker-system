@@ -330,6 +330,7 @@ a.btn-gray {
 .modal-resumo {
   color: #565c66;
   margin-bottom: 16px;
+  white-space: pre-line;
 }
 
 .modalidade-opcoes {
