@@ -3454,6 +3454,17 @@
       }
     }
 
+    if (valorTipo.tipo === 'Add-on') {
+
+      const totalPagoAntes = movimentacoesTorneio
+        .filter(m => m.jogador === jogador.nome && m.tipo === 'Entrada')
+        .reduce((soma, m) => soma + Number(m.valor || 0), 0);
+
+      const resultadoComEsteAddon = totalPagoAntes + Number(valorTipo.valor_total);
+
+      resumo += `\n\nTotal: R$ ${resultadoComEsteAddon.toFixed(2)}`;
+    }
+
     document.getElementById('modalPagamentoResumo').textContent = resumo;
 
     document.getElementById('modalPagamento').classList.add('aberto');
