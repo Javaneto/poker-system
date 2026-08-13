@@ -176,8 +176,8 @@
       Configurações de Torneio
     </a>
 
-    <button id="btnAdmin" class="btn-gray menu-item" onclick="toggleAdmin()">
-      Login
+    <button id="btnAdmin" class="btn-gray menu-item" onclick="sair()">
+      Sair
     </button>
   </div>
 </div>
@@ -349,25 +349,6 @@
   </div>
 </div>
 
-<div id="modalLogin" class="modal-overlay">
-  <div class="modal-box">
-    <h2>Login</h2>
-
-    <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="username">
-    <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
-
-    <div class="modal-acoes">
-      <button class="btn-gray" onclick="fecharModalLogin()">
-        Cancelar
-      </button>
-
-      <button id="btnConfirmarLogin" class="btn-blue" onclick="confirmarLogin()">
-        Entrar
-      </button>
-    </div>
-  </div>
-</div>
-
 <div id="modalAlerta" class="modal-overlay">
   <div class="modal-box" style="max-width:380px;">
     <h2>Aviso</h2>
@@ -423,24 +404,38 @@
   let todosValoresTorneios = [];
   let filtroRelatorioJogador = '';
 
-  const adminExpira = localStorage.getItem('adminExpira');
-
-  if (adminExpira) {
-    localStorage.removeItem('adminExpira');
-  }
-
   client.auth.onAuthStateChange((event, session) => {
 
     adminLiberado = !!session;
 
     console.log('Estado de autenticação ADM:', event, adminLiberado);
 
-    if (adminLiberado) {
-      liberarAcoes();
-    } else {
-      bloquearAcoes();
+    if (!adminLiberado) {
+      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
     }
   });
+
+  async function exigirSessaoOuRedirecionar() {
+
+    const { data } = await client.auth.getSession();
+
+    if (!data.session) {
+      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+      return false;
+    }
+
+    adminLiberado = true;
+    liberarAcoes();
+
+    return true;
+  }
+
+  async function sair() {
+
+    await client.auth.signOut();
+
+    window.location.href = 'login.html';
+  }
 
   let recarregarTimeout = null;
 
@@ -1837,84 +1832,6 @@
     janela.print();
   }
 
-  async function toggleAdmin() {
-
-    console.log('Alternando modo ADM');
-
-    if (adminLiberado) {
-
-      await client.auth.signOut();
-
-      console.log('ADM desativado');
-
-      return;
-    }
-
-    abrirModalLogin();
-  }
-
-  function abrirModalLogin() {
-
-    document.getElementById('loginEmail').value = '';
-    document.getElementById('loginSenha').value = '';
-
-    document.getElementById('modalLogin').classList.add('aberto');
-
-    document.getElementById('loginEmail').focus();
-  }
-
-  function fecharModalLogin() {
-
-    document.getElementById('modalLogin').classList.remove('aberto');
-  }
-
-  async function confirmarLogin() {
-
-    const email = document.getElementById('loginEmail').value.trim();
-    const senha = document.getElementById('loginSenha').value;
-
-    if (!email || !senha) {
-      await mostrarAlerta('Informe e-mail e senha');
-      return;
-    }
-
-    const btn = document.getElementById('btnConfirmarLogin');
-    btn.classList.add('disabled');
-
-    const { error } = await client.auth.signInWithPassword({
-      email,
-      password: senha
-    });
-
-    btn.classList.remove('disabled');
-
-    if (error) {
-      console.log('Falha no login ADM:', error.message);
-      await mostrarAlerta('E-mail ou senha incorretos');
-      return;
-    }
-
-    console.log('ADM liberado');
-
-    fecharModalLogin();
-  }
-
-  document.getElementById('loginEmail')
-    .addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('loginSenha').focus();
-      }
-    });
-
-  document.getElementById('loginSenha')
-    .addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        confirmarLogin();
-      }
-    });
-
   document.addEventListener('keydown', function(e) {
 
     if (e.key !== 'Escape') return;
@@ -1930,7 +1847,6 @@
     }
 
     fecharMenu();
-    fecharModalLogin();
     fecharModalDetalheHistorico();
     fecharModalPagarHistorico();
     fecharModalHistoricoJogador();
@@ -1970,7 +1886,6 @@
     document.getElementById('btnEntrada').classList.add('disabled');
     document.getElementById('btnSaida').classList.add('disabled');
 
-    fecharModalLogin();
     fecharModalCadastro();
     fecharModalConfirmacao();
     fecharModalConfirmacaoSaida();
@@ -2100,7 +2015,15 @@
     }
   }
 
-  carregarDados().then(tratarHashInicial);
+  (async function inicializar() {
+
+    const autenticado = await exigirSessaoOuRedirecionar();
+
+    if (!autenticado) return;
+
+    await carregarDados();
+    await tratarHashInicial();
+  })();
 </script>
 
 </body>
