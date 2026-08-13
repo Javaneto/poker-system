@@ -137,9 +137,14 @@
     </div>
 
     <div class="card oculto" id="painelEstatisticasTorneio" style="flex:1;min-width:260px;">
-      <h3 style="margin-top:0;margin-bottom:12px;">Estatísticas</h3>
+      <h3 style="margin-top:0;margin-bottom:12px;">Informações</h3>
 
       <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <p style="color:#666;margin-bottom:2px;">Jogadores Registrados</p>
+          <p id="statJogadoresRegistrados" style="font-size:22px;font-weight:bold;margin:0;">0</p>
+        </div>
+
         <div>
           <p style="color:#666;margin-bottom:2px;">Entradas (sem Add-on)</p>
           <p id="statEntradas" style="font-size:22px;font-weight:bold;margin:0;">0</p>
@@ -681,6 +686,10 @@
 
     <p id="modalPagamentoResumo" class="modal-resumo"></p>
 
+    <div id="campoValorPagarAddon" class="oculto">
+      <input type="number" id="valorPagarAddon" placeholder="Valor a pagar" min="0">
+    </div>
+
     <div class="modal-acoes">
       <button class="btn-gray" onclick="fecharModalPagamento()">
         Cancelar
@@ -688,6 +697,10 @@
 
       <button id="btnConfirmarPagamento" class="btn-blue" onclick="confirmarPagamento()">
         Confirmar
+      </button>
+
+      <button id="btnConfirmarEPagarAddon" class="btn-green oculto" onclick="confirmarPagamentoEPagar()">
+        Confirmar e Pagar
       </button>
     </div>
   </div>
@@ -921,6 +934,12 @@
     }
 
     painel.classList.remove('oculto');
+
+    const jogadoresRegistrados = new Set(
+      movimentacoesTorneio.filter(m => NOMES_BUYIN.includes(m.tipo_registro)).map(m => m.jogador)
+    );
+
+    document.getElementById('statJogadoresRegistrados').textContent = jogadoresRegistrados.size;
 
     const entradas = movimentacoesTorneio.filter(
       m => m.tipo === 'Entrada' && m.tipo_registro !== 'Add-on'
@@ -3467,6 +3486,12 @@
 
     document.getElementById('modalPagamentoResumo').textContent = resumo;
 
+    const ehAddon = valorTipo.tipo === 'Add-on';
+
+    document.getElementById('campoValorPagarAddon').classList.toggle('oculto', !ehAddon);
+    document.getElementById('btnConfirmarEPagarAddon').classList.toggle('oculto', !ehAddon);
+    document.getElementById('valorPagarAddon').value = '';
+
     document.getElementById('modalPagamento').classList.add('aberto');
   }
 
@@ -3477,9 +3502,9 @@
     document.getElementById('modalPagamento').classList.remove('aberto');
   }
 
-  async function confirmarPagamento() {
+  async function registrarEntradaPendente() {
 
-    if (!pagamentoPendente) return;
+    if (!pagamentoPendente) return false;
 
     const { jogador, valorTipo } = pagamentoPendente;
 
@@ -3493,9 +3518,6 @@
         valorPrize = Math.max(valorPrize - Number(bounty.valor_total), 0);
       }
     }
-
-    const btn = document.getElementById('btnConfirmarPagamento');
-    btn.classList.add('disabled');
 
     const { error: erroMov } = await client
       .from('movimentacoes')
@@ -3517,15 +3539,94 @@
       ]);
 
     if (erroMov) {
-      btn.classList.remove('disabled');
       await mostrarAlerta('Erro ao registrar pagamento');
       console.error(erroMov);
+      return false;
+    }
+
+    return true;
+  }
+
+  async function confirmarPagamento() {
+
+    if (!pagamentoPendente) return;
+
+    const { jogador, valorTipo } = pagamentoPendente;
+
+    const btn = document.getElementById('btnConfirmarPagamento');
+    const btnPagar = document.getElementById('btnConfirmarEPagarAddon');
+
+    btn.classList.add('disabled');
+    btnPagar.classList.add('disabled');
+
+    const sucesso = await registrarEntradaPendente();
+
+    btn.classList.remove('disabled');
+    btnPagar.classList.remove('disabled');
+
+    if (!sucesso) return;
+
+    console.log('Pagamento registrado:', jogador.nome, valorTipo.tipo);
+
+    fecharModalPagamento();
+
+    carregarDados();
+  }
+
+  async function confirmarPagamentoEPagar() {
+
+    if (!pagamentoPendente) return;
+
+    const valor = parseFloat(document.getElementById('valorPagarAddon').value);
+
+    if (isNaN(valor) || valor <= 0) {
+      await mostrarAlerta('Informe um valor válido para pagar');
       return;
     }
 
-    btn.classList.remove('disabled');
+    const { jogador } = pagamentoPendente;
 
-    console.log('Pagamento registrado:', jogador.nome, valorTipo.tipo);
+    const btn = document.getElementById('btnConfirmarPagamento');
+    const btnPagar = document.getElementById('btnConfirmarEPagarAddon');
+
+    btn.classList.add('disabled');
+    btnPagar.classList.add('disabled');
+
+    const sucessoEntrada = await registrarEntradaPendente();
+
+    if (!sucessoEntrada) {
+      btn.classList.remove('disabled');
+      btnPagar.classList.remove('disabled');
+      return;
+    }
+
+    const { error: erroPagamento } = await client
+      .from('movimentacoes')
+      .insert([
+        {
+          jogador: jogador.nome,
+          tipo: 'Pagamento',
+          valor,
+          modalidade: 'Cash',
+          pago: false,
+          data: new Date().toISOString(),
+          cpf: jogador.cpf,
+          telefone: jogador.telefone
+        }
+      ]);
+
+    btn.classList.remove('disabled');
+    btnPagar.classList.remove('disabled');
+
+    if (erroPagamento) {
+      await mostrarAlerta('Add-on registrado, mas houve erro ao registrar o pagamento');
+      console.error(erroPagamento);
+      fecharModalPagamento();
+      carregarDados();
+      return;
+    }
+
+    console.log('Add-on + pagamento registrados:', jogador.nome, valor);
 
     fecharModalPagamento();
 
