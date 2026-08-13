@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — RPG Poker Club</title>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container" style="max-width:380px;margin-top:100px;">
+
+  <div class="card">
+    <h1 style="text-align:center;margin-top:0;margin-bottom:4px;">RPG Poker Club</h1>
+    <p style="text-align:center;color:#666;margin-top:0;margin-bottom:24px;">Faça login para continuar</p>
+
+    <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="username">
+    <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
+
+    <p id="loginErro" class="negativo oculto" style="margin-top:-8px;margin-bottom:16px;"></p>
+
+    <button id="btnEntrar" class="btn-dark" style="width:100%;" onclick="confirmarLogin()">
+      Entrar
+    </button>
+  </div>
+
+</div>
+
+<script>
+
+  const SUPABASE_URL = 'https://rpohgkhkfzuorngtellg.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
+
+  const client = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+  function obterDestinoRedirecionamento() {
+
+    const params = new URLSearchParams(window.location.search);
+    const destino = params.get('redirect');
+
+    return destino || 'index.html';
+  }
+
+  function mostrarErroLogin(mensagem) {
+
+    const erroEl = document.getElementById('loginErro');
+
+    erroEl.textContent = mensagem;
+    erroEl.classList.remove('oculto');
+  }
+
+  async function verificarSessaoExistente() {
+
+    const { data } = await client.auth.getSession();
+
+    if (data.session) {
+      window.location.href = obterDestinoRedirecionamento();
+    }
+  }
+
+  async function confirmarLogin() {
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value;
+
+    document.getElementById('loginErro').classList.add('oculto');
+
+    if (!email || !senha) {
+      mostrarErroLogin('Informe e-mail e senha');
+      return;
+    }
+
+    const btn = document.getElementById('btnEntrar');
+    btn.classList.add('disabled');
+
+    const { error } = await client.auth.signInWithPassword({
+      email,
+      password: senha
+    });
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      console.log('Falha no login:', error.message);
+      mostrarErroLogin('E-mail ou senha incorretos');
+      return;
+    }
+
+    window.location.href = obterDestinoRedirecionamento();
+  }
+
+  document.getElementById('loginEmail').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('loginSenha').focus();
+    }
+  });
+
+  document.getElementById('loginSenha').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmarLogin();
+    }
+  });
+
+  verificarSessaoExistente();
+
+</script>
+
+</body>
+</html>
