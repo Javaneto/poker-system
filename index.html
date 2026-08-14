@@ -71,14 +71,8 @@
       </div>
     </div>
 
-    <div class="flex" style="align-items:flex-start;">
-      <div class="pesquisa-wrapper" style="flex:1;margin-bottom:0;">
-        <input type="text" id="pesquisaJogadorAberto" placeholder="Pesquisar jogador" oninput="atualizarTela()">
-      </div>
-
-      <select id="filtroModalidadeAberto" onchange="atualizarTela()" style="max-width:260px;margin-bottom:0;">
-        <option value="">Todas as modalidades</option>
-      </select>
+    <div class="pesquisa-wrapper" style="margin-bottom:0;">
+      <input type="text" id="pesquisaJogadorAberto" placeholder="Pesquisar jogador" oninput="atualizarTela()">
     </div>
 
     <table class="relatorio-desktop">
@@ -87,7 +81,6 @@
           <th>Jogador</th>
           <th>Entrou</th>
           <th>Saiu</th>
-          <th>Rebuys</th>
           <th>Resultado</th>
         </tr>
       </thead>
@@ -954,26 +947,9 @@
 
     select.innerHTML = '<option value="">Selecione o jogador</option>';
 
-    const filtroSelect = document.getElementById('filtroModalidadeAberto');
-
-    const movimentacoesAbertas = movimentacoes.filter(
+    const movimentacoesMesa = movimentacoes.filter(
       mov => !mov.sessao_finalizada_em
     );
-
-    const modalidadeAtualFiltro = filtroSelect.value;
-
-    const modalidadesDisponiveis = Array.from(
-      new Set(movimentacoesAbertas.map(mov => mov.modalidade).filter(Boolean))
-    ).sort();
-
-    filtroSelect.innerHTML = '<option value="">Todas as modalidades</option>' +
-      modalidadesDisponiveis.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
-
-    filtroSelect.value = modalidadesDisponiveis.includes(modalidadeAtualFiltro) ? modalidadeAtualFiltro : '';
-
-    const movimentacoesMesa = filtroSelect.value
-      ? movimentacoesAbertas.filter(mov => mov.modalidade === filtroSelect.value)
-      : movimentacoesAbertas;
 
     const termoPesquisaAberto = document.getElementById('pesquisaJogadorAberto').value.trim().toLowerCase();
 
@@ -991,7 +967,6 @@
 
       if (entrada > 0 || saida > 0 || temPagamento) {
 
-        const rebuys = Math.max(qtdEntradas - 1, 0);
         const idsHistorico = movsDoJogador.map(mov => mov.id).join(',');
         const classeSaldo = saldo >= 0 ? 'positivo' : 'negativo';
         const sinalSaldo = saldo >= 0 ? '+' : '-';
@@ -1003,7 +978,6 @@
             <td class="jogador-clicavel" data-ids="${idsHistorico}" data-nome="${escapeHtml(jogador.nome)}">${escapeHtml(jogador.nome)}</td>
             <td>R$ ${entrada.toFixed(2)}</td>
             <td>R$ ${saida.toFixed(2)}</td>
-            <td>${rebuys}</td>
             <td class="${classeSaldo}">
               ${sinalSaldo} R$ ${Math.abs(saldo).toFixed(2)}
             </td>
@@ -1014,7 +988,7 @@
           <div class="linha-desfazer">
             <div class="linha-desfazer-info">
               <strong class="jogador-clicavel" data-ids="${idsHistorico}" data-nome="${escapeHtml(jogador.nome)}">${escapeHtml(jogador.nome)}</strong>
-              Entrou R$ ${entrada.toFixed(2)} · Saiu R$ ${saida.toFixed(2)} · Rebuys ${rebuys}
+              Entrou R$ ${entrada.toFixed(2)} · Saiu R$ ${saida.toFixed(2)}
             </div>
             <div class="linha-desfazer-valor">
               <strong class="${classeSaldo}">${sinalSaldo} R$ ${Math.abs(saldo).toFixed(2)}</strong>
