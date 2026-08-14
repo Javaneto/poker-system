@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Torneios — RPG Poker Club</title>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+
+  <div class="topbar">
+    <h1>Torneios</h1>
+
+    <div style="display:flex;gap:8px;">
+      <a href="torneio.html" class="btn-gray">Voltar ao Torneio</a>
+      <button id="btnSair" class="btn-gray" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="topbar">
+      <select id="filtroStatusTorneios" onchange="renderizarListaTorneios()" style="max-width:220px;margin-bottom:0;">
+        <option value="aberto">Ativos</option>
+        <option value="encerrado">Encerrados</option>
+        <option value="">Todos</option>
+      </select>
+
+      <button id="btnNovoTorneio" class="btn-dark disabled" onclick="alternarFormularioNovoTorneio()">
+        + Novo Torneio
+      </button>
+    </div>
+
+    <div id="formularioNovoTorneio" class="oculto" style="border:1px solid #e9eaef;border-radius:10px;padding:16px;margin-bottom:16px;">
+      <h2 style="margin-top:0;">Novo Torneio</h2>
+
+      <input type="text" id="novoTorneioNome" placeholder="Nome do torneio">
+
+      <div class="cabecalho-tipos">
+        <span>Tipo</span>
+        <span>Valor Total</span>
+        <span>Rake</span>
+        <span>Prêmio</span>
+      </div>
+
+      <div id="linhasTiposPagamento"></div>
+
+      <p style="color:#666;font-size:12px;margin-top:-4px;">
+        Marque os tipos que valem para este torneio. Para ativar/desativar tipos globalmente, use "Configurações de Torneio".
+      </p>
+
+      <div class="modal-acoes">
+        <button class="btn-gray" onclick="alternarFormularioNovoTorneio()">
+          Cancelar
+        </button>
+
+        <button id="btnCriarTorneio" class="btn-dark" onclick="confirmarNovoTorneio()">
+          Criar Torneio
+        </button>
+      </div>
+    </div>
+
+    <div id="listaTorneios" class="grid-torneios"></div>
+  </div>
+
+</div>
+
+<div id="modalAlerta" class="modal-overlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2>Aviso</h2>
+
+    <p id="alertaMensagem" class="modal-resumo"></p>
+
+    <div class="modal-acoes">
+      <button class="btn-dark" style="flex:1;" onclick="confirmarAlerta()">
+        OK
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalConfirm" class="modal-overlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2>Confirmar</h2>
+
+    <p id="confirmMensagem" class="modal-resumo"></p>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="responderConfirm(false)">
+        Cancelar
+      </button>
+
+      <button class="btn-dark" onclick="responderConfirm(true)">
+        Confirmar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  console.log('Página de Torneios iniciada');
+
+  const SUPABASE_URL = 'https://rpohgkhkfzuorngtellg.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
+
+  const client = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+  const TIPOS_REGISTRO_FIXOS = [
+    { chave: 'buy-in', nome: 'Buy-in' },
+    { chave: 'free', nome: 'Free' },
+    { chave: 'rebuy', nome: 'Rebuy' },
+    { chave: 'duplo', nome: 'Duplo' },
+    { chave: 'triplo', nome: 'Triplo' },
+    { chave: 'addon', nome: 'Add-on' },
+    { chave: 'bounty', nome: 'Bounty (K.O.)' }
+  ];
+
+  let adminLiberado = false;
+  let torneioAtualId = null;
+  let todosTorneios = [];
+  let todosValoresTorneios = [];
+  let estruturasPremiacao = [];
+  let tiposRegistroAtivos = [];
+
+  function escapeHtml(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[c]));
+  }
+
+  let _resolveAlerta = null;
+  let _resolveConfirm = null;
+
+  function mostrarAlerta(mensagem) {
+
+    return new Promise(resolve => {
+
+      document.getElementById('alertaMensagem').textContent = mensagem;
+      document.getElementById('modalAlerta').classList.add('aberto');
+
+      _resolveAlerta = resolve;
+    });
+  }
+
+  function confirmarAlerta() {
+
+    document.getElementById('modalAlerta').classList.remove('aberto');
+
+    if (_resolveAlerta) {
+      const resolver = _resolveAlerta;
+      _resolveAlerta = null;
+      resolver();
+    }
+  }
+
+  function mostrarConfirm(mensagem) {
+
+    return new Promise(resolve => {
+
+      document.getElementById('confirmMensagem').textContent = mensagem;
+      document.getElementById('modalConfirm').classList.add('aberto');
+
+      _resolveConfirm = resolve;
+    });
+  }
+
+  function responderConfirm(valor) {
+
+    document.getElementById('modalConfirm').classList.remove('aberto');
+
+    if (_resolveConfirm) {
+      const resolver = _resolveConfirm;
+      _resolveConfirm = null;
+      resolver(valor);
+    }
+  }
+
+  async function sair() {
+
+    await client.auth.signOut();
+
+    window.location.href = 'login.html';
+  }
+
+  client.auth.onAuthStateChange((event, session) => {
+
+    adminLiberado = !!session;
+
+    console.log('Estado de autenticação ADM:', event, adminLiberado);
+
+    if (!adminLiberado) {
+      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    }
+  });
+
+  async function exigirSessaoOuRedirecionar() {
+
+    const { data } = await client.auth.getSession();
+
+    if (!data.session) {
+      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+      return false;
+    }
+
+    adminLiberado = true;
+
+    document.getElementById('btnNovoTorneio').classList.remove('disabled');
+
+    return true;
+  }
+
+  async function carregarDados() {
+
+    const { data: configuracaoDB } = await client
+      .from('configuracoes')
+      .select('*')
+      .eq('id', 1)
+      .single();
+
+    torneioAtualId = configuracaoDB?.torneio_atual_id || null;
+    tiposRegistroAtivos = configuracaoDB?.tipos_registro_ativos || TIPOS_REGISTRO_FIXOS.map(t => t.chave);
+
+    const { data: torneiosDB } = await client
+      .from('torneios')
+      .select('*')
+      .order('criado_em', { ascending: false });
+
+    todosTorneios = torneiosDB || [];
+
+    const { data: todosValoresDB } = await client
+      .from('torneio_valores')
+      .select('*')
+      .order('ordem', { ascending: true });
+
+    todosValoresTorneios = todosValoresDB || [];
+
+    const { data: estruturasDB } = await client
+      .from('premiacao_estruturas')
+      .select('*')
+      .order('id', { ascending: true });
+
+    estruturasPremiacao = estruturasDB || [];
+
+    renderizarListaTorneios();
+  }
+
+  function renderizarListaTorneios() {
+
+    const lista = document.getElementById('listaTorneios');
+    const filtroStatus = document.getElementById('filtroStatusTorneios').value;
+
+    lista.innerHTML = '';
+
+    const torneiosFiltrados = filtroStatus
+      ? todosTorneios.filter(t => (t.status || 'aberto') === filtroStatus)
+      : todosTorneios;
+
+    if (todosTorneios.length === 0) {
+      lista.innerHTML = '<p style="color:#666;">Nenhum torneio cadastrado ainda.</p>';
+      return;
+    }
+
+    if (torneiosFiltrados.length === 0) {
+      lista.innerHTML = '<p style="color:#666;">Nenhum torneio encontrado com esse filtro.</p>';
+      return;
+    }
+
+    torneiosFiltrados.forEach(torneio => {
+
+      const valoresDoTorneio = todosValoresTorneios.filter(v => v.torneio_id === torneio.id);
+      const primeiroValor = valoresDoTorneio[0];
+
+      const ehAtual = torneioAtualId === torneio.id;
+      const estaEncerrado = torneio.status === 'encerrado';
+
+      const div = document.createElement('div');
+
+      div.className = 'torneio-card' + (ehAtual ? ' atual' : '');
+
+      const dataFormatada = new Date(torneio.criado_em).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      div.innerHTML = `
+        <span class="status-badge ${estaEncerrado ? 'encerrado' : 'aberto'}">${estaEncerrado ? 'Encerrado' : 'Aberto'}</span>
+        <div class="torneio-data">${dataFormatada}</div>
+        <h3>${escapeHtml(torneio.nome)}</h3>
+        <div class="torneio-info">
+          ${primeiroValor ? `${escapeHtml(primeiroValor.tipo)}: R$ ${Number(primeiroValor.valor_total).toFixed(2)}` : 'Sem valores configurados'}
+        </div>
+      `;
+
+      const btnExcluir = document.createElement('button');
+
+      btnExcluir.className = 'btn-red btn-excluir-torneio' + (adminLiberado && estaEncerrado ? '' : ' disabled');
+      btnExcluir.textContent = '🗑️';
+      btnExcluir.title = estaEncerrado ? 'Excluir torneio' : 'Encerre o torneio antes de excluir';
+      btnExcluir.onclick = () => excluirTorneio(torneio.id, torneio.nome);
+
+      div.appendChild(btnExcluir);
+
+      const btn = document.createElement('button');
+
+      btn.className = 'btn-dark' + (adminLiberado ? '' : ' disabled');
+      btn.textContent = 'Selecionar';
+      btn.onclick = () => selecionarTorneio(torneio.id);
+
+      div.appendChild(btn);
+
+      lista.appendChild(div);
+    });
+  }
+
+  async function selecionarTorneio(torneioId) {
+
+    if (!adminLiberado) return;
+
+    if (!await mostrarConfirm('Tornar este o torneio atual? Os pagamentos passam a ser registrados nele.')) return;
+
+    const { error } = await client
+      .from('configuracoes')
+      .update({ torneio_atual_id: torneioId })
+      .eq('id', 1);
+
+    if (error) {
+      await mostrarAlerta('Erro ao selecionar torneio');
+      console.error(error);
+      return;
+    }
+
+    console.log('Torneio atual alterado para:', torneioId);
+
+    window.location.href = 'torneio.html';
+  }
+
+  async function excluirTorneio(torneioId, nomeTorneio) {
+
+    if (!adminLiberado) return;
+
+    const torneio = todosTorneios.find(t => t.id === torneioId);
+
+    if (!torneio || torneio.status !== 'encerrado') {
+      await mostrarAlerta('Só é possível excluir torneios encerrados.');
+      return;
+    }
+
+    if (!await mostrarConfirm(`Excluir permanentemente o torneio "${nomeTorneio}"? Essa ação não pode ser desfeita. As movimentações financeiras continuam no relatório, só deixam de estar vinculadas a esse torneio.`)) return;
+
+    const { error } = await client
+      .from('torneios')
+      .delete()
+      .eq('id', torneioId);
+
+    if (error) {
+      await mostrarAlerta('Erro ao excluir torneio');
+      console.error(error);
+      return;
+    }
+
+    console.log('Torneio excluído:', torneioId);
+
+    await carregarDados();
+  }
+
+  function criarLinhaTipoFixo(tipoFixo, total, rake, containerId) {
+
+    const div = document.createElement('div');
+
+    div.className = 'linha-tipo-pagamento';
+    div.dataset.tipoChave = tipoFixo.chave;
+    div.dataset.tipoNome = tipoFixo.nome;
+
+    if (tipoFixo.chave === 'bounty') {
+
+      div.innerHTML = `
+        <span class="tipo-nome-fixo">${escapeHtml(tipoFixo.nome)}</span>
+        <input type="number" class="tipo-total" placeholder="Valor do bounty" min="0" value="${total}" style="flex:2;">
+        <span style="color:#767c88;font-size:12px;">Descontado do prêmio a cada Registro/Rebuy</span>
+      `;
+
+      document.getElementById(containerId).appendChild(div);
+      return;
+    }
+
+    div.innerHTML = `
+      <span class="tipo-nome-fixo">${escapeHtml(tipoFixo.nome)}</span>
+      <input type="number" class="tipo-total" placeholder="Valor total (deixe vazio p/ desativar)" min="0" value="${total}">
+      <input type="number" class="tipo-rake" placeholder="Rake" min="0" value="${rake}">
+      <span class="tipo-prize">R$ 0,00</span>
+    `;
+
+    const inputTotal = div.querySelector('.tipo-total');
+    const inputRake = div.querySelector('.tipo-rake');
+    const spanPrize = div.querySelector('.tipo-prize');
+
+    function recalcular() {
+      const total = parseFloat(inputTotal.value) || 0;
+      const rake = parseFloat(inputRake.value) || 0;
+      const prize = Math.max(total - rake, 0);
+      spanPrize.textContent = `R$ ${prize.toFixed(2)}`;
+    }
+
+    inputTotal.addEventListener('input', recalcular);
+    inputRake.addEventListener('input', recalcular);
+
+    recalcular();
+
+    document.getElementById(containerId).appendChild(div);
+  }
+
+  function lerLinhasTiposPagamento(containerId) {
+
+    const linhas = Array.from(document.querySelectorAll(`#${containerId} .linha-tipo-pagamento`));
+
+    return linhas
+      .map((linha, index) => {
+
+        const tipoNome = linha.dataset.tipoNome;
+        const total = parseFloat(linha.querySelector('.tipo-total').value) || 0;
+        const inputRake = linha.querySelector('.tipo-rake');
+        const rake = inputRake ? (parseFloat(inputRake.value) || 0) : 0;
+        const ehBounty = linha.dataset.tipoChave === 'bounty';
+
+        return {
+          tipo: tipoNome,
+          valor_total: total,
+          valor_rake: rake,
+          valor_prize: ehBounty ? 0 : Math.max(total - rake, 0),
+          ordem: index
+        };
+      })
+      .filter(t => t.tipo && t.valor_total > 0);
+  }
+
+  function obterProximoNomeTorneio() {
+
+    const prefixo = 'RPG Poker Club #';
+
+    let maiorNumero = 0;
+
+    todosTorneios.forEach(t => {
+
+      if (t.nome && t.nome.startsWith(prefixo)) {
+
+        const numero = parseInt(t.nome.slice(prefixo.length), 10);
+
+        if (!isNaN(numero) && numero > maiorNumero) {
+          maiorNumero = numero;
+        }
+      }
+    });
+
+    return `${prefixo}${maiorNumero + 1}`;
+  }
+
+  function alternarFormularioNovoTorneio() {
+
+    if (!adminLiberado) return;
+
+    const form = document.getElementById('formularioNovoTorneio');
+
+    const vaiAbrir = form.classList.contains('oculto');
+
+    if (!vaiAbrir) {
+      form.classList.add('oculto');
+      return;
+    }
+
+    document.getElementById('novoTorneioNome').value = obterProximoNomeTorneio();
+
+    const container = document.getElementById('linhasTiposPagamento');
+    container.innerHTML = '';
+
+    const tiposDisponiveis = TIPOS_REGISTRO_FIXOS.filter(t => tiposRegistroAtivos.includes(t.chave));
+
+    if (tiposDisponiveis.length === 0) {
+      container.innerHTML = '<p style="color:#666;">Nenhum tipo ativo globalmente. Ative em "Configurações de Torneio".</p>';
+    } else {
+      tiposDisponiveis.forEach(t => criarLinhaTipoFixo(t, 0, 0, 'linhasTiposPagamento'));
+    }
+
+    form.classList.remove('oculto');
+  }
+
+  async function confirmarNovoTorneio() {
+
+    const nome = document.getElementById('novoTorneioNome').value.trim();
+
+    if (!nome) {
+      await mostrarAlerta('Informe o nome do torneio');
+      return;
+    }
+
+    const tipos = lerLinhasTiposPagamento('linhasTiposPagamento');
+
+    if (tipos.length === 0) {
+      await mostrarAlerta('Adicione ao menos um tipo de pagamento com valor');
+      return;
+    }
+
+    const torneioAtualExistente = todosTorneios.find(t => t.id === torneioAtualId);
+
+    if (torneioAtualExistente && torneioAtualExistente.status !== 'encerrado') {
+      if (!await mostrarConfirm(`Já existe o torneio "${torneioAtualExistente.nome}" em andamento. Iniciar um novo torneio agora?`)) {
+        return;
+      }
+    }
+
+    const btn = document.getElementById('btnCriarTorneio');
+    btn.classList.add('disabled');
+
+    const { data: torneioCriado, error: erroTorneio } = await client
+      .from('torneios')
+      .insert([{ nome, status: 'aberto' }])
+      .select()
+      .single();
+
+    if (erroTorneio) {
+      btn.classList.remove('disabled');
+      await mostrarAlerta('Erro ao criar torneio');
+      console.error(erroTorneio);
+      return;
+    }
+
+    const tiposComTorneio = tipos.map(t => ({ ...t, torneio_id: torneioCriado.id }));
+
+    const { error: erroValores } = await client
+      .from('torneio_valores')
+      .insert(tiposComTorneio);
+
+    if (erroValores) {
+      btn.classList.remove('disabled');
+      await mostrarAlerta('Erro ao salvar tipos de pagamento');
+      console.error(erroValores);
+      return;
+    }
+
+    const estruturaPadrao = estruturasPremiacao.find(e => e.nome === '50% - 30% - 20%');
+
+    const dadosParaVincular = estruturaPadrao ? { premiacao_estrutura_id: estruturaPadrao.id } : {};
+
+    const { error: erroConfig } = await client
+      .from('configuracoes')
+      .update({ torneio_atual_id: torneioCriado.id })
+      .eq('id', 1);
+
+    if (erroConfig) {
+      console.error(erroConfig);
+    }
+
+    if (Object.keys(dadosParaVincular).length > 0) {
+
+      const { error: erroVincular } = await client
+        .from('torneios')
+        .update(dadosParaVincular)
+        .eq('id', torneioCriado.id);
+
+      if (erroVincular) {
+        console.error(erroVincular);
+      }
+    }
+
+    btn.classList.remove('disabled');
+
+    console.log('Torneio criado:', torneioCriado.id);
+
+    window.location.href = 'torneio.html';
+  }
+
+  document.addEventListener('keydown', function(e) {
+
+    if (e.key !== 'Escape') return;
+
+    if (document.getElementById('modalConfirm').classList.contains('aberto')) {
+      responderConfirm(false);
+      return;
+    }
+
+    if (document.getElementById('modalAlerta').classList.contains('aberto')) {
+      confirmarAlerta();
+      return;
+    }
+  });
+
+  (async function inicializar() {
+
+    const autenticado = await exigirSessaoOuRedirecionar();
+
+    if (!autenticado) return;
+
+    await carregarDados();
+  })();
+
+</script>
+
+</body>
+</html>
