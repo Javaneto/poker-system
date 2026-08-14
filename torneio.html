@@ -211,6 +211,12 @@
     </table>
 
     <div id="tabelaMovimentacoesAbertasMobile" class="relatorio-mobile"></div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+      <button id="btnFinalizarTodosTorneio" class="btn-red disabled" onclick="finalizarTodosAbertosTorneio()">
+        Finalizar Todos
+      </button>
+    </div>
   </div>
 
 </div>
@@ -233,9 +239,9 @@
       Torneio Ativo
     </button>
 
-    <button class="btn-gray menu-item" onclick="fecharMenu(); abrirModalTorneios();">
+    <a href="torneios.html" class="btn-gray menu-item">
       Torneios
-    </button>
+    </a>
 
     <a href="index.html#cadastro" class="btn-gray menu-item">
       Cadastrar Jogador
@@ -295,63 +301,6 @@
 
       <button id="btnConfirmarPagarHistorico" class="btn-green" onclick="confirmarPagarHistorico()">
         Confirmar
-      </button>
-    </div>
-  </div>
-</div>
-
-<div id="modalTorneios" class="modal-overlay">
-  <div class="modal-box" style="max-width:900px;">
-    <div class="topbar">
-      <h2>Torneios</h2>
-
-      <button id="btnNovoTorneio" class="btn-dark disabled" onclick="abrirModalNovoTorneio()">
-        Novo Torneio
-      </button>
-    </div>
-
-    <select id="filtroStatusTorneios" onchange="renderizarListaTorneios()" style="max-width:220px;">
-      <option value="aberto">Ativos</option>
-      <option value="encerrado">Encerrados</option>
-      <option value="">Todos</option>
-    </select>
-
-    <div id="listaTorneios" class="grid-torneios"></div>
-
-    <div class="modal-acoes" style="margin-top:16px;">
-      <button class="btn-gray" onclick="fecharModalTorneios()">
-        Fechar
-      </button>
-    </div>
-  </div>
-</div>
-
-<div id="modalNovoTorneio" class="modal-overlay">
-  <div class="modal-box" style="max-width:880px;">
-    <h2>Novo Torneio</h2>
-
-    <input type="text" id="novoTorneioNome" placeholder="Nome do torneio">
-
-    <div class="cabecalho-tipos">
-      <span>Tipo</span>
-      <span>Valor Total</span>
-      <span>Rake</span>
-      <span>Prêmio</span>
-    </div>
-
-    <div id="linhasTiposPagamento"></div>
-
-    <p style="color:#666;font-size:12px;margin-top:-4px;">
-      Marque os tipos que valem para este torneio. Para ativar/desativar tipos globalmente, use "Configurações de Torneio".
-    </p>
-
-    <div class="modal-acoes">
-      <button class="btn-gray" onclick="fecharModalNovoTorneio()">
-        Cancelar
-      </button>
-
-      <button id="btnCriarTorneio" class="btn-dark" onclick="confirmarNovoTorneio()">
-        Criar Torneio
       </button>
     </div>
   </div>
@@ -1382,6 +1331,7 @@
   }
 
   let historicoJogadorAtual = null;
+  let idsMovimentacoesAbertasVisiveisTorneio = [];
 
   function calcularResultado(movs) {
 
@@ -1639,6 +1589,41 @@
     await carregarDados();
   }
 
+  async function finalizarTodosAbertosTorneio() {
+
+    if (!adminLiberado) return;
+
+    if (idsMovimentacoesAbertasVisiveisTorneio.length === 0) return;
+
+    const qtdJogadores = new Set(
+      movimentacoes
+        .filter(mov => idsMovimentacoesAbertasVisiveisTorneio.includes(mov.id))
+        .map(mov => mov.jogador)
+    ).size;
+
+    if (!await mostrarConfirm(`Finalizar a sessão de ${qtdJogadores} jogador(es)? Todas as movimentações em aberto na lista atual saem de "Movimentações em Aberto" e passam a aparecer agrupadas no histórico.`)) return;
+
+    const btn = document.getElementById('btnFinalizarTodosTorneio');
+    btn.classList.add('disabled');
+
+    const { error } = await client
+      .from('movimentacoes')
+      .update({ sessao_finalizada_em: new Date().toISOString() })
+      .in('id', idsMovimentacoesAbertasVisiveisTorneio);
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      await mostrarAlerta('Erro ao finalizar sessões');
+      console.error(error);
+      return;
+    }
+
+    console.log('Sessões finalizadas em lote:', idsMovimentacoesAbertasVisiveisTorneio.length, 'movimentações');
+
+    await carregarDados();
+  }
+
   function tratarCliqueJogadorAberto(e) {
 
     const el = e.target.closest('.jogador-clicavel');
@@ -1807,7 +1792,6 @@
 
     console.log('Atualizando tela do torneio');
 
-    renderizarListaTorneios();
     atualizarRelogioTorneio();
 
     const semTorneio = document.getElementById('semTorneio');
@@ -2102,99 +2086,6 @@
     carregarDados();
   }
 
-  function renderizarListaTorneios() {
-
-    const lista = document.getElementById('listaTorneios');
-    const filtroStatus = document.getElementById('filtroStatusTorneios').value;
-
-    lista.innerHTML = '';
-
-    const torneiosFiltrados = filtroStatus
-      ? todosTorneios.filter(t => (t.status || 'aberto') === filtroStatus)
-      : todosTorneios;
-
-    if (todosTorneios.length === 0) {
-      lista.innerHTML = '<p style="color:#666;">Nenhum torneio cadastrado ainda.</p>';
-      return;
-    }
-
-    if (torneiosFiltrados.length === 0) {
-      lista.innerHTML = '<p style="color:#666;">Nenhum torneio encontrado com esse filtro.</p>';
-      return;
-    }
-
-    torneiosFiltrados.forEach(torneio => {
-
-      const valoresDoTorneio = todosValoresTorneios.filter(v => v.torneio_id === torneio.id);
-      const primeiroValor = valoresDoTorneio[0];
-
-      const ehAtual = !!(torneioAtual && torneioAtual.id === torneio.id);
-      const estaEncerrado = torneio.status === 'encerrado';
-
-      const div = document.createElement('div');
-
-      div.className = 'torneio-card' + (ehAtual ? ' atual' : '');
-
-      const dataFormatada = new Date(torneio.criado_em).toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      div.innerHTML = `
-        <span class="status-badge ${estaEncerrado ? 'encerrado' : 'aberto'}">${estaEncerrado ? 'Encerrado' : 'Aberto'}</span>
-        <div class="torneio-data">${dataFormatada}</div>
-        <h3>${escapeHtml(torneio.nome)}</h3>
-        <div class="torneio-info">
-          ${primeiroValor ? `${escapeHtml(primeiroValor.tipo)}: R$ ${Number(primeiroValor.valor_total).toFixed(2)}` : 'Sem valores configurados'}
-        </div>
-      `;
-
-      const btnExcluir = document.createElement('button');
-
-      btnExcluir.className = 'btn-red btn-excluir-torneio' + (adminLiberado && estaEncerrado ? '' : ' disabled');
-      btnExcluir.textContent = '🗑️';
-      btnExcluir.title = estaEncerrado ? 'Excluir torneio' : 'Encerre o torneio antes de excluir';
-      btnExcluir.onclick = () => excluirTorneio(torneio.id, torneio.nome);
-
-      div.appendChild(btnExcluir);
-
-      const btn = document.createElement('button');
-
-      btn.className = 'btn-dark' + (adminLiberado ? '' : ' disabled');
-      btn.textContent = 'Selecionar';
-      btn.onclick = () => selecionarTorneio(torneio.id);
-
-      div.appendChild(btn);
-
-      lista.appendChild(div);
-    });
-  }
-
-  async function selecionarTorneio(torneioId) {
-
-    if (!adminLiberado) return;
-
-    if (!await mostrarConfirm('Tornar este o torneio atual? Os pagamentos passam a ser registrados nele.')) return;
-
-    const { error } = await client
-      .from('configuracoes')
-      .update({ torneio_atual_id: torneioId })
-      .eq('id', 1);
-
-    if (error) {
-      await mostrarAlerta('Erro ao selecionar torneio');
-      console.error(error);
-      return;
-    }
-
-    console.log('Torneio atual alterado para:', torneioId);
-
-    carregarDados();
-  }
-
   async function encerrarTorneio() {
 
     if (!adminLiberado || !torneioAtual) return;
@@ -2231,35 +2122,6 @@
     }
 
     console.log('Torneio encerrado:', torneioAtual.id);
-
-    carregarDados();
-  }
-
-  async function excluirTorneio(torneioId, nomeTorneio) {
-
-    if (!adminLiberado) return;
-
-    const torneio = todosTorneios.find(t => t.id === torneioId);
-
-    if (!torneio || torneio.status !== 'encerrado') {
-      await mostrarAlerta('Só é possível excluir torneios encerrados.');
-      return;
-    }
-
-    if (!await mostrarConfirm(`Excluir permanentemente o torneio "${nomeTorneio}"? Essa ação não pode ser desfeita. As movimentações financeiras continuam no relatório, só deixam de estar vinculadas a esse torneio.`)) return;
-
-    const { error } = await client
-      .from('torneios')
-      .delete()
-      .eq('id', torneioId);
-
-    if (error) {
-      await mostrarAlerta('Erro ao excluir torneio');
-      console.error(error);
-      return;
-    }
-
-    console.log('Torneio excluído:', torneioId);
 
     carregarDados();
   }
@@ -2367,6 +2229,8 @@
       ? jogadores.filter(j => j.nome.toLowerCase().includes(termoPesquisaAberto))
       : jogadores;
 
+    idsMovimentacoesAbertasVisiveisTorneio = [];
+
     jogadoresFiltrados.forEach(jogador => {
 
       const movsDoJogador = movimentacoesFiltradas.filter(mov => mov.jogador === jogador.nome);
@@ -2379,6 +2243,8 @@
         const idsHistorico = movsDoJogador.map(mov => mov.id).join(',');
         const classeSaldo = saldo >= 0 ? 'positivo' : 'negativo';
         const sinalSaldo = saldo >= 0 ? '+' : '-';
+
+        idsMovimentacoesAbertasVisiveisTorneio.push(...movsDoJogador.map(mov => mov.id));
 
         tabela.innerHTML += `
           <tr>
@@ -2405,6 +2271,11 @@
         `;
       }
     });
+
+    document.getElementById('btnFinalizarTodosTorneio').classList.toggle(
+      'disabled',
+      !adminLiberado || idsMovimentacoesAbertasVisiveisTorneio.length === 0
+    );
   }
 
   function renderizarTabelaJogadoresTorneio() {
@@ -2813,147 +2684,6 @@
         };
       })
       .filter(t => t.tipo && t.valor_total > 0);
-  }
-
-  function obterProximoNomeTorneio() {
-
-    const prefixo = 'RPG Poker Club #';
-
-    let maiorNumero = 0;
-
-    todosTorneios.forEach(t => {
-
-      if (t.nome && t.nome.startsWith(prefixo)) {
-
-        const numero = parseInt(t.nome.slice(prefixo.length), 10);
-
-        if (!isNaN(numero) && numero > maiorNumero) {
-          maiorNumero = numero;
-        }
-      }
-    });
-
-    return `${prefixo}${maiorNumero + 1}`;
-  }
-
-  function abrirModalTorneios() {
-
-    document.getElementById('modalTorneios').classList.add('aberto');
-  }
-
-  function fecharModalTorneios() {
-
-    document.getElementById('modalTorneios').classList.remove('aberto');
-  }
-
-  async function abrirModalNovoTorneio() {
-
-    if (!adminLiberado) return;
-
-    if (torneioAtual && !await mostrarConfirm(`Já existe o torneio "${torneioAtual.nome}" em andamento. Iniciar um novo torneio agora?`)) {
-      return;
-    }
-
-    document.getElementById('novoTorneioNome').value = obterProximoNomeTorneio();
-
-    const container = document.getElementById('linhasTiposPagamento');
-    container.innerHTML = '';
-
-    const tiposDisponiveis = TIPOS_REGISTRO_FIXOS.filter(t => tiposRegistroAtivos.includes(t.chave));
-
-    if (tiposDisponiveis.length === 0) {
-      container.innerHTML = '<p style="color:#666;">Nenhum tipo ativo globalmente. Ative em "Configurações de Torneio".</p>';
-    } else {
-      tiposDisponiveis.forEach(t => criarLinhaTipoFixo(t, 0, 0, 'linhasTiposPagamento'));
-    }
-
-    document.getElementById('modalNovoTorneio').classList.add('aberto');
-  }
-
-  function fecharModalNovoTorneio() {
-
-    document.getElementById('modalNovoTorneio').classList.remove('aberto');
-  }
-
-  async function confirmarNovoTorneio() {
-
-    const nome = document.getElementById('novoTorneioNome').value.trim();
-
-    if (!nome) {
-      await mostrarAlerta('Informe o nome do torneio');
-      return;
-    }
-
-    const tipos = lerLinhasTiposPagamento('linhasTiposPagamento');
-
-    if (tipos.length === 0) {
-      await mostrarAlerta('Adicione ao menos um tipo de pagamento com valor');
-      return;
-    }
-
-    const btn = document.getElementById('btnCriarTorneio');
-    btn.classList.add('disabled');
-
-    const { data: torneioCriado, error: erroTorneio } = await client
-      .from('torneios')
-      .insert([{ nome, status: 'aberto' }])
-      .select()
-      .single();
-
-    if (erroTorneio) {
-      btn.classList.remove('disabled');
-      await mostrarAlerta('Erro ao criar torneio');
-      console.error(erroTorneio);
-      return;
-    }
-
-    const tiposComTorneio = tipos.map(t => ({ ...t, torneio_id: torneioCriado.id }));
-
-    const { error: erroValores } = await client
-      .from('torneio_valores')
-      .insert(tiposComTorneio);
-
-    if (erroValores) {
-      btn.classList.remove('disabled');
-      await mostrarAlerta('Erro ao salvar tipos de pagamento');
-      console.error(erroValores);
-      return;
-    }
-
-    const estruturaPadrao = estruturasPremiacao.find(e => e.nome === '50% - 30% - 20%');
-
-    const dadosParaVincular = estruturaPadrao ? { premiacao_estrutura_id: estruturaPadrao.id } : {};
-
-    const { error: erroConfig } = await client
-      .from('configuracoes')
-      .update({ torneio_atual_id: torneioCriado.id })
-      .eq('id', 1);
-
-    if (Object.keys(dadosParaVincular).length > 0) {
-
-      const { error: erroVincular } = await client
-        .from('torneios')
-        .update(dadosParaVincular)
-        .eq('id', torneioCriado.id);
-
-      if (erroVincular) {
-        console.error(erroVincular);
-      }
-    }
-
-    btn.classList.remove('disabled');
-
-    if (erroConfig) {
-      await mostrarAlerta('Erro ao definir torneio atual');
-      console.error(erroConfig);
-      return;
-    }
-
-    console.log('Torneio criado:', torneioCriado.id);
-
-    fecharModalNovoTorneio();
-
-    carregarDados();
   }
 
   let estruturaEditandoId = null;
@@ -3651,8 +3381,6 @@
     fecharMenu();
     fecharModalHistoricoJogador();
     fecharModalPagarHistorico();
-    fecharModalTorneios();
-    fecharModalNovoTorneio();
     fecharModalEstruturas();
     fecharModalTiposPagamento();
     fecharModalEstruturasPremiacao();
@@ -3671,7 +3399,6 @@
 
     document.getElementById('btnAdmin').textContent = 'Sair';
 
-    document.getElementById('btnNovoTorneio').classList.remove('disabled');
     document.getElementById('btnDesfazerTorneio').classList.remove('disabled');
     document.getElementById('btnConfigTorneioMenu').classList.remove('disabled');
 
@@ -3683,38 +3410,6 @@
 
     atualizarBotoesPagamento();
     atualizarMovimentacoesAbertas();
-    renderizarListaTorneios();
-  }
-
-  function bloquearAcoes() {
-
-    console.log('Bloqueando ações ADM');
-
-    document.getElementById('btnAdmin').textContent = 'Login';
-
-    document.getElementById('btnNovoTorneio').classList.add('disabled');
-    document.getElementById('btnDesfazerTorneio').classList.add('disabled');
-    document.getElementById('btnConfigTorneioMenu').classList.add('disabled');
-    document.getElementById('btnConfigTorneioAtual').classList.add('disabled');
-    document.getElementById('btnAjustarPremiacao').classList.add('disabled');
-    document.getElementById('btnEncerrarTorneio').classList.add('disabled');
-
-    fecharModalPagarHistorico();
-    fecharModalNovoTorneio();
-    fecharModalEstruturas();
-    fecharModalTiposPagamento();
-    fecharModalEstruturasPremiacao();
-    fecharModalEstruturasBlinds();
-    fecharModalEditarRelogio();
-    fecharModalConfigTorneioAtual();
-    fecharModalAjustarPremiacao();
-    fecharModalSelecionarJogador();
-    fecharModalDesfazer();
-    fecharModalPagamento();
-
-    atualizarBotoesPagamento();
-    atualizarMovimentacoesAbertas();
-    renderizarListaTorneios();
   }
 
   async function tratarHashInicial() {
@@ -3730,8 +3425,6 @@
 
     if (hash === 'config') {
       abrirModalEstruturas();
-    } else if (hash === 'torneios') {
-      abrirModalTorneios();
     }
   }
 
