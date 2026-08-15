@@ -72,13 +72,19 @@
     .tv-relogio-caixa {
       flex: 2;
       min-width: 0;
-      background: #1a1a1a;
-      border-radius: 10px;
-      padding: 2vh 2vw;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
+    }
+
+    .tv-contador-caixa {
+      width: 100%;
+      background: #1a1a1a;
+      border-radius: 10px;
+      padding: 2vh 2vw;
+      display: flex;
+      justify-content: center;
     }
 
     .tv-contador {
@@ -91,7 +97,7 @@
     .tv-blinds {
       font-size: min(4.5vw, 7vh);
       font-weight: 800;
-      margin-top: 2vh;
+      margin-top: 4vh;
       text-align: center;
     }
 
@@ -168,7 +174,9 @@
 
     <div class="tv-corpo">
       <div class="tv-relogio-caixa">
-        <div class="tv-contador" id="tvContador">00:00</div>
+        <div class="tv-contador-caixa">
+          <div class="tv-contador" id="tvContador">00:00</div>
+        </div>
         <div class="tv-blinds" id="tvBlindsAtuais">-</div>
       </div>
 
@@ -375,6 +383,59 @@
     return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
   }
 
+  function formatarValorBlind(valor) {
+
+    const n = Number(valor) || 0;
+
+    if (n < 1000) return String(n);
+
+    const emK = Math.round((n / 1000) * 10) / 10;
+    const texto = Number.isInteger(emK) ? String(emK) : emK.toFixed(1).replace('.', ',');
+
+    return `${texto}K`;
+  }
+
+  function formatarMoedaSemZeros(valor) {
+
+    const arredondado = Math.round(Number(valor) * 100) / 100;
+
+    return Number.isInteger(arredondado)
+      ? `R$ ${arredondado}`
+      : `R$ ${arredondado.toFixed(2)}`;
+  }
+
+  function calcularValoresPremiacaoArredondados(totalPrize, percentuais) {
+
+    const unidade = Number(torneioAtual?.arredondamento_premiacao);
+
+    if (!unidade || unidade <= 0) {
+      return percentuais.map(pct => totalPrize * (Number(pct) / 100));
+    }
+
+    let sobra = 0;
+    const resultados = [];
+
+    percentuais.forEach(pct => {
+
+      const bruto = totalPrize * (Number(pct) / 100) + sobra;
+
+      const multiplos = Math.floor(bruto / unidade);
+      const fracao = (bruto - multiplos * unidade) / unidade;
+
+      const valor = fracao >= 0.6 ? (multiplos + 1) * unidade : multiplos * unidade;
+
+      sobra = bruto - valor;
+
+      resultados.push(valor);
+    });
+
+    if (resultados.length > 0) {
+      resultados[resultados.length - 1] = Math.round((resultados[resultados.length - 1] + sobra) * 100) / 100;
+    }
+
+    return resultados;
+  }
+
   function formatarTempoDecorrido(segundos) {
 
     const s = Math.max(Math.floor(segundos), 0);
@@ -534,14 +595,14 @@
       document.getElementById('tvProximoAnte').textContent = '-';
     } else if (emIntervalo) {
       document.getElementById('tvBlindsAtuais').textContent = 'Intervalo';
-      document.getElementById('tvProximoBlind').textContent = nivelAtual ? `${nivelAtual.sb} / ${nivelAtual.bb}` : '-';
-      document.getElementById('tvProximoAnte').textContent = nivelAtual ? `${nivelAtual.ante || 0}` : '-';
+      document.getElementById('tvProximoBlind').textContent = nivelAtual ? `${formatarValorBlind(nivelAtual.sb)} / ${formatarValorBlind(nivelAtual.bb)}` : '-';
+      document.getElementById('tvProximoAnte').textContent = nivelAtual ? formatarValorBlind(nivelAtual.ante || 0) : '-';
     } else {
       document.getElementById('tvBlindsAtuais').textContent = nivelAtual
-        ? `${nivelAtual.sb} / ${nivelAtual.bb} - ${nivelAtual.ante || 0}`
+        ? `${formatarValorBlind(nivelAtual.sb)} / ${formatarValorBlind(nivelAtual.bb)} - ${formatarValorBlind(nivelAtual.ante || 0)}`
         : '-';
-      document.getElementById('tvProximoBlind').textContent = nivelProximo ? `${nivelProximo.sb} / ${nivelProximo.bb}` : 'Último nível';
-      document.getElementById('tvProximoAnte').textContent = nivelProximo ? `${nivelProximo.ante || 0}` : '-';
+      document.getElementById('tvProximoBlind').textContent = nivelProximo ? `${formatarValorBlind(nivelProximo.sb)} / ${formatarValorBlind(nivelProximo.bb)}` : 'Último nível';
+      document.getElementById('tvProximoAnte').textContent = nivelProximo ? formatarValorBlind(nivelProximo.ante || 0) : '-';
     }
 
     const segundosProximoIntervalo = calcularSegundosAteProximoIntervalo();
@@ -582,12 +643,13 @@
 
     if (estruturaPremiacao) {
 
-      (estruturaPremiacao.percentuais || []).forEach((pct, index) => {
+      const percentuais = estruturaPremiacao.percentuais || [];
+      const valores = calcularValoresPremiacaoArredondados(totalPrize, percentuais);
 
-        const valor = totalPrize * (Number(pct) / 100);
+      valores.forEach((valor, index) => {
 
         const span = document.createElement('span');
-        span.textContent = `${index + 1}º: R$ ${valor.toFixed(2)}`;
+        span.textContent = `${index + 1}º: ${formatarMoedaSemZeros(valor)}`;
 
         premiosEl.appendChild(span);
       });
