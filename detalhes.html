@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalhes — RPG Poker Club</title>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    .oculto {
+      display: none !important;
+    }
+
+    .tv-topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      font-size: 15px;
+      color: #ccc;
+    }
+
+    .tv-titulo {
+      background: linear-gradient(180deg, #dc2626, #7f1d1d);
+      text-align: center;
+      padding: 12px;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .tv-cabecalho {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 30px 6px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .tv-corpo {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 0 20px;
+    }
+
+    .tv-relogio-caixa {
+      flex: 2;
+      min-width: 320px;
+      background: #111;
+      border-radius: 10px;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .tv-contador {
+      font-size: 12vw;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .tv-blinds {
+      font-size: 3vw;
+      font-weight: 800;
+      margin-top: 24px;
+    }
+
+    .tv-painel {
+      flex: 1;
+      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tv-linha {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      font-size: 20px;
+      font-weight: 700;
+      background: #4a0e0e;
+      border-bottom: 1px solid #2a0808;
+    }
+
+    .tv-linha:nth-child(odd) {
+      background: #5a1212;
+    }
+
+    .tv-premios {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      flex-wrap: wrap;
+      padding: 30px 20px;
+      font-size: 2.4vw;
+      font-weight: 800;
+    }
+
+    .tv-vazio {
+      text-align: center;
+      padding: 100px 20px;
+      color: #999;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tv-topo">
+    <span>RPG Poker Club</span>
+    <span id="tvRelogioParede"></span>
+  </div>
+
+  <div class="tv-titulo" id="tvNomeTorneio">Carregando...</div>
+
+  <div id="tvConteudo" class="oculto">
+
+    <div class="tv-cabecalho">
+      <span>Nível <span id="tvNivel">-</span></span>
+      <span id="tvEntradasTopo">0 Jogadores</span>
+      <span id="tvStatus">-</span>
+    </div>
+
+    <div class="tv-corpo">
+      <div class="tv-relogio-caixa">
+        <div class="tv-contador" id="tvContador">00:00</div>
+        <div class="tv-blinds" id="tvBlindsAtuais">-</div>
+      </div>
+
+      <div class="tv-painel">
+        <div class="tv-linha"><span>Próximo SB/BB</span><span id="tvProximoBlind">-</span></div>
+        <div class="tv-linha"><span>Próximo Ante</span><span id="tvProximoAnte">-</span></div>
+        <div class="tv-linha"><span>Próximo Intervalo</span><span id="tvProximoIntervalo">-</span></div>
+        <div class="tv-linha"><span>Tempo Decorrido</span><span id="tvTempoDecorrido">00:00</span></div>
+        <div class="tv-linha"><span>Entradas</span><span id="tvEntradas">0</span></div>
+        <div class="tv-linha"><span>Bounty</span><span id="tvBounty">N/D</span></div>
+        <div class="tv-linha"><span>Prêmio Total</span><span id="tvPremioTotal">R$ 0,00</span></div>
+      </div>
+    </div>
+
+    <div class="tv-premios" id="tvPremios"></div>
+
+  </div>
+
+  <div id="tvVazio" class="tv-vazio oculto">Nenhum torneio ativo no momento.</div>
+
+<script>
+
+  const SUPABASE_URL = 'https://rpohgkhkfzuorngtellg.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
+
+  const client = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+  let torneioAtual = null;
+  let valoresTorneio = [];
+  let movimentacoesTorneio = [];
+  let estruturasPremiacao = [];
+  let estruturasBlinds = [];
+
+  const NOMES_BUYIN = ['Buy-in', 'Free', 'Buy-in Duplo', 'Buy-in Triplo'];
+
+  client.auth.onAuthStateChange((event, session) => {
+
+    if (!session) {
+      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    }
+  });
+
+  async function exigirSessaoOuRedirecionar() {
+
+    const { data } = await client.auth.getSession();
+
+    if (!data.session) {
+      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+      return false;
+    }
+
+    return true;
+  }
+
+  function obterNiveisTorneioAtual() {
+
+    if (!torneioAtual) return [];
+
+    const estrutura = estruturasBlinds.find(e => e.id === torneioAtual.estrutura_blinds_id);
+
+    return estrutura ? (estrutura.niveis || []) : [];
+  }
+
+  function calcularSegundosRestantesClock() {
+
+    if (!torneioAtual) return 0;
+
+    const niveis = obterNiveisTorneioAtual();
+
+    if (niveis.length === 0) return 0;
+
+    const indiceAtual = Math.min(torneioAtual.relogio_nivel_atual || 0, niveis.length - 1);
+    const nivel = niveis[indiceAtual];
+
+    const base = torneioAtual.relogio_segundos_restantes ?? ((nivel?.duracao || 0) * 60);
+
+    if (!torneioAtual.relogio_rodando || !torneioAtual.relogio_iniciado_em) {
+      return base;
+    }
+
+    const decorrido = Math.floor((Date.now() - new Date(torneioAtual.relogio_iniciado_em).getTime()) / 1000);
+
+    return Math.max(base - decorrido, 0);
+  }
+
+  function calcularNovoTempoDecorridoAcumulado() {
+
+    if (!torneioAtual) return 0;
+
+    const acumulado = Number(torneioAtual.tempo_decorrido_segundos) || 0;
+
+    if (!torneioAtual.relogio_rodando || !torneioAtual.relogio_iniciado_em) {
+      return acumulado;
+    }
+
+    const decorridoDesdeInicio = Math.floor((Date.now() - new Date(torneioAtual.relogio_iniciado_em).getTime()) / 1000);
+
+    return acumulado + Math.max(decorridoDesdeInicio, 0);
+  }
+
+  function formatarTempoRelogio(segundos) {
+
+    const s = Math.max(Math.floor(segundos), 0);
+    const min = Math.floor(s / 60);
+    const seg = s % 60;
+
+    return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
+  }
+
+  function formatarTempoDecorrido(segundos) {
+
+    const s = Math.max(Math.floor(segundos), 0);
+    const h = Math.floor(s / 3600);
+    const min = Math.floor((s % 3600) / 60);
+
+    return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+  }
+
+  function calcularSegundosAteProximoIntervalo() {
+
+    if (!torneioAtual) return null;
+
+    const niveis = obterNiveisTorneioAtual();
+
+    if (niveis.length === 0) return null;
+
+    const indiceAtual = Math.min(torneioAtual.relogio_nivel_atual || 0, niveis.length - 1);
+    const emIntervalo = !!torneioAtual.relogio_em_intervalo;
+
+    if (emIntervalo) return 0;
+
+    const restanteAtual = calcularSegundosRestantesClock();
+    const nivelAtual = niveis[indiceAtual];
+
+    if (Number(nivelAtual?.pausa) > 0) {
+      return restanteAtual;
+    }
+
+    let acumulado = restanteAtual;
+
+    for (let i = indiceAtual + 1; i < niveis.length; i++) {
+
+      if (Number(niveis[i].pausa) > 0) {
+        return acumulado;
+      }
+
+      acumulado += (niveis[i].duracao || 0) * 60;
+    }
+
+    return null;
+  }
+
+  function atualizarRelogioParede() {
+
+    document.getElementById('tvRelogioParede').textContent = new Date().toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  async function carregarDados() {
+
+    const { data: configuracaoDB } = await client
+      .from('configuracoes')
+      .select('*')
+      .eq('id', 1)
+      .single();
+
+    const torneioAtualId = configuracaoDB?.torneio_atual_id || null;
+
+    if (!torneioAtualId) {
+      torneioAtual = null;
+      atualizarTela();
+      return;
+    }
+
+    const { data: torneioDB } = await client
+      .from('torneios')
+      .select('*')
+      .eq('id', torneioAtualId)
+      .single();
+
+    torneioAtual = torneioDB || null;
+
+    if (!torneioAtual) {
+      atualizarTela();
+      return;
+    }
+
+    const { data: valoresDB } = await client
+      .from('torneio_valores')
+      .select('*')
+      .eq('torneio_id', torneioAtualId);
+
+    valoresTorneio = valoresDB || [];
+
+    const { data: movsDB } = await client
+      .from('movimentacoes')
+      .select('*')
+      .eq('torneio_id', torneioAtualId);
+
+    movimentacoesTorneio = movsDB || [];
+
+    const { data: estruturasDB } = await client
+      .from('premiacao_estruturas')
+      .select('*');
+
+    estruturasPremiacao = estruturasDB || [];
+
+    const { data: estruturasBlindsDB } = await client
+      .from('estruturas_blinds')
+      .select('*');
+
+    estruturasBlinds = estruturasBlindsDB || [];
+
+    atualizarTela();
+  }
+
+  function atualizarTela() {
+
+    if (!torneioAtual) {
+      document.getElementById('tvNomeTorneio').textContent = 'Nenhum torneio ativo';
+      document.getElementById('tvConteudo').classList.add('oculto');
+      document.getElementById('tvVazio').classList.remove('oculto');
+      return;
+    }
+
+    document.getElementById('tvVazio').classList.add('oculto');
+    document.getElementById('tvConteudo').classList.remove('oculto');
+
+    document.getElementById('tvNomeTorneio').textContent = torneioAtual.nome;
+
+    const niveis = obterNiveisTorneioAtual();
+    const indiceAtual = Math.min(torneioAtual.relogio_nivel_atual || 0, Math.max(niveis.length - 1, 0));
+    const nivelAtual = niveis[indiceAtual];
+    const nivelProximo = niveis[indiceAtual + 1];
+    const emIntervalo = !!torneioAtual.relogio_em_intervalo;
+
+    document.getElementById('tvNivel').textContent = emIntervalo ? '— Intervalo' : (indiceAtual + 1);
+
+    const restante = calcularSegundosRestantesClock();
+    const contadorEl = document.getElementById('tvContador');
+
+    contadorEl.textContent = formatarTempoRelogio(restante);
+    contadorEl.style.color = emIntervalo ? '#ef4444' : '#fff';
+
+    let status = 'Pausado';
+
+    if (torneioAtual.status === 'encerrado') {
+      status = 'Encerrado';
+    } else if (emIntervalo) {
+      status = 'Intervalo';
+    } else if (torneioAtual.relogio_rodando) {
+      status = 'Em Andamento';
+    }
+
+    document.getElementById('tvStatus').textContent = status;
+
+    if (niveis.length === 0) {
+      document.getElementById('tvBlindsAtuais').textContent = 'Sem estrutura de blinds';
+      document.getElementById('tvProximoBlind').textContent = '-';
+      document.getElementById('tvProximoAnte').textContent = '-';
+    } else if (emIntervalo) {
+      document.getElementById('tvBlindsAtuais').textContent = 'Intervalo';
+      document.getElementById('tvProximoBlind').textContent = nivelAtual ? `${nivelAtual.sb}K / ${nivelAtual.bb}K` : '-';
+      document.getElementById('tvProximoAnte').textContent = nivelAtual ? `${nivelAtual.ante || 0}K` : '-';
+    } else {
+      document.getElementById('tvBlindsAtuais').textContent = nivelAtual
+        ? `${nivelAtual.sb} / ${nivelAtual.bb} - ${nivelAtual.ante || 0}`
+        : '-';
+      document.getElementById('tvProximoBlind').textContent = nivelProximo ? `${nivelProximo.sb} / ${nivelProximo.bb}` : 'Último nível';
+      document.getElementById('tvProximoAnte').textContent = nivelProximo ? `${nivelProximo.ante || 0}` : '-';
+    }
+
+    const segundosProximoIntervalo = calcularSegundosAteProximoIntervalo();
+
+    document.getElementById('tvProximoIntervalo').textContent = segundosProximoIntervalo === null
+      ? 'Nenhum'
+      : formatarTempoRelogio(segundosProximoIntervalo);
+
+    document.getElementById('tvTempoDecorrido').textContent = formatarTempoDecorrido(calcularNovoTempoDecorridoAcumulado());
+
+    const entradas = movimentacoesTorneio.filter(
+      m => m.tipo === 'Entrada' && m.tipo_registro !== 'Add-on'
+    ).length;
+
+    document.getElementById('tvEntradas').textContent = entradas;
+
+    const jogadoresRegistrados = new Set(
+      movimentacoesTorneio.filter(m => NOMES_BUYIN.includes(m.tipo_registro)).map(m => m.jogador)
+    );
+
+    document.getElementById('tvEntradasTopo').textContent = `${jogadoresRegistrados.size} Jogadores`;
+
+    const bounty = valoresTorneio.find(v => v.tipo === 'Bounty (K.O.)');
+
+    document.getElementById('tvBounty').textContent = (bounty && Number(bounty.valor_total) > 0)
+      ? `R$ ${Number(bounty.valor_total).toFixed(2)}`
+      : 'N/D';
+
+    const totalPrize = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_prize || 0), 0)
+      + Number(torneioAtual.ajuste_premiacao || 0);
+
+    document.getElementById('tvPremioTotal').textContent = `R$ ${totalPrize.toFixed(2)}`;
+
+    const estruturaPremiacao = estruturasPremiacao.find(e => e.id === torneioAtual.premiacao_estrutura_id);
+    const premiosEl = document.getElementById('tvPremios');
+
+    premiosEl.innerHTML = '';
+
+    if (estruturaPremiacao) {
+
+      (estruturaPremiacao.percentuais || []).forEach((pct, index) => {
+
+        const valor = totalPrize * (Number(pct) / 100);
+
+        const span = document.createElement('span');
+        span.textContent = `${index + 1}º: R$ ${valor.toFixed(2)}`;
+
+        premiosEl.appendChild(span);
+      });
+    }
+  }
+
+  (async function inicializar() {
+
+    const autenticado = await exigirSessaoOuRedirecionar();
+
+    if (!autenticado) return;
+
+    await carregarDados();
+
+    atualizarRelogioParede();
+
+    setInterval(atualizarTela, 1000);
+    setInterval(atualizarRelogioParede, 1000);
+    setInterval(carregarDados, 3000);
+  })();
+
+</script>
+
+</body>
+</html>
