@@ -595,7 +595,7 @@ tbody tr:hover {
 }
 
 .relogio-contador-intervalo {
-  color: #dc2626;
+  color: #dc2626 !important;
 }
 
 .btn-tile {
