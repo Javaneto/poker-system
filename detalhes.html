@@ -127,7 +127,7 @@
       gap: 4vw;
       flex-wrap: wrap;
       padding: 1.6vh 2vw;
-      font-size: min(3vh, 2.4vw);
+      font-size: min(4.5vh, 3.6vw);
       font-weight: 800;
     }
 
@@ -204,6 +204,7 @@
   let movimentacoesTorneio = [];
   let estruturasPremiacao = [];
   let estruturasBlinds = [];
+  let avancoNivelEmAndamento = false;
 
   const NOMES_BUYIN = ['Buy-in', 'Free', 'Buy-in Duplo', 'Buy-in Triplo'];
 
@@ -270,6 +271,99 @@
     const decorridoDesdeInicio = Math.floor((Date.now() - new Date(torneioAtual.relogio_iniciado_em).getTime()) / 1000);
 
     return acumulado + Math.max(decorridoDesdeInicio, 0);
+  }
+
+  async function executarAvancoNivelClock() {
+
+    if (!torneioAtual) return;
+
+    if (avancoNivelEmAndamento) return;
+
+    avancoNivelEmAndamento = true;
+
+    const niveis = obterNiveisTorneioAtual();
+    const indiceAtual = torneioAtual.relogio_nivel_atual || 0;
+    const nivelAtual = niveis[indiceAtual];
+    const emIntervalo = !!torneioAtual.relogio_em_intervalo;
+
+    let novosDados;
+
+    if (emIntervalo && !torneioAtual.relogio_intervalo_avanca_nivel) {
+
+      // intervalo manual termina (ou foi encerrado em outra tela) -> retoma o nível de onde parou
+      novosDados = {
+        relogio_em_intervalo: false,
+        relogio_intervalo_avanca_nivel: false,
+        relogio_segundos_restantes: torneioAtual.relogio_segundos_pre_intervalo ?? ((nivelAtual?.duracao || 0) * 60),
+        relogio_segundos_pre_intervalo: null,
+        relogio_iniciado_em: new Date().toISOString(),
+        relogio_rodando: true,
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
+      };
+
+    } else if (emIntervalo) {
+
+      // intervalo estruturado (entre níveis) termina -> avança de nível
+      const proximoIndice = Math.min(indiceAtual + 1, niveis.length - 1);
+      const proximoNivel = niveis[proximoIndice];
+
+      novosDados = {
+        relogio_nivel_atual: proximoIndice,
+        relogio_em_intervalo: false,
+        relogio_intervalo_avanca_nivel: false,
+        relogio_segundos_pre_intervalo: null,
+        relogio_segundos_restantes: (proximoNivel?.duracao || 0) * 60,
+        relogio_iniciado_em: new Date().toISOString(),
+        relogio_rodando: true,
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
+      };
+
+    } else if (nivelAtual && Number(nivelAtual.pausa) > 0) {
+
+      // nível termina e tem pausa configurada -> entra em intervalo estruturado
+      novosDados = {
+        relogio_em_intervalo: true,
+        relogio_intervalo_avanca_nivel: true,
+        relogio_segundos_restantes: Number(nivelAtual.pausa) * 60,
+        relogio_iniciado_em: new Date().toISOString(),
+        relogio_rodando: true,
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
+      };
+
+    } else {
+
+      // nível termina sem pausa -> avança direto
+      const proximoIndice = Math.min(indiceAtual + 1, niveis.length - 1);
+      const proximoNivel = niveis[proximoIndice];
+
+      novosDados = {
+        relogio_nivel_atual: proximoIndice,
+        relogio_em_intervalo: false,
+        relogio_segundos_restantes: (proximoNivel?.duracao || 0) * 60,
+        relogio_iniciado_em: new Date().toISOString(),
+        relogio_rodando: true,
+        tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
+      };
+    }
+
+    // Atualização otimista: reflete na tela imediatamente, sem esperar o próximo carregarDados()
+    torneioAtual = { ...torneioAtual, ...novosDados };
+    atualizarTela();
+
+    const { error } = await client
+      .from('torneios')
+      .update(novosDados)
+      .eq('id', torneioAtual.id);
+
+    avancoNivelEmAndamento = false;
+
+    if (error) {
+      console.error(error);
+      await carregarDados();
+      return;
+    }
+
+    await carregarDados();
   }
 
   function formatarTempoRelogio(segundos) {
@@ -417,6 +511,10 @@
 
     contadorEl.textContent = formatarTempoRelogio(restante);
     contadorEl.style.color = emIntervalo ? '#ef4444' : '#fff';
+
+    if (torneioAtual.status !== 'encerrado' && torneioAtual.relogio_rodando && restante <= 0 && !avancoNivelEmAndamento) {
+      executarAvancoNivelClock();
+    }
 
     let status = 'Pausado';
 
