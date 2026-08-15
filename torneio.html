@@ -228,9 +228,20 @@
       Mesa Cash
     </a>
 
-    <button class="btn-gray menu-item" onclick="fecharMenu()">
-      Torneio Ativo
+    <button class="btn-gray menu-item" onclick="alternarSubmenuTorneio()" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Torneio Ativo</span>
+      <span id="setaSubmenuTorneio">▾</span>
     </button>
+
+    <div id="submenuTorneio" style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn-gray menu-item menu-subitem" onclick="fecharMenu()">
+        Diretor
+      </button>
+
+      <a href="detalhes.html" class="btn-gray menu-item menu-subitem">
+        Detalhes
+      </a>
+    </div>
 
     <a href="torneios.html" class="btn-gray menu-item">
       Torneios
@@ -1311,6 +1322,17 @@
     if (e.target.id === 'menuOverlay') {
       fecharMenu();
     }
+  }
+
+  function alternarSubmenuTorneio() {
+
+    const submenu = document.getElementById('submenuTorneio');
+    const seta = document.getElementById('setaSubmenuTorneio');
+
+    const vaiAbrir = submenu.classList.contains('oculto');
+
+    submenu.classList.toggle('oculto');
+    seta.textContent = vaiAbrir ? '▾' : '▸';
   }
 
   function escapeHtml(valor) {
