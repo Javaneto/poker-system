@@ -38,6 +38,21 @@
       letter-spacing: 0.02em;
       margin-bottom: 10px;
     }
+
+    .painel-info-linha {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      font-weight: 700;
+      color: #fff;
+      background: #4a0e0e;
+      border-bottom: 1px solid #2a0808;
+    }
+
+    .painel-info-linha:nth-child(odd) {
+      background: #5a1212;
+    }
   </style>
 </head>
 <body>
@@ -57,33 +72,26 @@
   <div id="faixaNomeTorneio" class="faixa-nome-torneio oculto"></div>
 
   <div class="flex" style="align-items:flex-start;">
-    <div class="card" style="flex:1;min-width:200px;">
+    <div class="card" style="flex:0 1 400px;min-width:200px;background:#000;padding:16px;">
       <div id="relogioTorneio" class="oculto">
-        <h2 style="margin-top:0;">Relógio — Nível <span id="relogioNivelNumero">1</span></h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <h2 style="margin:0;color:#fff;font-size:18px;">
+            Nível <span id="relogioNivelNumero">1</span>
+          </h2>
 
-        <div style="text-align:center;padding:16px 0;">
-          <p id="relogioContador" style="font-size:56px;font-weight:800;margin:0;font-variant-numeric:tabular-nums;">
+          <span id="relogioStatusTexto" style="color:#fff;font-weight:700;">Pausado</span>
+        </div>
+
+        <div style="background:#1a1a1a;border-radius:10px;padding:16px 0;text-align:center;">
+          <p id="relogioContador" style="font-size:56px;font-weight:800;margin:0;color:#fff;font-variant-numeric:tabular-nums;">
             00:00
           </p>
-          <p id="relogioStatusTexto" style="color:#666;margin-top:4px;">Pausado</p>
         </div>
 
-        <div class="flex" style="text-align:center;">
-          <div style="flex:1;">
-            <p style="color:#666;margin-bottom:4px;">Blinds Atuais</p>
-            <p id="relogioBlindsAtual" style="font-size:24px;font-weight:bold;margin:0;">-</p>
-            <p id="relogioAnteAtual" style="color:#666;font-size:13px;margin:0;"></p>
-          </div>
-
-          <div style="flex:1;">
-            <p style="color:#666;margin-bottom:4px;">Próximo Nível</p>
-            <p id="relogioBlindsProximo" style="font-size:20px;font-weight:bold;margin:0;color:#767c88;">-</p>
-            <p id="relogioAnteProximo" style="color:#666;font-size:13px;margin:0;"></p>
-          </div>
-        </div>
+        <p id="relogioBlindsAtual" style="font-size:26px;font-weight:800;color:#fff;text-align:center;margin:16px 0 0;">-</p>
       </div>
 
-      <p id="relogioSemEstrutura" style="color:#666;">Selecione um torneio com Estrutura de Blinds configurada.</p>
+      <p id="relogioSemEstrutura" style="color:#999;">Selecione um torneio com Estrutura de Blinds configurada.</p>
     </div>
 
     <div class="card card-botoes-fixo">
@@ -148,63 +156,60 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>Jogadores do Torneio</h2>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Jogador</th>
-          <th>Registro</th>
-          <th>Rebuys</th>
-          <th>Add-on</th>
-          <th>Total Pago</th>
-        </tr>
-      </thead>
-
-      <tbody id="tabelaJogadoresTorneio"></tbody>
-    </table>
-  </div>
-
   <div class="flex" style="align-items:flex-start;">
-    <div class="card oculto" id="painelPremiacao" style="flex:1;min-width:260px;">
-      <p style="color:#666;margin-bottom:2px;">Prêmio acumulado</p>
-      <p id="totalPrizeAcumulado" class="positivo" style="font-size:24px;margin-top:0;margin-bottom:6px;">R$ 0,00</p>
+    <div class="card oculto" id="painelEstatisticasTorneio" style="flex:0 1 400px;min-width:200px;background:#000;padding:0;overflow:hidden;">
+      <div class="painel-info-linha">
+        <span>Próximo SB/BB</span>
+        <span id="statProximoBlind">-</span>
+      </div>
 
-      <table style="font-size:13px;">
+      <div class="painel-info-linha">
+        <span>Jogadores Registrados</span>
+        <span id="statJogadoresRegistrados">0</span>
+      </div>
+
+      <div class="painel-info-linha">
+        <span>Entradas (sem Add-on)</span>
+        <span id="statEntradas">0</span>
+      </div>
+
+      <div class="painel-info-linha">
+        <span>Tempo Decorrido</span>
+        <span id="statTempoDecorrido">00:00</span>
+      </div>
+
+      <div class="painel-info-linha">
+        <span>Próximo Intervalo em</span>
+        <span id="statProximoIntervalo">-</span>
+      </div>
+
+      <div class="painel-info-linha">
+        <span>Bounty</span>
+        <span id="statBounty">N/D</span>
+      </div>
+
+      <div class="painel-info-linha">
+        <span>Prêmio Total</span>
+        <span id="statPremioTotal">R$ 0,00</span>
+      </div>
+    </div>
+
+    <div class="card" style="flex:1;min-width:280px;">
+      <h2>Jogadores do Torneio</h2>
+
+      <table>
         <thead>
           <tr>
-            <th>Posição</th>
-            <th>Valor</th>
+            <th>Jogador</th>
+            <th>Registro</th>
+            <th>Rebuys</th>
+            <th>Add-on</th>
+            <th>Total Pago</th>
           </tr>
         </thead>
 
-        <tbody id="tabelaPremiacao"></tbody>
+        <tbody id="tabelaJogadoresTorneio"></tbody>
       </table>
-    </div>
-
-    <div class="card oculto" id="painelEstatisticasTorneio" style="flex:1;min-width:260px;">
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div>
-          <p style="color:#666;margin-bottom:1px;">Jogadores Registrados</p>
-          <p id="statJogadoresRegistrados" style="font-size:20px;font-weight:bold;margin:0;">0</p>
-        </div>
-
-        <div>
-          <p style="color:#666;margin-bottom:1px;">Entradas (sem Add-on)</p>
-          <p id="statEntradas" style="font-size:20px;font-weight:bold;margin:0;">0</p>
-        </div>
-
-        <div>
-          <p style="color:#666;margin-bottom:1px;">Tempo Decorrido</p>
-          <p id="statTempoDecorrido" style="font-size:20px;font-weight:bold;margin:0;">00:00</p>
-        </div>
-
-        <div>
-          <p style="color:#666;margin-bottom:1px;">Próximo Intervalo em</p>
-          <p id="statProximoIntervalo" style="font-size:20px;font-weight:bold;margin:0;">-</p>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -964,6 +969,14 @@
 
     painel.classList.remove('oculto');
 
+    const niveis = obterNiveisTorneioAtual();
+    const indiceAtual = Math.min(torneioAtual.relogio_nivel_atual || 0, Math.max(niveis.length - 1, 0));
+    const nivelProximo = niveis[indiceAtual + 1];
+
+    document.getElementById('statProximoBlind').textContent = nivelProximo
+      ? `${nivelProximo.sb} / ${nivelProximo.bb}`
+      : (niveis.length > 0 ? 'Último nível' : '-');
+
     const jogadoresRegistrados = new Set(
       movimentacoesTorneio.filter(m => NOMES_BUYIN.includes(m.tipo_registro)).map(m => m.jogador)
     );
@@ -985,6 +998,17 @@
     document.getElementById('statProximoIntervalo').textContent = segundosProximoIntervalo === null
       ? 'Nenhum programado'
       : formatarTempoRelogio(segundosProximoIntervalo);
+
+    const bounty = valoresTorneio.find(v => v.tipo === 'Bounty (K.O.)');
+
+    document.getElementById('statBounty').textContent = (bounty && Number(bounty.valor_total) > 0)
+      ? `R$ ${Number(bounty.valor_total).toFixed(2)}`
+      : 'N/D';
+
+    const totalPrizeStat = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_prize || 0), 0)
+      + Number(torneioAtual.ajuste_premiacao || 0);
+
+    document.getElementById('statPremioTotal').textContent = `R$ ${totalPrizeStat.toFixed(2)}`;
   }
 
   async function sincronizarRelogioTorneio() {
@@ -1052,7 +1076,6 @@
 
     const indiceAtual = Math.min(torneioAtual.relogio_nivel_atual || 0, niveis.length - 1);
     const nivelAtual = niveis[indiceAtual];
-    const nivelProximo = niveis[indiceAtual + 1];
     const emIntervalo = !!torneioAtual.relogio_em_intervalo;
     const estaEncerrado = torneioAtual.status === 'encerrado';
 
@@ -1069,18 +1092,8 @@
 
     if (emIntervalo) {
       document.getElementById('relogioBlindsAtual').textContent = 'Intervalo';
-      document.getElementById('relogioAnteAtual').textContent = '';
     } else {
-      document.getElementById('relogioBlindsAtual').textContent = `${nivelAtual.sb}/${nivelAtual.bb}`;
-      document.getElementById('relogioAnteAtual').textContent = `Ante ${nivelAtual.ante || 0}`;
-    }
-
-    if (nivelProximo) {
-      document.getElementById('relogioBlindsProximo').textContent = `${nivelProximo.sb}/${nivelProximo.bb}`;
-      document.getElementById('relogioAnteProximo').textContent = `Ante ${nivelProximo.ante || 0}`;
-    } else {
-      document.getElementById('relogioBlindsProximo').textContent = 'Último nível';
-      document.getElementById('relogioAnteProximo').textContent = '';
+      document.getElementById('relogioBlindsAtual').textContent = `${nivelAtual.sb}/${nivelAtual.bb} - ${nivelAtual.ante || 0}`;
     }
 
     const btnPlayPause = document.getElementById('btnRelogioPlayPause');
@@ -1907,7 +1920,6 @@
     const semTorneio = document.getElementById('semTorneio');
     const infoTorneio = document.getElementById('infoTorneio');
     const painelPagamento = document.getElementById('painelRegistrarPagamento');
-    const painelPremiacao = document.getElementById('painelPremiacao');
     const faixaNomeTorneio = document.getElementById('faixaNomeTorneio');
 
     if (!torneioAtual) {
@@ -1915,7 +1927,6 @@
       semTorneio.classList.remove('oculto');
       infoTorneio.classList.add('oculto');
       painelPagamento.classList.add('oculto');
-      painelPremiacao.classList.add('oculto');
       faixaNomeTorneio.classList.add('oculto');
 
       atualizarBotoesPagamento();
@@ -1929,7 +1940,6 @@
     semTorneio.classList.add('oculto');
     infoTorneio.classList.remove('oculto');
     painelPagamento.classList.remove('oculto');
-    painelPremiacao.classList.remove('oculto');
 
     faixaNomeTorneio.classList.remove('oculto');
     faixaNomeTorneio.textContent = torneioAtual.nome;
@@ -1954,84 +1964,10 @@
       }
     }
 
-    const totalPrize = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_prize || 0), 0)
-      + Number(torneioAtual.ajuste_premiacao || 0);
-
-    document.getElementById('totalPrizeAcumulado').textContent = `R$ ${totalPrize.toFixed(2)}`;
-
-    renderizarTabelaPremiacao(totalPrize);
-
     atualizarBotoesPagamento();
     atualizarMovimentacoesAbertas();
     renderizarTabelaJogadoresTorneio();
     atualizarModaisAbertosSeNecessario();
-  }
-
-  function calcularValoresPremiacaoArredondados(totalPrize, percentuais) {
-
-    const unidade = Number(torneioAtual?.arredondamento_premiacao);
-
-    if (!unidade || unidade <= 0) {
-      return percentuais.map(pct => totalPrize * (Number(pct) / 100));
-    }
-
-    let sobra = 0;
-    const resultados = [];
-
-    percentuais.forEach(pct => {
-
-      const bruto = totalPrize * (Number(pct) / 100) + sobra;
-
-      const multiplos = Math.floor(bruto / unidade);
-      const fracao = (bruto - multiplos * unidade) / unidade;
-
-      const valor = fracao >= 0.6 ? (multiplos + 1) * unidade : multiplos * unidade;
-
-      sobra = bruto - valor;
-
-      resultados.push(valor);
-    });
-
-    if (resultados.length > 0) {
-      resultados[resultados.length - 1] = Math.round((resultados[resultados.length - 1] + sobra) * 100) / 100;
-    }
-
-    return resultados;
-  }
-
-  function formatarMoedaSemZeros(valor) {
-
-    const arredondado = Math.round(Number(valor) * 100) / 100;
-
-    return Number.isInteger(arredondado)
-      ? `R$ ${arredondado}`
-      : `R$ ${arredondado.toFixed(2)}`;
-  }
-
-  function renderizarTabelaPremiacao(totalPrize) {
-
-    const tabela = document.getElementById('tabelaPremiacao');
-    tabela.innerHTML = '';
-
-    const estrutura = estruturasPremiacao.find(e => e.id === torneioAtual?.premiacao_estrutura_id);
-
-    if (!estrutura) {
-      tabela.innerHTML = '<tr><td colspan="2" style="color:#666;">Nenhuma estrutura de premiação selecionada.</td></tr>';
-      return;
-    }
-
-    const percentuais = estrutura.percentuais || [];
-    const valores = calcularValoresPremiacaoArredondados(totalPrize, percentuais);
-
-    valores.forEach((valor, index) => {
-
-      tabela.innerHTML += `
-        <tr>
-          <td>${index + 1}º</td>
-          <td>${formatarMoedaSemZeros(valor)}</td>
-        </tr>
-      `;
-    });
   }
 
   async function abrirModalConfigTorneioAtual() {
