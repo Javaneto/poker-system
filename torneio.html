@@ -2986,6 +2986,15 @@
         <input type="number" class="nivel-pausa" value="${nivel.pausa}" min="0">
       `;
 
+      const btnAdicionar = document.createElement('button');
+      btnAdicionar.type = 'button';
+      btnAdicionar.className = 'btn-icone';
+      btnAdicionar.title = 'Adicionar nível depois deste';
+      btnAdicionar.textContent = '➕';
+      btnAdicionar.onclick = () => inserirNivelBlindApos(index);
+
+      div.appendChild(btnAdicionar);
+
       const btnRemover = document.createElement('button');
       btnRemover.type = 'button';
       btnRemover.className = 'btn-icone';
@@ -3023,6 +3032,23 @@
       bb: ultimo ? ultimo.bb * 2 : 200,
       ante: ultimo ? ultimo.ante : 0,
       duracao: ultimo ? ultimo.duracao : 20,
+      pausa: 0
+    });
+
+    renderizarNiveisBlindEditor();
+  }
+
+  function inserirNivelBlindApos(index) {
+
+    niveisBlindAtual = lerNiveisBlindDoDOM();
+
+    const atual = niveisBlindAtual[index];
+
+    niveisBlindAtual.splice(index + 1, 0, {
+      sb: atual ? atual.sb * 2 : 100,
+      bb: atual ? atual.bb * 2 : 200,
+      ante: atual ? atual.ante : 0,
+      duracao: atual ? atual.duracao : 20,
       pausa: 0
     });
 
