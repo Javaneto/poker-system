@@ -8,18 +8,53 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <link rel="stylesheet" href="styles.css">
+
+  <style>
+    body {
+      padding: 16px 8px;
+    }
+
+    .container {
+      max-width: none;
+    }
+
+    .card {
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+
+    .flex {
+      gap: 8px;
+    }
+
+    .faixa-nome-torneio {
+      background: linear-gradient(180deg, #dc2626, #7f1d1d);
+      color: #fff;
+      text-align: center;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: 0.02em;
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
 <body>
 
 <div class="container">
 
   <div class="topbar">
-    <h1>RPG Poker Club — Torneio</h1>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="btnMenu" class="btn-gray" onclick="abrirMenu()">
+        ☰
+      </button>
 
-    <button id="btnMenu" class="btn-gray" onclick="abrirMenu()">
-      ☰
-    </button>
+      <h1 style="margin:0;">RPG Poker Club — Torneio</h1>
+    </div>
   </div>
+
+  <div id="faixaNomeTorneio" class="faixa-nome-torneio oculto"></div>
 
   <div class="flex" style="align-items:flex-start;">
     <div class="card" style="flex:1;min-width:200px;">
@@ -113,56 +148,6 @@
     </div>
   </div>
 
-  <div class="flex" style="align-items:flex-start;">
-    <div class="card oculto" id="painelPremiacao" style="flex:1;min-width:260px;">
-      <p style="color:#666;margin-bottom:4px;">Prêmio acumulado</p>
-      <p id="totalPrizeAcumulado" class="positivo" style="font-size:26px;margin-top:0;">R$ 0,00</p>
-
-      <h3 style="font-size:15px;margin-bottom:4px;">Distribuição de Prêmios</h3>
-
-      <p id="nomeEstruturaAtual" style="color:#666;font-size:13px;margin-top:0;margin-bottom:8px;">
-        Nenhuma estrutura selecionada.
-      </p>
-
-      <table style="font-size:13px;">
-        <thead>
-          <tr>
-            <th>Posição</th>
-            <th>Valor</th>
-          </tr>
-        </thead>
-
-        <tbody id="tabelaPremiacao"></tbody>
-      </table>
-    </div>
-
-    <div class="card oculto" id="painelEstatisticasTorneio" style="flex:1;min-width:260px;">
-      <h3 style="margin-top:0;margin-bottom:12px;">Informações</h3>
-
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div>
-          <p style="color:#666;margin-bottom:2px;">Jogadores Registrados</p>
-          <p id="statJogadoresRegistrados" style="font-size:22px;font-weight:bold;margin:0;">0</p>
-        </div>
-
-        <div>
-          <p style="color:#666;margin-bottom:2px;">Entradas (sem Add-on)</p>
-          <p id="statEntradas" style="font-size:22px;font-weight:bold;margin:0;">0</p>
-        </div>
-
-        <div>
-          <p style="color:#666;margin-bottom:2px;">Tempo Decorrido</p>
-          <p id="statTempoDecorrido" style="font-size:22px;font-weight:bold;margin:0;">00:00</p>
-        </div>
-
-        <div>
-          <p style="color:#666;margin-bottom:2px;">Próximo Intervalo em</p>
-          <p id="statProximoIntervalo" style="font-size:22px;font-weight:bold;margin:0;">-</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="card">
     <h2>Jogadores do Torneio</h2>
 
@@ -179,6 +164,48 @@
 
       <tbody id="tabelaJogadoresTorneio"></tbody>
     </table>
+  </div>
+
+  <div class="flex" style="align-items:flex-start;">
+    <div class="card oculto" id="painelPremiacao" style="flex:1;min-width:260px;">
+      <p style="color:#666;margin-bottom:2px;">Prêmio acumulado</p>
+      <p id="totalPrizeAcumulado" class="positivo" style="font-size:24px;margin-top:0;margin-bottom:6px;">R$ 0,00</p>
+
+      <table style="font-size:13px;">
+        <thead>
+          <tr>
+            <th>Posição</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+
+        <tbody id="tabelaPremiacao"></tbody>
+      </table>
+    </div>
+
+    <div class="card oculto" id="painelEstatisticasTorneio" style="flex:1;min-width:260px;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div>
+          <p style="color:#666;margin-bottom:1px;">Jogadores Registrados</p>
+          <p id="statJogadoresRegistrados" style="font-size:20px;font-weight:bold;margin:0;">0</p>
+        </div>
+
+        <div>
+          <p style="color:#666;margin-bottom:1px;">Entradas (sem Add-on)</p>
+          <p id="statEntradas" style="font-size:20px;font-weight:bold;margin:0;">0</p>
+        </div>
+
+        <div>
+          <p style="color:#666;margin-bottom:1px;">Tempo Decorrido</p>
+          <p id="statTempoDecorrido" style="font-size:20px;font-weight:bold;margin:0;">00:00</p>
+        </div>
+
+        <div>
+          <p style="color:#666;margin-bottom:1px;">Próximo Intervalo em</p>
+          <p id="statProximoIntervalo" style="font-size:20px;font-weight:bold;margin:0;">-</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -1881,6 +1908,7 @@
     const infoTorneio = document.getElementById('infoTorneio');
     const painelPagamento = document.getElementById('painelRegistrarPagamento');
     const painelPremiacao = document.getElementById('painelPremiacao');
+    const faixaNomeTorneio = document.getElementById('faixaNomeTorneio');
 
     if (!torneioAtual) {
 
@@ -1888,6 +1916,7 @@
       infoTorneio.classList.add('oculto');
       painelPagamento.classList.add('oculto');
       painelPremiacao.classList.add('oculto');
+      faixaNomeTorneio.classList.add('oculto');
 
       atualizarBotoesPagamento();
       atualizarMovimentacoesAbertas();
@@ -1901,6 +1930,9 @@
     infoTorneio.classList.remove('oculto');
     painelPagamento.classList.remove('oculto');
     painelPremiacao.classList.remove('oculto');
+
+    faixaNomeTorneio.classList.remove('oculto');
+    faixaNomeTorneio.textContent = torneioAtual.nome;
 
     const estaEncerrado = torneioAtual.status === 'encerrado';
 
@@ -1982,10 +2014,6 @@
     tabela.innerHTML = '';
 
     const estrutura = estruturasPremiacao.find(e => e.id === torneioAtual?.premiacao_estrutura_id);
-
-    document.getElementById('nomeEstruturaAtual').textContent = estrutura
-      ? `Estrutura: ${estrutura.nome}`
-      : 'Nenhuma estrutura selecionada.';
 
     if (!estrutura) {
       tabela.innerHTML = '<tr><td colspan="2" style="color:#666;">Nenhuma estrutura de premiação selecionada.</td></tr>';
