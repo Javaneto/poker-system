@@ -30,41 +30,75 @@
         <option value="">Todos</option>
       </select>
 
-      <button id="btnNovoTorneio" class="btn-dark disabled" onclick="alternarFormularioNovoTorneio()">
+      <button id="btnNovoTorneio" class="btn-dark disabled" onclick="abrirModalNovoTorneio()">
         + Novo Torneio
       </button>
     </div>
 
-    <div id="formularioNovoTorneio" class="oculto" style="border:1px solid #e9eaef;border-radius:10px;padding:16px;margin-bottom:16px;">
-      <h2 style="margin-top:0;">Novo Torneio</h2>
-
-      <input type="text" id="novoTorneioNome" placeholder="Nome do torneio">
-
-      <div class="cabecalho-tipos">
-        <span>Tipo</span>
-        <span>Valor Total</span>
-        <span>Rake</span>
-        <span>Prêmio</span>
-      </div>
-
-      <div id="linhasTiposPagamento"></div>
-
-      <p style="color:#666;font-size:12px;margin-top:-4px;">
-        Marque os tipos que valem para este torneio. Para ativar/desativar tipos globalmente, use "Configurações de Torneio".
-      </p>
-
-      <div class="modal-acoes">
-        <button class="btn-gray" onclick="alternarFormularioNovoTorneio()">
-          Cancelar
-        </button>
-
-        <button id="btnCriarTorneio" class="btn-dark" onclick="confirmarNovoTorneio()">
-          Criar Torneio
-        </button>
-      </div>
-    </div>
-
     <div id="listaTorneios" class="grid-torneios"></div>
+  </div>
+
+  <div id="modalNovoTorneio" class="modal-overlay">
+    <div class="modal-box" style="max-width:880px;">
+
+      <div id="novoTorneioEtapa1">
+        <h2 style="margin-top:0;">Novo Torneio — Informações</h2>
+
+        <input type="text" id="novoTorneioNome" placeholder="Nome do torneio">
+
+        <div class="cabecalho-tipos">
+          <span>Tipo</span>
+          <span>Valor Total</span>
+          <span>Rake</span>
+          <span>Prêmio</span>
+        </div>
+
+        <div id="linhasTiposPagamento"></div>
+
+        <p style="color:#666;font-size:12px;margin-top:-4px;">
+          Marque os tipos que valem para este torneio. Para ativar/desativar tipos globalmente, use "Configurações de Torneio".
+        </p>
+
+        <div class="modal-acoes">
+          <button class="btn-gray" onclick="fecharModalNovoTorneio()">
+            Cancelar
+          </button>
+
+          <button id="btnAvancarEtapaBlinds" class="btn-dark" onclick="avancarParaEtapaBlinds()">
+            Avançar →
+          </button>
+        </div>
+      </div>
+
+      <div id="novoTorneioEtapa2" class="oculto">
+        <h2 style="margin-top:0;">Novo Torneio — Estrutura de Blinds</h2>
+
+        <p style="color:#666;font-size:13px;margin-top:0;">Estrutura de Blinds</p>
+
+        <select id="novoTorneioEstruturaBlinds" style="margin-bottom:16px;">
+          <option value="">Nenhuma selecionada</option>
+        </select>
+
+        <p style="color:#666;font-size:12px;margin-bottom:4px;">Duração do Intervalo Manual (min)</p>
+
+        <input type="number" id="novoTorneioIntervaloManual" min="1" placeholder="10">
+
+        <p style="color:#666;font-size:12px;margin-top:-4px;">
+          Se a estrutura desejada ainda não existe, você pode criar ou editar em "Configurar Torneio → Estrutura de Blinds" depois de criar o torneio.
+        </p>
+
+        <div class="modal-acoes">
+          <button class="btn-gray" onclick="voltarParaEtapaInfo()">
+            ← Voltar
+          </button>
+
+          <button id="btnCriarTorneio" class="btn-dark" onclick="confirmarNovoTorneio()">
+            Criar Torneio
+          </button>
+        </div>
+      </div>
+
+    </div>
   </div>
 
 </div>
@@ -127,6 +161,7 @@
   let todosTorneios = [];
   let todosValoresTorneios = [];
   let estruturasPremiacao = [];
+  let estruturasBlinds = [];
   let tiposRegistroAtivos = [];
 
   function escapeHtml(valor) {
@@ -251,6 +286,13 @@
       .order('id', { ascending: true });
 
     estruturasPremiacao = estruturasDB || [];
+
+    const { data: estruturasBlindsDB } = await client
+      .from('estruturas_blinds')
+      .select('*')
+      .order('id', { ascending: true });
+
+    estruturasBlinds = estruturasBlindsDB || [];
 
     renderizarListaTorneios();
   }
@@ -468,18 +510,9 @@
     return `${prefixo}${maiorNumero + 1}`;
   }
 
-  function alternarFormularioNovoTorneio() {
+  function abrirModalNovoTorneio() {
 
     if (!adminLiberado) return;
-
-    const form = document.getElementById('formularioNovoTorneio');
-
-    const vaiAbrir = form.classList.contains('oculto');
-
-    if (!vaiAbrir) {
-      form.classList.add('oculto');
-      return;
-    }
 
     document.getElementById('novoTorneioNome').value = obterProximoNomeTorneio();
 
@@ -494,10 +527,18 @@
       tiposDisponiveis.forEach(t => criarLinhaTipoFixo(t, 0, 0, 'linhasTiposPagamento'));
     }
 
-    form.classList.remove('oculto');
+    document.getElementById('novoTorneioEtapa1').classList.remove('oculto');
+    document.getElementById('novoTorneioEtapa2').classList.add('oculto');
+
+    document.getElementById('modalNovoTorneio').classList.add('aberto');
   }
 
-  async function confirmarNovoTorneio() {
+  function fecharModalNovoTorneio() {
+
+    document.getElementById('modalNovoTorneio').classList.remove('aberto');
+  }
+
+  async function avancarParaEtapaBlinds() {
 
     const nome = document.getElementById('novoTorneioNome').value.trim();
 
@@ -513,6 +554,36 @@
       return;
     }
 
+    const select = document.getElementById('novoTorneioEstruturaBlinds');
+
+    select.innerHTML = '<option value="">Nenhuma selecionada</option>' +
+      estruturasBlinds.map(e => `<option value="${e.id}">${escapeHtml(e.nome)}</option>`).join('');
+
+    document.getElementById('novoTorneioIntervaloManual').value = 10;
+
+    document.getElementById('novoTorneioEtapa1').classList.add('oculto');
+    document.getElementById('novoTorneioEtapa2').classList.remove('oculto');
+  }
+
+  function voltarParaEtapaInfo() {
+
+    document.getElementById('novoTorneioEtapa2').classList.add('oculto');
+    document.getElementById('novoTorneioEtapa1').classList.remove('oculto');
+  }
+
+  async function confirmarNovoTorneio() {
+
+    const nome = document.getElementById('novoTorneioNome').value.trim();
+    const tipos = lerLinhasTiposPagamento('linhasTiposPagamento');
+
+    if (!nome || tipos.length === 0) {
+      await mostrarAlerta('Volte à etapa anterior e confira o nome e os valores');
+      return;
+    }
+
+    const estruturaBlindsId = document.getElementById('novoTorneioEstruturaBlinds').value || null;
+    const intervaloManual = parseInt(document.getElementById('novoTorneioIntervaloManual').value, 10) || 10;
+
     const torneioAtualExistente = todosTorneios.find(t => t.id === torneioAtualId);
 
     if (torneioAtualExistente && torneioAtualExistente.status !== 'encerrado') {
@@ -526,7 +597,12 @@
 
     const { data: torneioCriado, error: erroTorneio } = await client
       .from('torneios')
-      .insert([{ nome, status: 'aberto' }])
+      .insert([{
+        nome,
+        status: 'aberto',
+        estrutura_blinds_id: estruturaBlindsId ? Number(estruturaBlindsId) : null,
+        intervalo_manual_minutos: intervaloManual
+      }])
       .select()
       .single();
 
@@ -595,6 +671,8 @@
       confirmarAlerta();
       return;
     }
+
+    fecharModalNovoTorneio();
   });
 
   (async function inicializar() {
