@@ -125,7 +125,7 @@ a.btn-gray {
 }
 
 .oculto {
-  display: none;
+  display: none !important;
 }
 
 .modal-overlay {
@@ -199,6 +199,11 @@ a.btn-gray {
 
 .menu-lateral .menu-item:hover {
   background: #eef0f4;
+}
+
+.menu-lateral .menu-subitem {
+  margin-left: 14px;
+  width: calc(100% - 14px);
 }
 
 .grid-torneios {
