@@ -45,8 +45,8 @@
       flex: 0 0 auto;
       background: linear-gradient(180deg, #dc2626, #7f1d1d);
       text-align: center;
-      padding: 1.4vh 1vw;
-      font-size: min(4vh, 3.2vw);
+      padding: 0.8vh 1vw;
+      font-size: min(2.8vh, 2.2vw);
       font-weight: 800;
       letter-spacing: 0.02em;
     }
@@ -153,12 +153,99 @@
       color: #999;
       font-size: min(4vh, 3vw);
     }
+
+    #btnMenuTV {
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: min(2.4vh, 2vw);
+      cursor: pointer;
+    }
+
+    .menu-overlay-tv {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 3000;
+    }
+
+    .menu-overlay-tv.aberto {
+      display: block;
+    }
+
+    .menu-lateral-tv {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 260px;
+      background: #111;
+      border-right: 1px solid #333;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+
+    .menu-item-tv {
+      display: block;
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 10px 14px;
+      text-align: left;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .menu-subitem-tv {
+      margin-left: 12px;
+    }
   </style>
 </head>
 <body>
 
+  <div id="menuOverlayTV" class="menu-overlay-tv" onclick="fecharMenuSeClicouForaTV(event)">
+    <div class="menu-lateral-tv">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <strong style="color:#fff;">Menu</strong>
+        <button class="menu-item-tv" style="padding:2px 10px;" onclick="fecharMenuTV()">×</button>
+      </div>
+
+      <a href="index.html" class="menu-item-tv">Mesa Cash</a>
+
+      <button class="menu-item-tv" onclick="alternarSubmenuTorneioTV()" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Torneio Ativo</span>
+        <span id="setaSubmenuTorneioTV">▾</span>
+      </button>
+
+      <div id="submenuTorneioTV" style="display:flex;flex-direction:column;gap:8px;">
+        <a href="torneio.html" class="menu-item-tv menu-subitem-tv">Diretor</a>
+        <button class="menu-item-tv menu-subitem-tv" onclick="fecharMenuTV()">Detalhes</button>
+      </div>
+
+      <a href="torneios.html" class="menu-item-tv">Torneios</a>
+      <a href="index.html#cadastro" class="menu-item-tv">Cadastrar Jogador</a>
+      <a href="torneio.html#config" class="menu-item-tv">Configurações de Torneio</a>
+      <button class="menu-item-tv" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
   <div class="tv-topo">
-    <span>RPG Poker Club</span>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="btnMenuTV" onclick="abrirMenuTV()">☰</button>
+      <span>RPG Poker Club</span>
+    </div>
     <span id="tvRelogioParede"></span>
   </div>
 
@@ -234,6 +321,44 @@
 
     return true;
   }
+
+  async function sair() {
+
+    await client.auth.signOut();
+
+    window.location.href = 'login.html';
+  }
+
+  function abrirMenuTV() {
+    document.getElementById('menuOverlayTV').classList.add('aberto');
+  }
+
+  function fecharMenuTV() {
+    document.getElementById('menuOverlayTV').classList.remove('aberto');
+  }
+
+  function fecharMenuSeClicouForaTV(e) {
+    if (e.target.id === 'menuOverlayTV') {
+      fecharMenuTV();
+    }
+  }
+
+  function alternarSubmenuTorneioTV() {
+
+    const submenu = document.getElementById('submenuTorneioTV');
+    const seta = document.getElementById('setaSubmenuTorneioTV');
+
+    const vaiAbrir = submenu.classList.contains('oculto');
+
+    submenu.classList.toggle('oculto');
+    seta.textContent = vaiAbrir ? '▾' : '▸';
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      fecharMenuTV();
+    }
+  });
 
   function obterNiveisTorneioAtual() {
 
