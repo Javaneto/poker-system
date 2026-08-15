@@ -14,11 +14,17 @@
       padding: 0;
     }
 
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
     body {
       background: #000;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     .oculto {
@@ -26,74 +32,84 @@
     }
 
     .tv-topo {
+      flex: 0 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 20px;
-      font-size: 15px;
+      padding: 1vh 2vw;
+      font-size: min(2.2vh, 2vw);
       color: #ccc;
     }
 
     .tv-titulo {
+      flex: 0 0 auto;
       background: linear-gradient(180deg, #dc2626, #7f1d1d);
       text-align: center;
-      padding: 12px;
-      font-size: 26px;
+      padding: 1.4vh 1vw;
+      font-size: min(4vh, 3.2vw);
       font-weight: 800;
       letter-spacing: 0.02em;
     }
 
     .tv-cabecalho {
+      flex: 0 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 30px 6px;
-      font-size: 24px;
+      padding: 1.6vh 2.5vw 0.6vh;
+      font-size: min(3vh, 2.4vw);
       font-weight: 700;
     }
 
     .tv-corpo {
+      flex: 1 1 auto;
+      min-height: 0;
       display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      padding: 0 20px;
+      gap: 1.4vw;
+      padding: 1vh 2vw;
     }
 
     .tv-relogio-caixa {
       flex: 2;
-      min-width: 320px;
+      min-width: 0;
       background: #111;
       border-radius: 10px;
-      padding: 30px;
-      text-align: center;
+      padding: 2vh 2vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     .tv-contador {
-      font-size: 12vw;
+      font-size: min(16vw, 30vh);
       font-weight: 800;
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
 
     .tv-blinds {
-      font-size: 3vw;
+      font-size: min(4.5vw, 7vh);
       font-weight: 800;
-      margin-top: 24px;
+      margin-top: 2vh;
+      text-align: center;
     }
 
     .tv-painel {
       flex: 1;
-      min-width: 300px;
+      min-width: 0;
       display: flex;
       flex-direction: column;
     }
 
     .tv-linha {
+      flex: 1;
+      min-height: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 20px;
-      font-size: 20px;
+      padding: 0 1.6vw;
+      font-size: min(2.6vh, 1.8vw);
       font-weight: 700;
       background: #4a0e0e;
       border-bottom: 1px solid #2a0808;
@@ -104,20 +120,32 @@
     }
 
     .tv-premios {
+      flex: 0 0 auto;
       display: flex;
       justify-content: center;
-      gap: 60px;
+      align-items: center;
+      gap: 4vw;
       flex-wrap: wrap;
-      padding: 30px 20px;
-      font-size: 2.4vw;
+      padding: 1.6vh 2vw;
+      font-size: min(3vh, 2.4vw);
       font-weight: 800;
     }
 
+    #tvConteudo {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
     .tv-vazio {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      padding: 100px 20px;
       color: #999;
-      font-size: 20px;
+      font-size: min(4vh, 3vw);
     }
   </style>
 </head>
@@ -408,8 +436,8 @@
       document.getElementById('tvProximoAnte').textContent = '-';
     } else if (emIntervalo) {
       document.getElementById('tvBlindsAtuais').textContent = 'Intervalo';
-      document.getElementById('tvProximoBlind').textContent = nivelAtual ? `${nivelAtual.sb}K / ${nivelAtual.bb}K` : '-';
-      document.getElementById('tvProximoAnte').textContent = nivelAtual ? `${nivelAtual.ante || 0}K` : '-';
+      document.getElementById('tvProximoBlind').textContent = nivelAtual ? `${nivelAtual.sb} / ${nivelAtual.bb}` : '-';
+      document.getElementById('tvProximoAnte').textContent = nivelAtual ? `${nivelAtual.ante || 0}` : '-';
     } else {
       document.getElementById('tvBlindsAtuais').textContent = nivelAtual
         ? `${nivelAtual.sb} / ${nivelAtual.bb} - ${nivelAtual.ante || 0}`
