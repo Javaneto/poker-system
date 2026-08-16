@@ -594,11 +594,11 @@
 
     for (let i = indiceAtual + 1; i < niveis.length; i++) {
 
+      acumulado += (niveis[i].duracao || 0) * 60;
+
       if (Number(niveis[i].pausa) > 0) {
         return acumulado;
       }
-
-      acumulado += (niveis[i].duracao || 0) * 60;
     }
 
     return null;
