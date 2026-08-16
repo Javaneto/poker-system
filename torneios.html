@@ -17,7 +17,7 @@
     <h1>Torneios</h1>
 
     <div style="display:flex;gap:8px;">
-      <a href="torneio.html" class="btn-gray">Voltar ao Torneio</a>
+      <a href="diretor.html" class="btn-gray">Voltar ao Torneio</a>
       <button id="btnSair" class="btn-gray" onclick="sair()">Sair</button>
     </div>
   </div>
@@ -387,7 +387,7 @@
 
     console.log('Torneio atual alterado para:', torneioId);
 
-    window.location.href = 'torneio.html';
+    window.location.href = 'diretor.html';
   }
 
   async function excluirTorneio(torneioId, nomeTorneio) {
@@ -655,7 +655,7 @@
 
     console.log('Torneio criado:', torneioCriado.id);
 
-    window.location.href = 'torneio.html';
+    window.location.href = 'diretor.html';
   }
 
   document.addEventListener('keydown', function(e) {
