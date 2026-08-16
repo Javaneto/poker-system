@@ -1315,20 +1315,33 @@
       };
     }
 
+    const iniciadoEmEsperado = torneioAtual.relogio_iniciado_em;
+
     // Atualização otimista: reflete na tela imediatamente, sem esperar o carregarDados()
     torneioAtual = { ...torneioAtual, ...novosDados };
     atualizarRelogioTorneio();
 
-    const { error } = await client
-      .from('torneios')
-      .update(novosDados)
-      .eq('id', torneioAtual.id);
+    let query = client.from('torneios').update(novosDados).eq('id', torneioAtual.id);
+
+    query = iniciadoEmEsperado
+      ? query.eq('relogio_iniciado_em', iniciadoEmEsperado)
+      : query.is('relogio_iniciado_em', null);
+
+    const { data, error } = await query.select();
 
     avancoNivelEmAndamento = false;
     relogioAcaoEmAndamento = false;
 
     if (error) {
       console.error(error);
+      await carregarDados();
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      // Outra tela (Diretor ou Detalhes) já processou este avanço primeiro.
+      // Não fazemos nada além de ressincronizar com o estado real do banco.
+      console.log('Avanço já processado por outra tela; ressincronizando.');
       await carregarDados();
       return;
     }
