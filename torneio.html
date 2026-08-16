@@ -192,6 +192,8 @@
         <span>Prêmio Total</span>
         <span id="statPremioTotal">R$ 0,00</span>
       </div>
+
+      <div id="linhasPremiosInfo"></div>
     </div>
 
     <div class="card" style="flex:1;min-width:280px;">
@@ -946,11 +948,11 @@
 
     for (let i = indiceAtual + 1; i < niveis.length; i++) {
 
+      acumulado += (niveis[i].duracao || 0) * 60;
+
       if (Number(niveis[i].pausa) > 0) {
         return acumulado;
       }
-
-      acumulado += (niveis[i].duracao || 0) * 60;
     }
 
     return null;
@@ -1009,6 +1011,68 @@
       + Number(torneioAtual.ajuste_premiacao || 0);
 
     document.getElementById('statPremioTotal').textContent = `R$ ${totalPrizeStat.toFixed(2)}`;
+
+    const estruturaPremiacao = estruturasPremiacao.find(e => e.id === torneioAtual.premiacao_estrutura_id);
+    const linhasPremios = document.getElementById('linhasPremiosInfo');
+
+    linhasPremios.innerHTML = '';
+
+    if (estruturaPremiacao) {
+
+      const percentuais = estruturaPremiacao.percentuais || [];
+      const valores = calcularValoresPremiacaoArredondados(totalPrizeStat, percentuais);
+
+      valores.forEach((valor, index) => {
+
+        linhasPremios.innerHTML += `
+          <div class="painel-info-linha">
+            <span>${index + 1}º Colocado</span>
+            <span>${formatarMoedaSemZeros(valor)}</span>
+          </div>
+        `;
+      });
+    }
+  }
+
+  function calcularValoresPremiacaoArredondados(totalPrize, percentuais) {
+
+    const unidade = Number(torneioAtual?.arredondamento_premiacao);
+
+    if (!unidade || unidade <= 0) {
+      return percentuais.map(pct => totalPrize * (Number(pct) / 100));
+    }
+
+    let sobra = 0;
+    const resultados = [];
+
+    percentuais.forEach(pct => {
+
+      const bruto = totalPrize * (Number(pct) / 100) + sobra;
+
+      const multiplos = Math.floor(bruto / unidade);
+      const fracao = (bruto - multiplos * unidade) / unidade;
+
+      const valor = fracao >= 0.6 ? (multiplos + 1) * unidade : multiplos * unidade;
+
+      sobra = bruto - valor;
+
+      resultados.push(valor);
+    });
+
+    if (resultados.length > 0) {
+      resultados[resultados.length - 1] = Math.round((resultados[resultados.length - 1] + sobra) * 100) / 100;
+    }
+
+    return resultados;
+  }
+
+  function formatarMoedaSemZeros(valor) {
+
+    const arredondado = Math.round(Number(valor) * 100) / 100;
+
+    return Number.isInteger(arredondado)
+      ? `R$ ${arredondado}`
+      : `R$ ${arredondado.toFixed(2)}`;
   }
 
   async function sincronizarRelogioTorneio() {
@@ -3229,6 +3293,40 @@
     }
 
     console.log('Estrutura de blinds salva:', nome);
+
+    if (
+      estruturaBlindsEditandoId &&
+      torneioAtual &&
+      torneioAtual.estrutura_blinds_id === estruturaBlindsEditandoId &&
+      torneioAtual.status !== 'encerrado' &&
+      !torneioAtual.relogio_em_intervalo
+    ) {
+
+      const indiceAtual = Math.min(torneioAtual.relogio_nivel_atual || 0, niveisBlindAtual.length - 1);
+      const nivelAtual = niveisBlindAtual[indiceAtual];
+
+      if (nivelAtual) {
+
+        const dadosClock = {
+          relogio_segundos_restantes: (nivelAtual.duracao || 0) * 60
+        };
+
+        if (torneioAtual.relogio_rodando) {
+          dadosClock.relogio_iniciado_em = new Date().toISOString();
+        }
+
+        const { error: erroSincronizarClock } = await client
+          .from('torneios')
+          .update(dadosClock)
+          .eq('id', torneioAtual.id);
+
+        if (erroSincronizarClock) {
+          console.error(erroSincronizarClock);
+        } else {
+          console.log('Tempo do nível atual atualizado pra nova duração:', dadosClock.relogio_segundos_restantes, 'segundos');
+        }
+      }
+    }
 
     document.getElementById('novaEstruturaBlindsNome').value = '';
     niveisBlindAtual = [];
