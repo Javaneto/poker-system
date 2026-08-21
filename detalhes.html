@@ -301,7 +301,7 @@
   let estruturasBlinds = [];
   let avancoNivelEmAndamento = false;
 
-  const NOMES_BUYIN = ['Buy-in', 'Free', 'Buy-in Duplo', 'Buy-in Triplo'];
+  const NOMES_BUYIN = ['Buy-in', 'Free', 'Buy-in Free', 'Buy-in Duplo', 'Buy-in Triplo'];
 
   client.auth.onAuthStateChange((event, session) => {
 
@@ -752,7 +752,7 @@
     document.getElementById('tvTempoDecorrido').textContent = formatarTempoDecorrido(calcularNovoTempoDecorridoAcumulado());
 
     const entradas = movimentacoesTorneio.filter(
-      m => m.tipo === 'Entrada' && m.tipo_registro !== 'Add-on'
+      m => m.tipo === 'Entrada' || m.tipo === 'Registro' || m.tipo === 'Rebuy'
     ).length;
 
     document.getElementById('tvEntradas').textContent = entradas;
