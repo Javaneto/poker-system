@@ -733,8 +733,8 @@
       document.getElementById('tvProximoAnte').textContent = '-';
     } else if (emIntervalo) {
       document.getElementById('tvBlindsAtuais').textContent = 'Intervalo';
-      document.getElementById('tvProximoBlind').textContent = nivelAtual ? `${formatarValorBlind(nivelAtual.sb)} / ${formatarValorBlind(nivelAtual.bb)}` : '-';
-      document.getElementById('tvProximoAnte').textContent = nivelAtual ? formatarValorBlind(nivelAtual.ante || 0) : '-';
+      document.getElementById('tvProximoBlind').textContent = nivelProximo ? `${formatarValorBlind(nivelProximo.sb)} / ${formatarValorBlind(nivelProximo.bb)}` : 'Último nível';
+      document.getElementById('tvProximoAnte').textContent = nivelProximo ? formatarValorBlind(nivelProximo.ante || 0) : '-';
     } else {
       document.getElementById('tvBlindsAtuais').textContent = nivelAtual
         ? `${formatarValorBlind(nivelAtual.sb)} / ${formatarValorBlind(nivelAtual.bb)} - ${formatarValorBlind(nivelAtual.ante || 0)}`
