@@ -11,7 +11,7 @@
 
   <style>
     body {
-      padding: 16px 8px;
+      padding: 0 8px 16px;
     }
 
     .container {
@@ -27,16 +27,37 @@
       gap: 8px;
     }
 
+    .topo-diretor {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      margin: 0 -8px 10px;
+      font-size: 15px;
+      color: #ccc;
+      background: #000;
+    }
+
+    #btnMenu, #btnModoEscuro {
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
     .faixa-nome-torneio {
       background: linear-gradient(180deg, #dc2626, #7f1d1d);
       color: #fff;
       text-align: center;
       padding: 8px 12px;
-      border-radius: 8px;
       font-weight: 800;
       font-size: 18px;
       letter-spacing: 0.02em;
-      margin-bottom: 10px;
+      margin: 0 -8px 10px;
     }
 
     .painel-info-linha {
@@ -53,20 +74,112 @@
     .painel-info-linha:nth-child(odd) {
       background: #5a1212;
     }
+
+    body.modo-escuro {
+      background: #000;
+      color: #fff;
+    }
+
+    body.modo-escuro .card {
+      background: #1a1a1a;
+      border-color: #333;
+      box-shadow: none;
+    }
+
+    body.modo-escuro h1,
+    body.modo-escuro h2,
+    body.modo-escuro h3,
+    body.modo-escuro label,
+    body.modo-escuro p,
+    body.modo-escuro span,
+    body.modo-escuro td,
+    body.modo-escuro th,
+    body.modo-escuro strong {
+      color: #fff;
+    }
+
+    body.modo-escuro [style*="color:#666"],
+    body.modo-escuro [style*="color:#767c88"],
+    body.modo-escuro [style*="color:#464c56"] {
+      color: #999 !important;
+    }
+
+    body.modo-escuro th,
+    body.modo-escuro td {
+      border-bottom-color: #333;
+    }
+
+    body.modo-escuro input,
+    body.modo-escuro select {
+      background: #1a1a1a;
+      color: #fff;
+      border-color: #444;
+    }
+
+    body.modo-escuro .modal-box {
+      background: #1a1a1a;
+    }
+
+    body.modo-escuro .modal-overlay {
+      background: rgba(0,0,0,0.75);
+    }
+
+    body.modo-escuro .menu-lateral {
+      background: #1a1a1a;
+    }
+
+    body.modo-escuro .menu-lateral .menu-item {
+      background: #262626;
+      color: #fff;
+    }
+
+    body.modo-escuro .menu-lateral .menu-item:hover {
+      background: #333;
+    }
+
+    body.modo-escuro .btn-gray {
+      background: #2a2a2a;
+      color: #fff;
+    }
+
+    body.modo-escuro .linha-desfazer,
+    body.modo-escuro .linha-tipo-pagamento,
+    body.modo-escuro .linha-nivel-blind {
+      border-bottom-color: #333;
+    }
+
+    body.modo-escuro .secao-config {
+      border-color: #333;
+    }
+
+    body.modo-escuro .cabecalho-tipos,
+    body.modo-escuro .cabecalho-niveis-blind {
+      color: #999;
+    }
+
+    body.modo-escuro #btnMenu,
+    body.modo-escuro #btnModoEscuro {
+      background: #1a1a1a;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
 
-  <div class="topbar">
-    <div style="display:flex;align-items:center;gap:12px;">
-      <button id="btnMenu" class="btn-gray" onclick="abrirMenu()">
+  <div class="topo-diretor">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="btnMenu" onclick="abrirMenu()">
         ☰
       </button>
 
-      <h1 style="margin:0;">RPG Poker Club — Diretor</h1>
+      <span>RPG Poker Club</span>
     </div>
+
+    <button id="btnModoEscuro" onclick="alternarModoEscuro()" title="Alternar modo escuro">
+      🌙
+    </button>
   </div>
 
   <div id="faixaNomeTorneio" class="faixa-nome-torneio oculto"></div>
@@ -1502,6 +1615,36 @@
   function fecharMenu() {
     document.getElementById('menuOverlay').classList.remove('aberto');
   }
+
+  function aplicarModoEscuro(ativo) {
+
+    document.body.classList.toggle('modo-escuro', ativo);
+    document.getElementById('btnModoEscuro').textContent = ativo ? '☀️' : '🌙';
+  }
+
+  function alternarModoEscuro() {
+
+    const ativo = !document.body.classList.contains('modo-escuro');
+
+    aplicarModoEscuro(ativo);
+
+    try {
+      localStorage.setItem('rpgPokerClubModoEscuro', ativo ? '1' : '0');
+    } catch (erro) {
+      console.log('Não foi possível salvar a preferência de modo escuro:', erro.message);
+    }
+  }
+
+  (function aplicarPreferenciaModoEscuroSalva() {
+
+    try {
+      if (localStorage.getItem('rpgPokerClubModoEscuro') === '1') {
+        aplicarModoEscuro(true);
+      }
+    } catch (erro) {
+      console.log('Não foi possível ler a preferência de modo escuro:', erro.message);
+    }
+  })();
 
   function fecharMenuSeClicouFora(e) {
     if (e.target.id === 'menuOverlay') {
