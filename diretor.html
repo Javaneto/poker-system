@@ -833,7 +833,7 @@
 
   const TIPOS_REGISTRO_FIXOS = [
     { chave: 'buy-in', nome: 'Buy-in' },
-    { chave: 'free', nome: 'Free' },
+    { chave: 'free', nome: 'Buy-in Free' },
     { chave: 'rebuy', nome: 'Rebuy' },
     { chave: 'duplo', nome: 'Duplo' },
     { chave: 'triplo', nome: 'Triplo' },
@@ -841,7 +841,7 @@
     { chave: 'bounty', nome: 'Bounty (K.O.)' }
   ];
 
-  const NOMES_BUYIN = ['Buy-in', 'Free', 'Buy-in Duplo', 'Buy-in Triplo'];
+  const NOMES_BUYIN = ['Buy-in', 'Free', 'Buy-in Free', 'Buy-in Duplo', 'Buy-in Triplo'];
   const NOMES_REBUY = ['Rebuy', 'Rebuy Duplo', 'Rebuy Triplo'];
 
   let jogadores = [];
@@ -986,7 +986,7 @@
     document.getElementById('statJogadoresRegistrados').textContent = jogadoresRegistrados.size;
 
     const entradas = movimentacoesTorneio.filter(
-      m => m.tipo === 'Entrada' && m.tipo_registro !== 'Add-on'
+      m => m.tipo === 'Entrada' || m.tipo === 'Registro' || m.tipo === 'Rebuy'
     ).length;
 
     document.getElementById('statEntradas').textContent = entradas;
@@ -1543,7 +1543,7 @@
 
     movs.forEach(mov => {
 
-      if (mov.tipo === 'Entrada') {
+      if (mov.tipo === 'Entrada' || mov.tipo === 'Registro' || mov.tipo === 'Rebuy' || mov.tipo === 'Add-on') {
         entrada += Number(mov.valor);
         qtdEntradas++;
 
@@ -2350,9 +2350,9 @@
   function variantesRegistro() {
 
     return valoresTorneio
-      .filter(v => ['Buy-in', 'Free', 'Duplo', 'Triplo'].includes(v.tipo))
+      .filter(v => ['Buy-in', 'Free', 'Buy-in Free', 'Duplo', 'Triplo'].includes(v.tipo))
       .map(v => {
-        if (v.tipo === 'Buy-in' || v.tipo === 'Free') return { ...v };
+        if (v.tipo === 'Buy-in' || v.tipo === 'Free' || v.tipo === 'Buy-in Free') return { ...v };
         return { ...v, tipo: `Buy-in ${v.tipo}` };
       });
   }
@@ -2503,9 +2503,9 @@
 
       const movsJogador = movimentacoesTorneio.filter(m => m.jogador === nome);
 
-      const registro = movsJogador.find(m => NOMES_BUYIN.includes(m.tipo_registro));
-      const qtdRebuys = movsJogador.filter(m => NOMES_REBUY.includes(m.tipo_registro)).length;
-      const temAddon = movsJogador.some(m => m.tipo_registro === 'Add-on');
+      const registro = movsJogador.find(m => m.tipo === 'Registro' || (m.tipo === 'Entrada' && NOMES_BUYIN.includes(m.tipo_registro)));
+      const qtdRebuys = movsJogador.filter(m => m.tipo === 'Rebuy' || (m.tipo === 'Entrada' && m !== registro && m.tipo_registro !== 'Add-on')).length;
+      const temAddon = movsJogador.some(m => m.tipo === 'Add-on' || m.tipo_registro === 'Add-on');
       const totalPago = movsJogador.reduce((soma, m) => soma + Number(m.valor), 0);
 
       tabela.innerHTML += `
@@ -3559,7 +3559,7 @@
     if (valorTipo.tipo === 'Add-on') {
 
       const totalPagoAntes = movimentacoesTorneio
-        .filter(m => m.jogador === jogador.nome && m.tipo === 'Entrada')
+        .filter(m => m.jogador === jogador.nome && (m.tipo === 'Entrada' || m.tipo === 'Registro' || m.tipo === 'Rebuy' || m.tipo === 'Add-on'))
         .reduce((soma, m) => soma + Number(m.valor || 0), 0);
 
       const resultadoComEsteAddon = totalPagoAntes + Number(valorTipo.valor_total);
@@ -3602,12 +3602,22 @@
       }
     }
 
+    let tipoMovimento = 'Entrada';
+
+    if (NOMES_BUYIN.includes(valorTipo.tipo)) {
+      tipoMovimento = 'Registro';
+    } else if (NOMES_REBUY.includes(valorTipo.tipo)) {
+      tipoMovimento = 'Rebuy';
+    } else if (valorTipo.tipo === 'Add-on') {
+      tipoMovimento = 'Add-on';
+    }
+
     const { error: erroMov } = await client
       .from('movimentacoes')
       .insert([
         {
           jogador: jogador.nome,
-          tipo: 'Entrada',
+          tipo: tipoMovimento,
           valor: valorTipo.valor_total,
           modalidade: 'Torneio',
           tipo_registro: valorTipo.tipo,
