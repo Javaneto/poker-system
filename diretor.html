@@ -1886,6 +1886,7 @@
     .on('postgres_changes', { event: '*', schema: 'public', table: 'movimentacoes' }, recarregarComDebounce)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'jogadores' }, recarregarComDebounce)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, recarregarComDebounce)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'torneios' }, recarregarComDebounce)
     .subscribe((status) => {
       console.log('Status do canal Realtime:', status);
     });
