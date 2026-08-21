@@ -496,7 +496,7 @@
 
     movs.forEach(mov => {
 
-      if (mov.tipo === 'Entrada') {
+      if (mov.tipo === 'Entrada' || mov.tipo === 'Registro' || mov.tipo === 'Rebuy' || mov.tipo === 'Add-on') {
         entrada += Number(mov.valor);
         qtdEntradas++;
 
