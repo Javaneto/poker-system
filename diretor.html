@@ -53,9 +53,9 @@
       background: linear-gradient(180deg, #dc2626, #7f1d1d);
       color: #fff;
       text-align: center;
-      padding: 8px 12px;
+      padding: 0.8vh 1vw;
       font-weight: 800;
-      font-size: 18px;
+      font-size: min(2.8vh, 2.2vw);
       letter-spacing: 0.02em;
       margin: 0 -8px 10px;
     }
@@ -140,6 +140,15 @@
     body.modo-escuro .btn-gray {
       background: #2a2a2a;
       color: #fff;
+    }
+
+    body.modo-escuro tbody tr:hover {
+      background: #262626;
+    }
+
+    body.modo-escuro .sugestao-item:hover,
+    body.modo-escuro .sugestao-selecionada {
+      background: #333;
     }
 
     body.modo-escuro .linha-desfazer,
