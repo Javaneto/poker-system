@@ -3087,6 +3087,8 @@
 
     if (!adminLiberado) return;
 
+    document.getElementById('modalEstruturas').classList.remove('aberto');
+
     const container = document.getElementById('listaTiposFixosGlobal');
     container.innerHTML = '';
 
@@ -3113,6 +3115,7 @@
   function fecharModalTiposPagamento() {
 
     document.getElementById('modalTiposPagamento').classList.remove('aberto');
+    document.getElementById('modalEstruturas').classList.add('aberto');
   }
 
   async function confirmarTiposFixosGlobal() {
@@ -3164,6 +3167,9 @@
     estruturaEditandoId = null;
     estruturaPremiacaoModoSelecao = !!modoSelecao;
 
+    document.getElementById('modalEditarPremiacaoTorneio').classList.remove('aberto');
+    document.getElementById('modalEstruturas').classList.remove('aberto');
+
     renderizarListaEstruturas();
 
     document.getElementById('novaEstruturaNome').value = '';
@@ -3181,6 +3187,8 @@
 
     if (estruturaPremiacaoModoSelecao) {
       document.getElementById('modalEditarPremiacaoTorneio').classList.add('aberto');
+    } else {
+      document.getElementById('modalEstruturas').classList.add('aberto');
     }
 
     atualizarPreviewsConfigTorneio();
@@ -3191,6 +3199,9 @@
     if (!adminLiberado) return;
 
     estruturaBlindsModoSelecao = !!modoSelecao;
+
+    document.getElementById('modalEditarBlindsTorneio').classList.remove('aberto');
+    document.getElementById('modalEstruturas').classList.remove('aberto');
 
     renderizarListaEstruturasBlinds();
 
@@ -3203,6 +3214,8 @@
 
     if (estruturaBlindsModoSelecao) {
       document.getElementById('modalEditarBlindsTorneio').classList.add('aberto');
+    } else {
+      document.getElementById('modalEstruturas').classList.add('aberto');
     }
 
     atualizarPreviewsConfigTorneio();
