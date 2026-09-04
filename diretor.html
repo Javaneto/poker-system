@@ -3494,18 +3494,27 @@
           dadosClock.relogio_iniciado_em = new Date().toISOString();
         }
 
-        const { error: erroSincronizarClock } = await client
+        // Não aguardamos essa gravação: ela roda em segundo plano pra não atrasar
+        // o fechamento do modal. O Realtime (tabela torneios) e o próximo
+        // carregarDados() pegam essa mudança logo em seguida de qualquer forma.
+        client
           .from('torneios')
           .update(dadosClock)
-          .eq('id', torneioAtual.id);
-
-        if (erroSincronizarClock) {
-          console.error(erroSincronizarClock);
-        } else {
-          console.log('Tempo do nível atual atualizado pra nova duração:', dadosClock.relogio_segundos_restantes, 'segundos');
-        }
+          .eq('id', torneioAtual.id)
+          .then(({ error: erroSincronizarClock }) => {
+            if (erroSincronizarClock) {
+              console.error(erroSincronizarClock);
+            } else {
+              console.log('Tempo do nível atual atualizado pra nova duração:', dadosClock.relogio_segundos_restantes, 'segundos');
+            }
+          });
       }
     }
+
+    await carregarDados();
+
+    document.getElementById('modalEstruturaBlindsForm').classList.remove('aberto');
+    document.getElementById('modalEstruturasBlinds').classList.add('aberto');
 
     document.getElementById('novaEstruturaBlindsNome').value = '';
     niveisBlindAtual = [];
@@ -3513,11 +3522,6 @@
     btn.textContent = 'Criar Estrutura';
 
     renderizarNiveisBlindEditor();
-
-    await carregarDados();
-
-    document.getElementById('modalEstruturaBlindsForm').classList.remove('aberto');
-    document.getElementById('modalEstruturasBlinds').classList.add('aberto');
 
     renderizarListaEstruturasBlinds();
   }
