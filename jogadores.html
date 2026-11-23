@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogadores — RPG Poker Club</title>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="js/comum.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .kpi {
+      background: white;
+      border: 1px solid #e9eaef;
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .kpi-rotulo {
+      font-size: 12px;
+      color: #767c88;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .kpi-valor {
+      font-size: 22px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: #9aa0aa;
+    }
+
+    .filtros-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .chip {
+      background: #eef0f4;
+      color: #374151;
+      box-shadow: none;
+      padding: 7px 12px;
+      font-size: 13px;
+      border-radius: 999px;
+    }
+
+    .chip.ativo {
+      background: #16181d;
+      color: white;
+    }
+
+    .linha-filtros {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .linha-filtros .pesquisa-wrapper {
+      flex: 1 1 260px;
+    }
+
+    .linha-filtros select {
+      flex: 0 0 200px;
+      width: 200px;
+    }
+
+    .situacao {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .situacao-jogo { background: #dbeafe; color: #1d4ed8; }
+    .situacao-deve { background: #fee2e2; color: #b91c1c; }
+    .situacao-credito { background: #dcfce7; color: #15803d; }
+    .situacao-ok { background: #eef0f4; color: #464c56; }
+    .situacao-inativo { background: #f3f4f6; color: #9aa0aa; }
+
+    .linha-jogador {
+      cursor: pointer;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #e0e7ff;
+      color: #3730a3;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      flex: 0 0 auto;
+    }
+
+    .nome-com-avatar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-jogador-mobile {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f1f3;
+      cursor: pointer;
+    }
+
+    .card-jogador-mobile .info {
+      font-size: 13px;
+      color: #464c56;
+      min-width: 0;
+    }
+
+    .card-jogador-mobile .info strong {
+      display: block;
+      font-size: 15px;
+      color: #16181d;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .grade-detalhe {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .grade-detalhe .item {
+      background: #f8f9fb;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .grade-detalhe .item span {
+      display: block;
+      font-size: 11px;
+      color: #767c88;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .grade-detalhe .item strong {
+      font-size: 16px;
+    }
+
+    .dados-cadastro {
+      font-size: 14px;
+      color: #464c56;
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 10px;
+    }
+
+    .form-grid .largura-total {
+      grid-column: 1 / -1;
+    }
+
+    .form-grid label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #767c88;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid #d9dbe1;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      font: inherit;
+      font-size: 14px;
+      resize: vertical;
+    }
+
+    .check-linha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .check-linha input {
+      width: auto;
+      margin: 0;
+    }
+
+    .aniversariantes {
+      font-size: 13px;
+      color: #464c56;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .linha-filtros select {
+        flex: 1 1 100%;
+        width: 100%;
+      }
+
+      .kpi-valor {
+        font-size: 18px;
+      }
+
+      .modal-acoes {
+        flex-wrap: wrap;
+      }
+
+      .modal-acoes button {
+        flex: 1 1 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="btn-gray" onclick="abrirMenu()">☰</button>
+      <h1 style="margin:0;">Jogadores</h1>
+    </div>
+
+    <button id="btnNovoJogador" class="btn-blue disabled" onclick="abrirFormJogador()">+ Novo Jogador</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi">
+      <div class="kpi-rotulo">Jogadores ativos</div>
+      <div class="kpi-valor" id="kpiAtivos">-</div>
+      <div class="kpi-sub" id="kpiTotal"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-rotulo">Em jogo agora</div>
+      <div class="kpi-valor" id="kpiEmJogo">-</div>
+      <div class="kpi-sub">com movimentação em aberto</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-rotulo">A receber dos jogadores</div>
+      <div class="kpi-valor negativo" id="kpiDevendo">-</div>
+      <div class="kpi-sub" id="kpiDevendoQtd"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-rotulo">A pagar aos jogadores</div>
+      <div class="kpi-valor positivo" id="kpiCredito">-</div>
+      <div class="kpi-sub" id="kpiCreditoQtd"></div>
+    </div>
+  </div>
+
+  <div class="card" id="cardAniversariantes" style="display:none;">
+    <h2 style="margin-bottom:6px;">🎂 Aniversariantes (próximos 30 dias)</h2>
+    <div class="aniversariantes" id="listaAniversariantes"></div>
+  </div>
+
+  <div class="card">
+    <div class="linha-filtros">
+      <div class="pesquisa-wrapper">
+        <input type="text" id="busca" placeholder="Buscar por nome, apelido, telefone ou CPF" autocomplete="off" oninput="renderizar()">
+      </div>
+
+      <select id="ordenacao" onchange="renderizar()">
+        <option value="nome">Nome A→Z</option>
+        <option value="saldo-deve">Maior dívida</option>
+        <option value="saldo-credito">Maior crédito</option>
+        <option value="atividade">Última atividade</option>
+        <option value="jogos">Mais jogos</option>
+      </select>
+    </div>
+
+    <div class="filtros-chips" id="chips">
+      <button class="chip ativo" data-filtro="todos" onclick="definirFiltro('todos')">Todos</button>
+      <button class="chip" data-filtro="jogo" onclick="definirFiltro('jogo')">Em jogo</button>
+      <button class="chip" data-filtro="deve" onclick="definirFiltro('deve')">Devendo ao clube</button>
+      <button class="chip" data-filtro="credito" onclick="definirFiltro('credito')">Clube deve</button>
+      <button class="chip" data-filtro="inativos" onclick="definirFiltro('inativos')">Inativos</button>
+    </div>
+
+    <p id="contagem" style="color:#767c88;font-size:13px;margin:4px 0 0 0;"></p>
+
+    <table class="relatorio-desktop">
+      <thead>
+        <tr>
+          <th style="width:30%;">Jogador</th>
+          <th>Telefone</th>
+          <th>Situação</th>
+          <th>Saldo</th>
+          <th>Última atividade</th>
+          <th style="width:80px;">Jogos</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaJogadores"></tbody>
+    </table>
+
+    <div id="listaJogadoresMobile" class="relatorio-mobile"></div>
+  </div>
+</div>
+
+<div id="menuOverlay" class="menu-overlay" onclick="if (event.target === this) fecharMenu()">
+  <div class="menu-lateral">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <strong>Menu</strong>
+      <button class="btn-gray" onclick="fecharMenu()">×</button>
+    </div>
+    <a href="index.html" class="btn-gray menu-item">Mesa Cash</a>
+    <a href="diretor.html" class="btn-gray menu-item">Torneio Ativo — Diretor</a>
+    <a href="detalhes.html" class="btn-gray menu-item">Torneio Ativo — Detalhes</a>
+    <a href="torneios.html" class="btn-gray menu-item">Torneios</a>
+    <button class="btn-gray menu-item" onclick="fecharMenu()">Jogadores</button>
+    <button class="btn-gray menu-item" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<!-- Detalhe do jogador -->
+<div id="modalDetalhe" class="modal-overlay">
+  <div class="modal-box" style="max-width:720px;">
+    <div class="topbar" style="margin-bottom:12px;">
+      <div class="nome-com-avatar">
+        <span class="avatar" id="detalheAvatar"></span>
+        <div>
+          <h2 style="margin:0;" id="detalheNome"></h2>
+          <span id="detalheSituacao"></span>
+        </div>
+      </div>
+      <button class="btn-gray" onclick="fecharModal('modalDetalhe')">Fechar</button>
+    </div>
+
+    <div class="dados-cadastro" id="detalheDados"></div>
+
+    <div class="grade-detalhe" id="detalheNumeros"></div>
+
+    <h3>Últimas movimentações</h3>
+    <div id="detalheMovs" style="max-height:300px;overflow-y:auto;"></div>
+
+    <div class="modal-acoes" style="margin-top:16px;">
+      <button class="btn-blue" id="btnEditarDetalhe" onclick="abrirFormJogador(jogadorDetalhe)">Editar</button>
+      <button class="btn-gray" id="btnAtivarDetalhe" onclick="alternarAtivo()"></button>
+      <button class="btn-red" id="btnExcluirDetalhe" onclick="excluirJogador()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Formulário novo / editar -->
+<div id="modalForm" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px;">
+    <h2 id="formTitulo">Novo Jogador</h2>
+
+    <div class="form-grid">
+      <div class="largura-total">
+        <label for="fNome">Nome *</label>
+        <input type="text" id="fNome" autocapitalize="words" maxlength="80">
+      </div>
+      <div>
+        <label for="fApelido">Apelido</label>
+        <input type="text" id="fApelido" maxlength="40">
+      </div>
+      <div>
+        <label for="fTelefone">Telefone</label>
+        <input type="tel" id="fTelefone" maxlength="20">
+      </div>
+      <div>
+        <label for="fCpf">CPF</label>
+        <input type="text" id="fCpf" inputmode="numeric" maxlength="14">
+      </div>
+      <div>
+        <label for="fNascimento">Data de nascimento</label>
+        <input type="date" id="fNascimento">
+      </div>
+      <div class="largura-total">
+        <label for="fEmail">E-mail</label>
+        <input type="email" id="fEmail" maxlength="120">
+      </div>
+      <div class="largura-total">
+        <label for="fObs">Observação</label>
+        <textarea id="fObs" rows="2" maxlength="500"></textarea>
+      </div>
+      <div class="largura-total">
+        <label class="check-linha"><input type="checkbox" id="fAtivo" checked> Jogador ativo (aparece nas buscas de cash e torneio)</label>
+      </div>
+    </div>
+
+    <p id="formAvisoNome" class="oculto" style="color:#b45309;font-size:13px;margin-top:-4px;">
+      Ao mudar o nome, todas as movimentações deste jogador também passam para o novo nome.
+    </p>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModal('modalForm')">Cancelar</button>
+      <button class="btn-green" id="btnSalvarJogador" onclick="salvarJogador()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alerta / confirmação -->
+<div id="modalAlerta" class="modal-overlay">
+  <div class="modal-box">
+    <h2>Aviso</h2>
+    <p id="alertaTexto" class="modal-resumo"></p>
+    <div class="modal-acoes"><button class="btn-dark" onclick="responderAlerta()">OK</button></div>
+  </div>
+</div>
+
+<div id="modalConfirm" class="modal-overlay" style="z-index:2600;">
+  <div class="modal-box">
+    <h2>Confirmar</h2>
+    <p id="confirmTexto" class="modal-resumo"></p>
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="responderConfirm(false)">Cancelar</button>
+      <button class="btn-blue" onclick="responderConfirm(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+  const SUPABASE_URL = 'https://rpohgkhkfzuorngtellg.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
+
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let jogadores = [];
+  let movimentacoes = [];
+  let resumoPorNome = new Map();
+  let filtroAtual = 'todos';
+  let jogadorDetalhe = null;
+  let jogadorEditando = null;
+  let adminLiberado = false;
+
+  // ---------- utilitários de tela ----------
+
+  function escapeHtml(texto) {
+    return String(texto ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  let resolverAlerta = null;
+  let resolverConfirm = null;
+
+  function mostrarAlerta(texto) {
+    document.getElementById('alertaTexto').textContent = texto;
+    document.getElementById('modalAlerta').classList.add('aberto');
+    return new Promise(r => { resolverAlerta = r; });
+  }
+
+  function responderAlerta() {
+    document.getElementById('modalAlerta').classList.remove('aberto');
+    if (resolverAlerta) resolverAlerta();
+    resolverAlerta = null;
+  }
+
+  function mostrarConfirm(texto) {
+    document.getElementById('confirmTexto').textContent = texto;
+    document.getElementById('modalConfirm').classList.add('aberto');
+    return new Promise(r => { resolverConfirm = r; });
+  }
+
+  function responderConfirm(valor) {
+    document.getElementById('modalConfirm').classList.remove('aberto');
+    if (resolverConfirm) resolverConfirm(valor);
+    resolverConfirm = null;
+  }
+
+  function abrirMenu() { document.getElementById('menuOverlay').classList.add('aberto'); }
+  function fecharMenu() { document.getElementById('menuOverlay').classList.remove('aberto'); }
+  function fecharModal(id) { document.getElementById(id).classList.remove('aberto'); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (document.getElementById('modalConfirm').classList.contains('aberto')) return responderConfirm(false);
+    if (document.getElementById('modalAlerta').classList.contains('aberto')) return responderAlerta();
+    ['modalForm', 'modalDetalhe'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el.classList.contains('aberto')) { el.classList.remove('aberto'); }
+    });
+  });
+
+  async function sair() {
+    await client.auth.signOut();
+    window.location.href = 'login.html';
+  }
+
+  function iniciais(nome) {
+    const partes = String(nome || '?').trim().split(/\s+/);
+    return ((partes[0] || '?')[0] + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase();
+  }
+
+  function soDigitos(texto) {
+    return String(texto || '').replace(/\D/g, '');
+  }
+
+  // ---------- dados ----------
+
+  function carregarDados() {
+    return executarSerial('dados-jogadores', carregarDadosAgora);
+  }
+
+  async function carregarDadosAgora() {
+
+    const { data: jogadoresDB, error } = await client.from('jogadores').select('*');
+
+    if (error) throw error;
+
+    jogadores = (jogadoresDB || []).sort((a, b) => a.nome.localeCompare(b.nome));
+
+    movimentacoes = await buscarTodas(() => client
+      .from('movimentacoes')
+      .select('id,jogador,tipo,tipo_registro,modalidade,valor,pago,data,sessao_finalizada_em,torneio_id,observacao')
+      .order('id', { ascending: false }));
+
+    montarResumos();
+    renderizar();
+
+    if (jogadorDetalhe && document.getElementById('modalDetalhe').classList.contains('aberto')) {
+      const atualizado = jogadores.find(j => String(j.id) === String(jogadorDetalhe.id));
+      if (atualizado) abrirDetalhe(atualizado.id);
+      else fecharModal('modalDetalhe');
+    }
+  }
+
+  function montarResumos() {
+
+    const porNome = new Map();
+
+    movimentacoes.forEach(m => {
+      if (!porNome.has(m.jogador)) porNome.set(m.jogador, []);
+      porNome.get(m.jogador).push(m);
+    });
+
+    resumoPorNome = new Map();
+
+    jogadores.forEach(j => {
+
+      const movs = porNome.get(j.nome) || [];
+      const abertas = movs.filter(m => !m.sessao_finalizada_em);
+
+      const geral = calcularResultadoMovimentacoes(movs);
+      const emAberto = calcularResultadoMovimentacoes(abertas);
+
+      const sessoesCash = new Set(movs.filter(m => !m.torneio_id && m.sessao_finalizada_em).map(m => m.sessao_finalizada_em)).size;
+      const torneios = new Set(movs.filter(m => m.torneio_id).map(m => m.torneio_id)).size;
+
+      const ultima = movs.reduce((maior, m) => (!maior || new Date(m.data) > new Date(maior) ? m.data : maior), null);
+
+      let situacao = 'ok';
+      if (j.ativo === false) situacao = 'inativo';
+      else if (abertas.length > 0) situacao = 'jogo';
+      else if (geral.resultado < -0.005) situacao = 'deve';
+      else if (geral.resultado > 0.005) situacao = 'credito';
+
+      resumoPorNome.set(j.nome, {
+        movs,
+        abertas,
+        saldoGeral: geral.resultado,
+        saldoAberto: emAberto.resultado,
+        totalEntrou: geral.entrada,
+        totalSaiu: geral.saida,
+        sessoesCash,
+        torneios,
+        jogos: sessoesCash + torneios + (abertas.length > 0 ? 1 : 0),
+        ultima,
+        situacao
+      });
+    });
+  }
+
+  const ROTULOS_SITUACAO = {
+    jogo: 'Em jogo / a apurar',
+    deve: 'Devendo ao clube',
+    credito: 'Clube deve',
+    ok: 'Em dia',
+    inativo: 'Inativo'
+  };
+
+  function htmlSituacao(situacao) {
+    return `<span class="situacao situacao-${situacao}">${ROTULOS_SITUACAO[situacao]}</span>`;
+  }
+
+  function htmlSaldo(valor) {
+    if (Math.abs(valor) < 0.005) return '<span style="color:#9aa0aa;">R$ 0.00</span>';
+    const classe = valor > 0 ? 'positivo' : 'negativo';
+    const sinal = valor > 0 ? '+' : '-';
+    return `<span class="${classe}">${sinal} ${formatarMoeda(Math.abs(valor))}</span>`;
+  }
+
+  function definirFiltro(filtro) {
+    filtroAtual = filtro;
+    document.querySelectorAll('#chips .chip').forEach(c => c.classList.toggle('ativo', c.dataset.filtro === filtro));
+    renderizar();
+  }
+
+  function renderizar() {
+
+    const termo = document.getElementById('busca').value.trim().toLowerCase();
+    const termoDigitos = soDigitos(termo);
+    const ordenacao = document.getElementById('ordenacao').value;
+
+    // KPIs (sobre todos os jogadores)
+    const resumos = jogadores.map(j => resumoPorNome.get(j.nome));
+    const ativos = jogadores.filter(j => j.ativo !== false);
+    const devendo = resumos.filter(r => r && r.saldoGeral < -0.005);
+    const credito = resumos.filter(r => r && r.saldoGeral > 0.005);
+
+    document.getElementById('kpiAtivos').textContent = ativos.length;
+    document.getElementById('kpiTotal').textContent = `${jogadores.length} cadastrados`;
+    document.getElementById('kpiEmJogo').textContent = resumos.filter(r => r && r.abertas.length > 0).length;
+    document.getElementById('kpiDevendo').textContent = formatarMoeda(Math.abs(devendo.reduce((s, r) => s + r.saldoGeral, 0)));
+    document.getElementById('kpiDevendoQtd').textContent = `${devendo.length} jogador(es)`;
+    document.getElementById('kpiCredito').textContent = formatarMoeda(credito.reduce((s, r) => s + r.saldoGeral, 0));
+    document.getElementById('kpiCreditoQtd').textContent = `${credito.length} jogador(es)`;
+
+    renderizarAniversariantes();
+
+    let lista = jogadores.filter(j => {
+
+      const r = resumoPorNome.get(j.nome);
+
+      if (filtroAtual === 'inativos' && j.ativo !== false) return false;
+      if (filtroAtual !== 'inativos' && filtroAtual !== 'todos' && j.ativo === false) return false;
+      if (filtroAtual === 'jogo' && r.abertas.length === 0) return false;
+      if (filtroAtual === 'deve' && !(r.saldoGeral < -0.005)) return false;
+      if (filtroAtual === 'credito' && !(r.saldoGeral > 0.005)) return false;
+
+      if (!termo) return true;
+
+      return j.nome.toLowerCase().includes(termo)
+        || (j.apelido || '').toLowerCase().includes(termo)
+        || (termoDigitos && (soDigitos(j.telefone).includes(termoDigitos) || soDigitos(j.cpf).includes(termoDigitos)));
+    });
+
+    const r = j => resumoPorNome.get(j.nome);
+
+    if (ordenacao === 'saldo-deve') lista.sort((a, b) => r(a).saldoGeral - r(b).saldoGeral);
+    if (ordenacao === 'saldo-credito') lista.sort((a, b) => r(b).saldoGeral - r(a).saldoGeral);
+    if (ordenacao === 'atividade') lista.sort((a, b) => new Date(r(b).ultima || 0) - new Date(r(a).ultima || 0));
+    if (ordenacao === 'jogos') lista.sort((a, b) => r(b).jogos - r(a).jogos);
+
+    document.getElementById('contagem').textContent = `${lista.length} de ${jogadores.length} jogadores`;
+
+    const tabela = document.getElementById('tabelaJogadores');
+    const mobile = document.getElementById('listaJogadoresMobile');
+
+    if (lista.length === 0) {
+      tabela.innerHTML = '<tr><td colspan="6" style="color:#767c88;">Nenhum jogador encontrado.</td></tr>';
+      mobile.innerHTML = '<p style="color:#767c88;">Nenhum jogador encontrado.</p>';
+      return;
+    }
+
+    tabela.innerHTML = lista.map(j => {
+      const res = r(j);
+      return `
+        <tr class="linha-jogador" data-id="${escapeHtml(j.id)}" onclick="abrirDetalhe(this.dataset.id)">
+          <td>
+            <div class="nome-com-avatar">
+              <span class="avatar">${escapeHtml(iniciais(j.nome))}</span>
+              <div>
+                <span class="jogador-clicavel">${escapeHtml(j.nome)}</span>
+                ${j.apelido ? `<br><span style="color:#9aa0aa;font-size:12px;">${escapeHtml(j.apelido)}</span>` : ''}
+              </div>
+            </div>
+          </td>
+          <td>${escapeHtml(j.telefone || '-')}</td>
+          <td>${htmlSituacao(res.situacao)}</td>
+          <td>${htmlSaldo(res.saldoGeral)}</td>
+          <td>${res.ultima ? formatarDataHora(res.ultima) : '-'}</td>
+          <td>${res.jogos}</td>
+        </tr>
+      `;
+    }).join('');
+
+    mobile.innerHTML = lista.map(j => {
+      const res = r(j);
+      return `
+        <div class="card-jogador-mobile" data-id="${escapeHtml(j.id)}" onclick="abrirDetalhe(this.dataset.id)">
+          <div class="nome-com-avatar" style="min-width:0;">
+            <span class="avatar">${escapeHtml(iniciais(j.nome))}</span>
+            <div class="info">
+              <strong>${escapeHtml(j.nome)}</strong>
+              ${htmlSituacao(res.situacao)}
+            </div>
+          </div>
+          <div style="text-align:right;font-size:14px;">${htmlSaldo(res.saldoGeral)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderizarAniversariantes() {
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const proximos = jogadores
+      .filter(j => j.data_nascimento && j.ativo !== false)
+      .map(j => {
+        const [, mes, dia] = j.data_nascimento.split('-').map(Number);
+        let proximo = new Date(hoje.getFullYear(), mes - 1, dia);
+        if (proximo < hoje) proximo = new Date(hoje.getFullYear() + 1, mes - 1, dia);
+        const dias = Math.round((proximo - hoje) / 86400000);
+        return { j, dias, proximo };
+      })
+      .filter(x => x.dias <= 30)
+      .sort((a, b) => a.dias - b.dias);
+
+    const card = document.getElementById('cardAniversariantes');
+
+    card.style.display = proximos.length ? '' : 'none';
+
+    document.getElementById('listaAniversariantes').innerHTML = proximos.map(x =>
+      `<strong>${escapeHtml(x.j.nome)}</strong> — ${x.proximo.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}${x.dias === 0 ? ' (hoje!)' : ` (em ${x.dias} dia${x.dias > 1 ? 's' : ''})`}`
+    ).join('<br>');
+  }
+
+  // ---------- detalhe ----------
+
+  function abrirDetalhe(id) {
+
+    const j = jogadores.find(x => String(x.id) === String(id));
+
+    if (!j) return;
+
+    jogadorDetalhe = j;
+
+    const res = resumoPorNome.get(j.nome);
+
+    document.getElementById('detalheAvatar').textContent = iniciais(j.nome);
+    document.getElementById('detalheNome').textContent = j.nome;
+    document.getElementById('detalheSituacao').innerHTML = htmlSituacao(res.situacao);
+
+    const nascimento = j.data_nascimento
+      ? new Date(j.data_nascimento + 'T00:00:00').toLocaleDateString('pt-BR')
+      : null;
+
+    document.getElementById('detalheDados').innerHTML = [
+      j.apelido ? `Apelido: <strong>${escapeHtml(j.apelido)}</strong>` : null,
+      `Telefone: <strong>${escapeHtml(j.telefone || '-')}</strong>`,
+      `CPF: <strong>${escapeHtml(j.cpf || '-')}</strong>`,
+      j.email ? `E-mail: <strong>${escapeHtml(j.email)}</strong>` : null,
+      nascimento ? `Nascimento: <strong>${nascimento}</strong>` : null,
+      j.observacao ? `Obs: <em>${escapeHtml(j.observacao)}</em>` : null
+    ].filter(Boolean).join('<br>');
+
+    document.getElementById('detalheNumeros').innerHTML = `
+      <div class="item"><span>Saldo geral</span><strong>${htmlSaldo(res.saldoGeral)}</strong></div>
+      <div class="item"><span>Em aberto agora</span><strong>${res.abertas.length ? htmlSaldo(res.saldoAberto) : '-'}</strong></div>
+      <div class="item"><span>Sessões de cash</span><strong>${res.sessoesCash}</strong></div>
+      <div class="item"><span>Torneios</span><strong>${res.torneios}</strong></div>
+      <div class="item"><span>Total que entrou</span><strong>${formatarMoeda(res.totalEntrou)}</strong></div>
+      <div class="item"><span>Total que saiu</span><strong>${formatarMoeda(res.totalSaiu)}</strong></div>
+    `;
+
+    const ultimas = res.movs.slice().sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 50);
+
+    document.getElementById('detalheMovs').innerHTML = ultimas.length
+      ? ultimas.map(m => `
+          <div class="linha-desfazer">
+            <div class="linha-desfazer-info">
+              <strong>${escapeHtml(m.tipo)}${m.tipo_registro && m.tipo_registro !== m.tipo ? ' · ' + escapeHtml(m.tipo_registro) : ''}</strong>
+              ${escapeHtml(m.modalidade || '-')} · ${m.sessao_finalizada_em ? 'finalizada' : '<span style="color:#1d4ed8;font-weight:700;">em aberto</span>'}
+              ${m.observacao ? `<br><em style="color:#767c88;">Obs: ${escapeHtml(m.observacao)}</em>` : ''}<br>
+              <span style="color:#9aa0aa;font-size:12px;">${formatarDataHora(m.data)}</span>
+            </div>
+            <div class="linha-desfazer-valor"><strong>${formatarMoeda(m.valor)}</strong></div>
+          </div>
+        `).join('')
+      : '<p style="color:#767c88;">Nenhuma movimentação.</p>';
+
+    document.getElementById('btnAtivarDetalhe').textContent = j.ativo === false ? 'Reativar' : 'Inativar';
+
+    ['btnEditarDetalhe', 'btnAtivarDetalhe', 'btnExcluirDetalhe'].forEach(id =>
+      document.getElementById(id).classList.toggle('disabled', !adminLiberado)
+    );
+
+    document.getElementById('modalDetalhe').classList.add('aberto');
+  }
+
+  // ---------- novo / editar ----------
+
+  function abrirFormJogador(jogador = null) {
+
+    if (!adminLiberado) return;
+
+    jogadorEditando = jogador;
+
+    document.getElementById('formTitulo').textContent = jogador ? 'Editar Jogador' : 'Novo Jogador';
+    document.getElementById('fNome').value = jogador?.nome || '';
+    document.getElementById('fApelido').value = jogador?.apelido || '';
+    document.getElementById('fTelefone').value = jogador?.telefone || '';
+    document.getElementById('fCpf').value = jogador?.cpf || '';
+    document.getElementById('fNascimento').value = jogador?.data_nascimento || '';
+    document.getElementById('fEmail').value = jogador?.email || '';
+    document.getElementById('fObs').value = jogador?.observacao || '';
+    document.getElementById('fAtivo').checked = jogador ? jogador.ativo !== false : true;
+    document.getElementById('formAvisoNome').classList.add('oculto');
+
+    document.getElementById('modalForm').classList.add('aberto');
+    setTimeout(() => document.getElementById('fNome').focus(), 50);
+  }
+
+  document.getElementById('fNome').addEventListener('input', () => {
+    const mudou = jogadorEditando && document.getElementById('fNome').value.trim() !== jogadorEditando.nome;
+    document.getElementById('formAvisoNome').classList.toggle('oculto', !mudou);
+  });
+
+  function avisoSqlPendente(error) {
+    return /column|coluna|schema cache/i.test(error?.message || '')
+      ? '\n\nParece que o banco ainda não tem os campos novos. Rode o arquivo sql/003_jogadores_cadastro.sql no Supabase.'
+      : '';
+  }
+
+  async function salvarJogador() {
+
+    if (!adminLiberado) return;
+
+    const nome = document.getElementById('fNome').value.trim().replace(/\s+/g, ' ');
+    const cpf = document.getElementById('fCpf').value.trim();
+
+    if (!nome) {
+      await mostrarAlerta('Informe o nome do jogador');
+      return;
+    }
+
+    const duplicado = jogadores.find(j =>
+      j.id !== jogadorEditando?.id &&
+      (j.nome.toLowerCase() === nome.toLowerCase() || (cpf && soDigitos(j.cpf) && soDigitos(j.cpf) === soDigitos(cpf)))
+    );
+
+    if (duplicado) {
+      await mostrarAlerta(`Já existe um jogador com esse ${duplicado.nome.toLowerCase() === nome.toLowerCase() ? 'nome' : 'CPF'}: ${duplicado.nome}`);
+      return;
+    }
+
+    const dados = {
+      nome,
+      apelido: document.getElementById('fApelido').value.trim() || null,
+      telefone: document.getElementById('fTelefone').value.trim(),
+      cpf,
+      data_nascimento: document.getElementById('fNascimento').value || null,
+      email: document.getElementById('fEmail').value.trim() || null,
+      observacao: document.getElementById('fObs').value.trim() || null,
+      ativo: document.getElementById('fAtivo').checked
+    };
+
+    const btn = document.getElementById('btnSalvarJogador');
+    btn.classList.add('disabled');
+
+    try {
+
+      if (!jogadorEditando) {
+
+        const { error } = await client.from('jogadores').insert([dados]);
+
+        if (error) {
+          await mostrarAlerta('Erro ao cadastrar jogador.' + avisoSqlPendente(error));
+          console.error(error);
+          return;
+        }
+
+      } else {
+
+        const nomeAntigo = jogadorEditando.nome;
+
+        if (nomeAntigo !== nome) {
+          const qtd = (resumoPorNome.get(nomeAntigo)?.movs || []).length;
+          if (!await mostrarConfirm(`Renomear "${nomeAntigo}" para "${nome}"? ${qtd} movimentação(ões) também serão atualizadas para o novo nome.`)) return;
+        }
+
+        const { error } = await client.from('jogadores').update(dados).eq('id', jogadorEditando.id);
+
+        if (error) {
+          await mostrarAlerta('Erro ao salvar jogador.' + avisoSqlPendente(error));
+          console.error(error);
+          return;
+        }
+
+        // As movimentações guardam o nome do jogador: mantém tudo ligado.
+        if (nomeAntigo !== nome) {
+
+          const { error: erroMovs } = await client
+            .from('movimentacoes')
+            .update({ jogador: nome })
+            .eq('jogador', nomeAntigo);
+
+          if (erroMovs) {
+            await mostrarAlerta('O cadastro foi salvo, mas houve erro ao atualizar o nome nas movimentações. Tente renomear de novo.');
+            console.error(erroMovs);
+          }
+        }
+      }
+
+      fecharModal('modalForm');
+      await carregarDados();
+
+    } finally {
+      btn.classList.remove('disabled');
+    }
+  }
+
+  async function alternarAtivo() {
+
+    if (!adminLiberado || !jogadorDetalhe) return;
+
+    const novo = jogadorDetalhe.ativo === false;
+
+    const { error } = await client.from('jogadores').update({ ativo: novo }).eq('id', jogadorDetalhe.id);
+
+    if (error) {
+      await mostrarAlerta('Erro ao atualizar jogador.' + avisoSqlPendente(error));
+      console.error(error);
+      return;
+    }
+
+    await carregarDados();
+  }
+
+  async function excluirJogador() {
+
+    if (!adminLiberado || !jogadorDetalhe) return;
+
+    const res = resumoPorNome.get(jogadorDetalhe.nome);
+
+    if (res.movs.length > 0) {
+      await mostrarAlerta(`${jogadorDetalhe.nome} tem ${res.movs.length} movimentação(ões) e não pode ser excluído, para não perder o histórico. Use "Inativar": ele some das buscas mas o histórico continua.`);
+      return;
+    }
+
+    if (!await mostrarConfirm(`Excluir o cadastro de ${jogadorDetalhe.nome}?`)) return;
+
+    const { error } = await client.from('jogadores').delete().eq('id', jogadorDetalhe.id);
+
+    if (error) {
+      await mostrarAlerta('Erro ao excluir jogador');
+      console.error(error);
+      return;
+    }
+
+    fecharModal('modalDetalhe');
+    jogadorDetalhe = null;
+    await carregarDados();
+  }
+
+  // ---------- início ----------
+
+  (async function inicializar() {
+
+    const { data } = await client.auth.getSession();
+
+    if (!data.session) {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent('jogadores.html');
+      return;
+    }
+
+    adminLiberado = true;
+    document.getElementById('btnNovoJogador').classList.remove('disabled');
+
+    await carregarDados();
+
+    iniciarRealtimeRobusto({
+      nome: 'jogadores-realtime',
+      tabelas: ['jogadores', 'movimentacoes'],
+      aoMudar: () => carregarDados()
+    });
+  })();
+
+</script>
+
+</body>
+</html>

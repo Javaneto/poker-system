@@ -674,6 +674,192 @@ tbody tr:hover {
   width: 225px;
 }
 
+/* ---- Indicador de Realtime ---- */
+
+.indicador-ao-vivo {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1500;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px 6px 24px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  box-shadow: 0 2px 8px rgba(16,24,40,0.15);
+  pointer-events: auto;
+}
+
+.indicador-ao-vivo::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.indicador-ao-vivo[data-estado="ok"]::before {
+  animation: pulso-ao-vivo 2s ease-in-out infinite;
+}
+
+.indicador-ao-vivo[data-estado="reconectando"] {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.indicador-ao-vivo[data-estado="offline"],
+.indicador-ao-vivo[data-estado="erro"] {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+@keyframes pulso-ao-vivo {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ---- Central de Histórico / Log ---- */
+
+/* Abaixo dos modais de confirmação/alerta das páginas (z-index 2000),
+   que são abertos por cima dela. */
+#modalCentralHistorico {
+  z-index: 1900;
+}
+
+.modal-box.modal-grande {
+  max-width: 900px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.abas {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.aba {
+  background: #eef0f4;
+  color: #374151;
+  box-shadow: none;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.aba.ativa {
+  background: #2563eb;
+  color: white;
+}
+
+.ch-filtros {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.ch-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ch-check input {
+  width: auto;
+  margin: 0;
+}
+
+.ch-conteudo {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+}
+
+.ch-vazio {
+  color: #767c88;
+  padding: 16px 0;
+}
+
+.ch-dica {
+  color: #767c88;
+  font-size: 12px;
+  margin: 0 0 4px 0;
+}
+
+.ch-data {
+  color: #9aa0aa;
+  font-size: 12px;
+}
+
+.ch-obs {
+  color: #767c88;
+}
+
+.ch-sessao {
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.ch-itens {
+  background: #f8f9fb;
+  border-radius: 10px;
+  padding: 0 12px;
+  margin-bottom: 10px;
+}
+
+.ch-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 4px;
+  background: #eef0f4;
+  color: #464c56;
+}
+
+.ch-badge-insert { background: #dcfce7; color: #15803d; }
+.ch-badge-update { background: #dbeafe; color: #1d4ed8; }
+.ch-badge-delete { background: #fee2e2; color: #b91c1c; }
+
+@media (max-width: 768px) {
+
+  .modal-box.modal-grande {
+    height: 100%;
+    max-height: none;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .ch-conteudo .linha-desfazer {
+    flex-wrap: wrap;
+  }
+
+  .ch-conteudo .linha-desfazer-valor {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .indicador-ao-vivo {
+    bottom: 8px;
+    right: 8px;
+    font-size: 11px;
+  }
+}
+
 @media (max-width: 768px) {
 
   .relatorio-desktop {

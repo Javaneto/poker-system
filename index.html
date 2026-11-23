@@ -6,6 +6,7 @@
   <title>RPG Poker Club</title>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="js/comum.js"></script>
 
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -67,8 +68,8 @@
       <h2>Movimentações em Aberto</h2>
 
       <div style="display:flex;gap:8px;">
-        <button id="btnDesfazer" class="btn-gray disabled" onclick="abrirModalDesfazer()">
-          Desfazer
+        <button id="btnDesfazer" class="btn-gray disabled" onclick="abrirCentralHistorico({ aoAlterar: carregarDados })">
+          Desfazer / Log
         </button>
       </div>
     </div>
@@ -178,6 +179,10 @@
 
     <a href="torneios.html" class="btn-gray menu-item">
       Torneios
+    </a>
+
+    <a href="jogadores.html" class="btn-gray menu-item">
+      Jogadores
     </a>
 
     <button id="btnAbrirCadastro" class="btn-dark disabled menu-item" onclick="fecharMenu(); abrirModalCadastro();">
@@ -432,26 +437,17 @@
     window.location.href = 'login.html';
   }
 
-  let recarregarTimeout = null;
-
   function recarregarComDebounce() {
-
-    clearTimeout(recarregarTimeout);
-
-    recarregarTimeout = setTimeout(() => {
-      console.log('Recarregando dados via Realtime');
-      carregarDados();
-    }, 300);
+    carregarDados();
   }
 
-  client
-    .channel('mesa-realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'movimentacoes' }, recarregarComDebounce)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'jogadores' }, recarregarComDebounce)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, recarregarComDebounce)
-    .subscribe((status) => {
-      console.log('Status do canal Realtime:', status);
-    });
+  // Realtime com reconexão automática, recarga ao voltar para a aba e
+  // conferência a cada 30 s (ver js/comum.js).
+  iniciarRealtimeRobusto({
+    nome: 'mesa-realtime',
+    tabelas: ['movimentacoes', 'jogadores', 'configuracoes', 'torneios', 'torneio_valores'],
+    aoMudar: () => carregarDados()
+  });
 
   function abrirMenu() {
     document.getElementById('menuOverlay').classList.add('aberto');
@@ -739,6 +735,9 @@
 
     if (!adminLiberado) return;
 
+    // Confere com o banco antes de fechar: a lista usada é a mais atual.
+    await carregarDados();
+
     if (idsMovimentacoesAbertasVisiveis.length === 0) return;
 
     const qtdJogadores = new Set(
@@ -916,7 +915,13 @@
   document.getElementById('mesaAtual').addEventListener('click', tratarCliqueJogadorMesa);
   document.getElementById('mesaAtualMobile').addEventListener('click', tratarCliqueJogadorMesa);
 
-  async function carregarDados() {
+  // Uma carga por vez; se pedirem outra durante a carga, roda de novo no fim
+  // (a tela nunca fica com dados mais velhos que o último pedido).
+  function carregarDados() {
+    return executarSerial('dados-mesa', carregarDadosAgora);
+  }
+
+  async function carregarDadosAgora() {
 
     console.log('Carregando dados do Supabase');
 
@@ -924,10 +929,12 @@
       .from('jogadores')
       .select('*');
 
-    const { data: movimentacoesDB } = await client
+    // Todas as movimentações, em páginas de 1000 (o Supabase limita cada
+    // consulta a 1000 linhas; antes o histórico antigo ficava incompleto).
+    const movimentacoesDB = await buscarTodas(() => client
       .from('movimentacoes')
       .select('*')
-      .order('id', { ascending: false });
+      .order('id', { ascending: false }));
 
     const { data: configuracaoDB } = await client
       .from('configuracoes')
@@ -1246,6 +1253,7 @@
 
     const filtrados = jogadores
       .filter(j =>
+        j.ativo !== false &&
         j.nome.toLowerCase().includes(pesquisa)
       )
       .sort((a, b) => {

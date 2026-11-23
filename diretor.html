@@ -6,6 +6,7 @@
   <title>RPG Poker Club — Diretor</title>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="js/comum.js"></script>
 
   <link rel="stylesheet" href="styles.css">
 
@@ -240,7 +241,7 @@
             <span id="textoEncerrarTorneio">Encerrar</span>
           </button>
 
-          <button id="btnDesfazerTorneio" class="btn-tile btn-gray disabled" onclick="abrirModalDesfazer()">
+          <button id="btnDesfazerTorneio" class="btn-tile btn-gray disabled" onclick="abrirCentralHistorico({ torneioId: torneioAtual ? torneioAtual.id : null, aoAlterar: carregarDados })">
             <span class="btn-tile-icone" id="desfazerTorneioIcone"></span>
             <span>Desfazer</span>
           </button>
@@ -401,6 +402,10 @@
 
     <a href="torneios.html" class="btn-gray menu-item">
       Torneios
+    </a>
+
+    <a href="jogadores.html" class="btn-gray menu-item">
+      Jogadores
     </a>
 
     <a href="index.html#cadastro" class="btn-gray menu-item">
@@ -1952,6 +1957,9 @@
 
     if (!adminLiberado) return;
 
+    // Confere com o banco antes de fechar: a lista usada é a mais atual.
+    await carregarDados();
+
     if (idsMovimentacoesAbertasVisiveisTorneio.length === 0) return;
 
     const qtdJogadores = new Set(
@@ -2028,29 +2036,25 @@
     window.location.href = 'login.html';
   }
 
-  let recarregarTimeout = null;
-
   function recarregarComDebounce() {
-
-    clearTimeout(recarregarTimeout);
-
-    recarregarTimeout = setTimeout(() => {
-      console.log('Recarregando dados via Realtime');
-      carregarDados();
-    }, 300);
+    carregarDados();
   }
 
-  client
-    .channel('torneio-realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'movimentacoes' }, recarregarComDebounce)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'jogadores' }, recarregarComDebounce)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, recarregarComDebounce)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'torneios' }, recarregarComDebounce)
-    .subscribe((status) => {
-      console.log('Status do canal Realtime:', status);
-    });
+  // Realtime com reconexão automática, recarga ao voltar para a aba e
+  // conferência a cada 30 s (ver js/comum.js).
+  iniciarRealtimeRobusto({
+    nome: 'torneio-realtime',
+    tabelas: ['movimentacoes', 'jogadores', 'configuracoes', 'torneios', 'torneio_valores', 'estruturas_blinds', 'premiacao_estruturas'],
+    aoMudar: () => carregarDados()
+  });
 
-  async function carregarDados() {
+  // Uma carga por vez; se pedirem outra durante a carga, roda de novo no fim
+  // (a tela nunca fica com dados mais velhos que o último pedido).
+  function carregarDados() {
+    return executarSerial('dados-torneio', carregarDadosAgora);
+  }
+
+  async function carregarDadosAgora() {
 
     console.log('Carregando dados do Supabase');
 
@@ -2073,11 +2077,11 @@
     // devolve no máximo 1000 linhas por consulta; buscando a tabela inteira
     // sem ordem vinham só as mais antigas (já finalizadas) e a lista de
     // "Movimentações em Aberto" ficava vazia.
-    const { data: movimentacoesTodasDB } = await client
+    const movimentacoesTodasDB = await buscarTodas(() => client
       .from('movimentacoes')
       .select('*')
       .is('sessao_finalizada_em', null)
-      .order('id', { ascending: false });
+      .order('id', { ascending: false }));
 
     movimentacoes = movimentacoesTodasDB || [];
 
@@ -2127,10 +2131,11 @@
 
     valoresTorneio = todosValoresTorneios.filter(v => v.torneio_id === torneioAtualId);
 
-    const { data: movimentacoesDB } = await client
+    const movimentacoesDB = await buscarTodas(() => client
       .from('movimentacoes')
       .select('*')
-      .eq('torneio_id', torneioAtualId);
+      .eq('torneio_id', torneioAtualId)
+      .order('id', { ascending: true }));
 
     movimentacoesTorneio = movimentacoesDB || [];
 
@@ -2851,6 +2856,7 @@
     } else {
 
       nomesParaMostrar = jogadores
+        .filter(j => j.ativo !== false)
         .map(j => j.nome)
         .filter(nome => nome.toLowerCase().includes(termo))
         .sort((a, b) => a.localeCompare(b));
