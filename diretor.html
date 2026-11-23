@@ -2069,9 +2069,15 @@
 
     tiposRegistroAtivos = configuracaoDB?.tipos_registro_ativos || TIPOS_REGISTRO_FIXOS.map(t => t.chave);
 
+    // Só as movimentações em aberto (sessão não finalizada). O Supabase
+    // devolve no máximo 1000 linhas por consulta; buscando a tabela inteira
+    // sem ordem vinham só as mais antigas (já finalizadas) e a lista de
+    // "Movimentações em Aberto" ficava vazia.
     const { data: movimentacoesTodasDB } = await client
       .from('movimentacoes')
-      .select('*');
+      .select('*')
+      .is('sessao_finalizada_em', null)
+      .order('id', { ascending: false });
 
     movimentacoes = movimentacoesTodasDB || [];
 
