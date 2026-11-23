@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ranking — RPG Poker Club</title>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="js/comum.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .lista-rankings {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .chip-ranking {
+      background: #eef0f4;
+      color: #374151;
+      box-shadow: none;
+      border-radius: 999px;
+      padding: 8px 14px;
+    }
+
+    .chip-ranking.ativo {
+      background: #16181d;
+      color: white;
+    }
+
+    .chip-ranking .inativo-tag {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-left: 4px;
+    }
+
+    .resumo-ranking {
+      color: #464c56;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .podio {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 6px 0 16px;
+    }
+
+    .podio-item {
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      color: #16181d;
+    }
+
+    .podio-item .medalha { font-size: 28px; }
+    .podio-item strong { display: block; font-size: 16px; margin-top: 4px; }
+    .podio-item span { font-size: 13px; color: #464c56; }
+
+    .podio-1 { background: linear-gradient(180deg, #fef3c7, #fde68a); }
+    .podio-2 { background: linear-gradient(180deg, #f3f4f6, #e5e7eb); }
+    .podio-3 { background: linear-gradient(180deg, #ffedd5, #fed7aa); }
+
+    .pos-col {
+      width: 56px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .pontos-col {
+      font-weight: 800;
+      color: #1d4ed8;
+    }
+
+    .linha-ranking { cursor: pointer; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 10px;
+    }
+
+    .form-grid .largura-total { grid-column: 1 / -1; }
+
+    .form-grid label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #767c88;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .previa-pontos {
+      background: #f8f9fb;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #464c56;
+      margin-bottom: 12px;
+    }
+
+    .linha-vinculo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f1f3;
+    }
+
+    .linha-vinculo input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      flex: 0 0 auto;
+    }
+
+    .linha-vinculo .info {
+      flex: 1;
+      font-size: 13px;
+      color: #464c56;
+      min-width: 0;
+    }
+
+    .linha-vinculo .info strong {
+      display: block;
+      font-size: 14px;
+      color: #16181d;
+    }
+
+    .linha-vinculo input[type="number"] {
+      width: 110px;
+      margin: 0;
+      flex: 0 0 auto;
+    }
+
+    .tag-aviso {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    /* Modo TV (tela cheia) */
+    body.modo-tv {
+      background: #000;
+      color: #fff;
+      padding: 2vh 3vw;
+    }
+
+    body.modo-tv .so-admin { display: none !important; }
+
+    body.modo-tv .card {
+      background: #111;
+      border-color: #222;
+      color: #fff;
+    }
+
+    body.modo-tv th { color: #aaa; font-size: min(2.2vh, 1.6vw); }
+    body.modo-tv td { font-size: min(3vh, 2.2vw); border-bottom-color: #222; color: #fff; }
+    body.modo-tv .pontos-col { color: #facc15; }
+    body.modo-tv tbody tr:hover { background: transparent; }
+    body.modo-tv h1 { font-size: min(5vh, 3.5vw); }
+    body.modo-tv .resumo-ranking { color: #aaa; }
+
+    @media (max-width: 768px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .podio { gap: 6px; }
+      .podio-item { padding: 10px 6px; }
+      .podio-item strong { font-size: 13px; }
+      .linha-vinculo { flex-wrap: wrap; }
+      .linha-vinculo input[type="number"] { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="btn-gray so-admin" onclick="abrirMenu()">☰</button>
+      <h1 style="margin:0;" id="tituloPagina">Ranking</h1>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-gray" id="btnModoTV" onclick="alternarModoTV()">⛶ Tela cheia</button>
+      <button class="btn-blue so-admin disabled" id="btnNovoRanking" onclick="abrirFormRanking()">+ Novo ranking</button>
+    </div>
+  </div>
+
+  <div class="lista-rankings so-admin" id="listaRankings"></div>
+
+  <div id="semRanking" class="card oculto">
+    <p style="color:#767c88;margin:0;">Nenhum ranking criado ainda. Clique em <strong>+ Novo ranking</strong> para começar.</p>
+  </div>
+
+  <div id="areaRanking" class="oculto">
+
+    <div class="card so-admin">
+      <div class="topbar" style="margin-bottom:8px;">
+        <h2 style="margin:0;" id="nomeRanking"></h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-gray" onclick="abrirVinculos()">Torneios</button>
+          <button class="btn-gray" onclick="abrirAjustes()">Ajuste manual</button>
+          <button class="btn-gray" onclick="abrirFormRanking(rankingAtual)">Configurar</button>
+        </div>
+      </div>
+      <div class="resumo-ranking" id="resumoRanking"></div>
+    </div>
+
+    <div id="podio" class="podio"></div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th class="pos-col">#</th>
+            <th>Jogador</th>
+            <th>Pontos</th>
+            <th>Torneios</th>
+            <th>Vitórias</th>
+            <th>Premiado</th>
+            <th>Melhor</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaRanking"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="menuOverlay" class="menu-overlay" onclick="if (event.target === this) fecharMenu()">
+  <div class="menu-lateral">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <strong>Menu</strong>
+      <button class="btn-gray" onclick="fecharMenu()">×</button>
+    </div>
+    <a href="index.html" class="btn-gray menu-item">Mesa Cash</a>
+    <a href="diretor.html" class="btn-gray menu-item">Torneio Ativo — Diretor</a>
+    <a href="detalhes.html" class="btn-gray menu-item">Torneio Ativo — Detalhes</a>
+    <a href="torneios.html" class="btn-gray menu-item">Torneios</a>
+    <a href="jogadores.html" class="btn-gray menu-item">Jogadores</a>
+    <button class="btn-gray menu-item" onclick="fecharMenu()">Ranking</button>
+    <button class="btn-gray menu-item" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<!-- Configurar ranking -->
+<div id="modalFormRanking" class="modal-overlay">
+  <div class="modal-box" style="max-width:600px;">
+    <h2 id="formRankingTitulo">Novo ranking</h2>
+
+    <div class="form-grid">
+      <div class="largura-total">
+        <label for="rNome">Nome *</label>
+        <input type="text" id="rNome" placeholder="Ex.: Ranking 2º Semestre 2026" maxlength="80">
+      </div>
+      <div>
+        <label for="rInicio">Início</label>
+        <input type="date" id="rInicio">
+      </div>
+      <div>
+        <label for="rFim">Fim</label>
+        <input type="date" id="rFim">
+      </div>
+      <div>
+        <label for="rBase">Pontos base por torneio</label>
+        <input type="number" id="rBase" min="0" step="1">
+      </div>
+      <div>
+        <label for="rPorJogador">Pontos extras por jogador</label>
+        <input type="number" id="rPorJogador" min="0" step="1">
+      </div>
+      <div>
+        <label for="rParticipacao">Pontos por participar</label>
+        <input type="number" id="rParticipacao" min="0" step="1">
+      </div>
+      <div>
+        <label class="check-linha" style="margin-top:22px;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="rAtivo" style="width:auto;margin:0;"> Ranking ativo</label>
+      </div>
+      <div class="largura-total">
+        <label for="rPercentuais">Distribuição por posição (% do total, separados por vírgula)</label>
+        <input type="text" id="rPercentuais" placeholder="30, 20, 15, 10, 8, 6, 5, 3, 2, 1">
+      </div>
+    </div>
+
+    <div class="previa-pontos" id="previaPontos"></div>
+
+    <div class="modal-acoes" style="flex-wrap:wrap;">
+      <button class="btn-red oculto" id="btnExcluirRanking" onclick="excluirRanking()">Excluir</button>
+      <span style="flex:1;"></span>
+      <button class="btn-gray" onclick="fecharModal('modalFormRanking')">Cancelar</button>
+      <button class="btn-green" id="btnSalvarRanking" onclick="salvarRanking()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Torneios do ranking -->
+<div id="modalVinculos" class="modal-overlay">
+  <div class="modal-box" style="max-width:680px;">
+    <h2 style="margin-bottom:4px;">Torneios que contam</h2>
+    <p class="ch-dica" style="margin-bottom:10px;">
+      Marque os torneios deste ranking. O campo ao lado soma ou tira pontos do <strong>total distribuído</strong> naquele torneio
+      (ex.: +200 numa etapa especial). As colocações vêm do botão <strong>Classificação</strong> no Diretor.
+    </p>
+    <div id="listaVinculos" style="max-height:55vh;overflow-y:auto;"></div>
+    <div class="modal-acoes" style="margin-top:14px;">
+      <button class="btn-gray" onclick="fecharModal('modalVinculos')">Cancelar</button>
+      <button class="btn-green" id="btnSalvarVinculos" onclick="salvarVinculos()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ajustes manuais -->
+<div id="modalAjustes" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px;">
+    <h2 style="margin-bottom:4px;">Ajuste manual de pontos</h2>
+    <p class="ch-dica" style="margin-bottom:10px;">Soma (ou tira, com valor negativo) pontos de um jogador neste ranking.</p>
+
+    <select id="ajJogador"></select>
+    <div style="display:flex;gap:8px;">
+      <input type="number" id="ajPontos" placeholder="Pontos (ex.: 50 ou -20)" step="1">
+      <input type="text" id="ajMotivo" placeholder="Motivo" maxlength="120">
+    </div>
+    <button class="btn-blue" style="width:100%;margin-bottom:14px;" onclick="adicionarAjuste()">Adicionar ajuste</button>
+
+    <div id="listaAjustes" style="max-height:40vh;overflow-y:auto;"></div>
+
+    <div class="modal-acoes" style="margin-top:14px;">
+      <button class="btn-gray" onclick="fecharModal('modalAjustes')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detalhe do jogador no ranking -->
+<div id="modalDetalheRanking" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px;">
+    <h2 id="detRankingNome"></h2>
+    <div id="detRankingConteudo"></div>
+    <div class="modal-acoes" style="margin-top:14px;">
+      <button class="btn-gray" onclick="fecharModal('modalDetalheRanking')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalAlerta" class="modal-overlay" style="z-index:2600;">
+  <div class="modal-box">
+    <h2>Aviso</h2>
+    <p id="alertaTexto" class="modal-resumo"></p>
+    <div class="modal-acoes"><button class="btn-dark" onclick="responderAlerta()">OK</button></div>
+  </div>
+</div>
+
+<div id="modalConfirm" class="modal-overlay" style="z-index:2600;">
+  <div class="modal-box">
+    <h2>Confirmar</h2>
+    <p id="confirmTexto" class="modal-resumo"></p>
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="responderConfirm(false)">Cancelar</button>
+      <button class="btn-blue" onclick="responderConfirm(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+  const SUPABASE_URL = 'https://rpohgkhkfzuorngtellg.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
+
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const PERCENTUAIS_PADRAO = [30, 20, 15, 10, 8, 6, 5, 3, 2, 1];
+
+  let rankings = [];
+  let vinculos = [];
+  let ajustes = [];
+  let resultados = [];
+  let torneios = [];
+  let jogadores = [];
+  let rankingAtual = null;
+  let rankingEditando = null;
+  let classificacaoAtual = [];
+  let adminLiberado = false;
+
+  // ---------- utilitários ----------
+
+  function escapeHtml(texto) {
+    return String(texto ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  let resolverAlerta = null;
+  let resolverConfirm = null;
+
+  function mostrarAlerta(texto) {
+    document.getElementById('alertaTexto').textContent = texto;
+    document.getElementById('modalAlerta').classList.add('aberto');
+    return new Promise(r => { resolverAlerta = r; });
+  }
+
+  function responderAlerta() {
+    document.getElementById('modalAlerta').classList.remove('aberto');
+    if (resolverAlerta) resolverAlerta();
+    resolverAlerta = null;
+  }
+
+  function mostrarConfirm(texto) {
+    document.getElementById('confirmTexto').textContent = texto;
+    document.getElementById('modalConfirm').classList.add('aberto');
+    return new Promise(r => { resolverConfirm = r; });
+  }
+
+  function responderConfirm(valor) {
+    document.getElementById('modalConfirm').classList.remove('aberto');
+    if (resolverConfirm) resolverConfirm(valor);
+    resolverConfirm = null;
+  }
+
+  function abrirMenu() { document.getElementById('menuOverlay').classList.add('aberto'); }
+  function fecharMenu() { document.getElementById('menuOverlay').classList.remove('aberto'); }
+  function fecharModal(id) { document.getElementById(id).classList.remove('aberto'); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (document.getElementById('modalConfirm').classList.contains('aberto')) return responderConfirm(false);
+    if (document.getElementById('modalAlerta').classList.contains('aberto')) return responderAlerta();
+    document.querySelectorAll('.modal-overlay.aberto').forEach(m => m.classList.remove('aberto'));
+  });
+
+  async function sair() {
+    await client.auth.signOut();
+    window.location.href = 'login.html';
+  }
+
+  function nomeTorneio(id) {
+    return torneios.find(t => String(t.id) === String(id))?.nome || `Torneio ${id}`;
+  }
+
+  function lerPercentuais(texto) {
+    return String(texto || '')
+      .split(/[,;\s]+/)
+      .map(v => Number(v.replace(',', '.')))
+      .filter(v => !isNaN(v) && v > 0);
+  }
+
+  function formatarPontos(valor) {
+    return Number(valor || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+  }
+
+  // ---------- modo TV ----------
+
+  function alternarModoTV() {
+
+    const ativo = !document.body.classList.contains('modo-tv');
+
+    document.body.classList.toggle('modo-tv', ativo);
+    document.getElementById('btnModoTV').textContent = ativo ? 'Sair da tela cheia' : '⛶ Tela cheia';
+
+    if (ativo && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (!ativo && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && document.body.classList.contains('modo-tv')) {
+      document.body.classList.remove('modo-tv');
+      document.getElementById('btnModoTV').textContent = '⛶ Tela cheia';
+    }
+  });
+
+  // ---------- dados ----------
+
+  function carregarDados() {
+    return executarSerial('dados-ranking', carregarDadosAgora);
+  }
+
+  async function carregarDadosAgora() {
+
+    const [r, v, a, res, t, j] = await Promise.all([
+      client.from('rankings').select('*').order('criado_em', { ascending: false }),
+      client.from('ranking_torneios').select('*'),
+      client.from('ranking_ajustes').select('*').order('criado_em', { ascending: false }),
+      buscarTodas(() => client.from('torneio_resultados').select('*').order('id', { ascending: true })).then(data => ({ data })).catch(error => ({ error })),
+      client.from('torneios').select('id,nome,status,criado_em').order('criado_em', { ascending: false }),
+      client.from('jogadores').select('nome,ativo').order('nome', { ascending: true })
+    ]);
+
+    const erro = r.error || v.error || a.error || res.error;
+
+    if (erro) {
+      console.error(erro);
+      document.getElementById('semRanking').classList.remove('oculto');
+      document.getElementById('semRanking').innerHTML = /rankings|ranking_|torneio_resultados/.test(erro.message || '')
+        ? '<p style="margin:0;">O Ranking ainda não foi ativado. Rode o arquivo <strong>sql/004_ranking.sql</strong> no Supabase e recarregue a página.</p>'
+        : `<p class="negativo" style="margin:0;">Erro ao carregar: ${escapeHtml(erro.message)}</p>`;
+      return;
+    }
+
+    rankings = r.data || [];
+    vinculos = v.data || [];
+    ajustes = a.data || [];
+    resultados = res.data || [];
+    torneios = t.data || [];
+    jogadores = j.data || [];
+
+    const idSalvo = rankingAtual?.id ?? Number(new URLSearchParams(location.search).get('id'));
+
+    rankingAtual = rankings.find(x => x.id === idSalvo) || rankings.find(x => x.ativo) || rankings[0] || null;
+
+    renderizar();
+  }
+
+  // ---------- tela principal ----------
+
+  function selecionarRanking(id) {
+    rankingAtual = rankings.find(r => r.id === id) || null;
+    history.replaceState(null, '', rankingAtual ? `?id=${rankingAtual.id}` : location.pathname);
+    renderizar();
+  }
+
+  function renderizar() {
+
+    document.getElementById('listaRankings').innerHTML = rankings.map(r => `
+      <button class="chip-ranking ${rankingAtual && r.id === rankingAtual.id ? 'ativo' : ''}" onclick="selecionarRanking(${r.id})">
+        ${escapeHtml(r.nome)}${r.ativo ? '' : '<span class="inativo-tag">(encerrado)</span>'}
+      </button>
+    `).join('');
+
+    document.getElementById('semRanking').classList.toggle('oculto', rankings.length > 0);
+    document.getElementById('areaRanking').classList.toggle('oculto', !rankingAtual);
+
+    if (!rankingAtual) return;
+
+    const meusVinculos = vinculos.filter(v => v.ranking_id === rankingAtual.id);
+    const meusAjustes = ajustes.filter(a => a.ranking_id === rankingAtual.id);
+
+    classificacaoAtual = montarClassificacaoRanking(rankingAtual, meusVinculos, resultados, meusAjustes);
+
+    document.getElementById('tituloPagina').textContent = document.body.classList.contains('modo-tv')
+      ? rankingAtual.nome
+      : 'Ranking';
+
+    document.getElementById('nomeRanking').textContent = rankingAtual.nome;
+
+    const periodo = [rankingAtual.data_inicio, rankingAtual.data_fim]
+      .map(d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '…')
+      .join(' a ');
+
+    const semClassificacao = meusVinculos.filter(v => !resultados.some(r => String(r.torneio_id) === String(v.torneio_id))).length;
+
+    document.getElementById('resumoRanking').innerHTML = `
+      ${rankingAtual.ativo ? '<span class="positivo">Ativo</span>' : '<span style="color:#767c88;font-weight:700;">Encerrado</span>'}
+      · Período: ${periodo}
+      · ${meusVinculos.length} torneio(s)${semClassificacao ? ` <span class="tag-aviso">${semClassificacao} sem classificação</span>` : ''}
+      · ${meusAjustes.length} ajuste(s) manual(is)<br>
+      Pontos por torneio: ${formatarPontos(rankingAtual.pontos_base)} + ${formatarPontos(rankingAtual.pontos_por_jogador)} por jogador,
+      distribuídos ${(rankingAtual.percentuais || []).join('% / ')}%
+      ${Number(rankingAtual.pontos_participacao) ? ` · +${formatarPontos(rankingAtual.pontos_participacao)} por participar` : ''}
+    `;
+
+    const medalhas = ['🥇', '🥈', '🥉'];
+
+    document.getElementById('podio').innerHTML = classificacaoAtual.slice(0, 3).map((l, i) => `
+      <div class="podio-item podio-${i + 1}">
+        <div class="medalha">${medalhas[i]}</div>
+        <strong>${escapeHtml(l.jogador)}</strong>
+        <span>${formatarPontos(l.pontos)} pts</span>
+      </div>
+    `).join('');
+
+    const tabela = document.getElementById('tabelaRanking');
+
+    if (classificacaoAtual.length === 0) {
+      tabela.innerHTML = `<tr><td colspan="7" style="color:#767c88;">
+        Ainda sem pontos. Vincule torneios em <strong>Torneios</strong> e preencha a <strong>Classificação</strong> de cada torneio no Diretor.
+      </td></tr>`;
+      return;
+    }
+
+    let posicaoAnterior = 0;
+    let pontosAnteriores = null;
+
+    tabela.innerHTML = classificacaoAtual.map((l, i) => {
+
+      // Empate em pontos, vitórias e melhor colocação = mesma posição.
+      const anterior = classificacaoAtual[i - 1];
+      const empate = anterior && anterior.pontos === l.pontos && anterior.vitorias === l.vitorias && anterior.melhor === l.melhor;
+      const pos = empate ? posicaoAnterior : i + 1;
+      posicaoAnterior = pos;
+
+      return `
+        <tr class="linha-ranking" onclick="abrirDetalheJogadorRanking(${i})">
+          <td class="pos-col">${pos <= 3 ? medalhas[pos - 1] : pos + 'º'}</td>
+          <td>${escapeHtml(l.jogador)}${l.pontosAjuste ? ` <span class="ch-badge" title="Inclui ajuste manual">${l.pontosAjuste > 0 ? '+' : ''}${formatarPontos(l.pontosAjuste)}</span>` : ''}</td>
+          <td class="pontos-col">${formatarPontos(l.pontos)}</td>
+          <td>${l.torneios}</td>
+          <td>${l.vitorias}</td>
+          <td>${l.premiados}</td>
+          <td>${l.melhor ? l.melhor + 'º' : '-'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function abrirDetalheJogadorRanking(i) {
+
+    const l = classificacaoAtual[i];
+
+    if (!l) return;
+
+    document.getElementById('detRankingNome').textContent = `${l.jogador} — ${formatarPontos(l.pontos)} pts`;
+
+    const ajustesJogador = ajustes.filter(a => a.ranking_id === rankingAtual.id && a.jogador === l.jogador);
+
+    document.getElementById('detRankingConteudo').innerHTML = `
+      <h3>Torneios</h3>
+      ${l.detalhes.length ? l.detalhes
+        .sort((a, b) => b.pontos - a.pontos)
+        .map(d => `
+          <div class="linha-desfazer">
+            <div class="linha-desfazer-info">
+              <strong>${escapeHtml(nomeTorneio(d.torneio_id))}</strong>
+              ${d.posicao}º de ${d.jogadores}
+            </div>
+            <div class="linha-desfazer-valor"><strong>${formatarPontos(d.pontos)} pts</strong></div>
+          </div>
+        `).join('') : '<p class="ch-vazio">Nenhum torneio.</p>'}
+      ${ajustesJogador.length ? `
+        <h3 style="margin-top:14px;">Ajustes manuais</h3>
+        ${ajustesJogador.map(a => `
+          <div class="linha-desfazer">
+            <div class="linha-desfazer-info">${escapeHtml(a.motivo || 'Sem motivo')}<br><span class="ch-data">${formatarDataHora(a.criado_em)}</span></div>
+            <div class="linha-desfazer-valor"><strong>${a.pontos > 0 ? '+' : ''}${formatarPontos(a.pontos)} pts</strong></div>
+          </div>
+        `).join('')}
+      ` : ''}
+    `;
+
+    document.getElementById('modalDetalheRanking').classList.add('aberto');
+  }
+
+  // ---------- configurar ranking ----------
+
+  function abrirFormRanking(ranking = null) {
+
+    if (!adminLiberado) return;
+
+    rankingEditando = ranking;
+
+    document.getElementById('formRankingTitulo').textContent = ranking ? 'Configurar ranking' : 'Novo ranking';
+    document.getElementById('rNome').value = ranking?.nome || '';
+    document.getElementById('rInicio').value = ranking?.data_inicio || '';
+    document.getElementById('rFim').value = ranking?.data_fim || '';
+    document.getElementById('rBase').value = ranking ? ranking.pontos_base : 100;
+    document.getElementById('rPorJogador').value = ranking ? ranking.pontos_por_jogador : 10;
+    document.getElementById('rParticipacao').value = ranking ? ranking.pontos_participacao : 0;
+    document.getElementById('rAtivo').checked = ranking ? ranking.ativo : true;
+    document.getElementById('rPercentuais').value = (ranking?.percentuais || PERCENTUAIS_PADRAO).join(', ');
+    document.getElementById('btnExcluirRanking').classList.toggle('oculto', !ranking);
+
+    atualizarPreviaPontos();
+
+    document.getElementById('modalFormRanking').classList.add('aberto');
+  }
+
+  function rankingDoFormulario() {
+    return {
+      nome: document.getElementById('rNome').value.trim(),
+      data_inicio: document.getElementById('rInicio').value || null,
+      data_fim: document.getElementById('rFim').value || null,
+      ativo: document.getElementById('rAtivo').checked,
+      pontos_base: Number(document.getElementById('rBase').value) || 0,
+      pontos_por_jogador: Number(document.getElementById('rPorJogador').value) || 0,
+      pontos_participacao: Number(document.getElementById('rParticipacao').value) || 0,
+      percentuais: lerPercentuais(document.getElementById('rPercentuais').value)
+    };
+  }
+
+  function atualizarPreviaPontos() {
+
+    const r = rankingDoFormulario();
+    const soma = r.percentuais.reduce((s, p) => s + p, 0);
+
+    const exemplo = n => {
+      const c = calcularPontosTorneio(r, n, 0);
+      return `<strong>${n} jogadores</strong>: total ${formatarPontos(c.total)} → ${c.porPosicao.slice(0, 5).map((p, i) => `${i + 1}º ${formatarPontos(p)}`).join(', ')}${c.porPosicao.length > 5 ? '...' : ''}`;
+    };
+
+    document.getElementById('previaPontos').innerHTML = `
+      ${exemplo(10)}<br>${exemplo(30)}<br>
+      <span style="color:${Math.abs(soma - 100) < 0.01 ? '#15803d' : '#b45309'};">
+        Soma dos percentuais: ${soma.toFixed(1)}%${Math.abs(soma - 100) < 0.01 ? ' ✓' : ' (o normal é 100%)'}
+      </span>
+    `;
+  }
+
+  ['rBase', 'rPorJogador', 'rParticipacao', 'rPercentuais'].forEach(id =>
+    document.getElementById(id).addEventListener('input', atualizarPreviaPontos)
+  );
+
+  async function salvarRanking() {
+
+    if (!adminLiberado) return;
+
+    const dados = rankingDoFormulario();
+
+    if (!dados.nome) {
+      await mostrarAlerta('Informe o nome do ranking');
+      return;
+    }
+
+    if (dados.percentuais.length === 0) {
+      await mostrarAlerta('Informe a distribuição por posição (ex.: 30, 20, 15, 10...)');
+      return;
+    }
+
+    const btn = document.getElementById('btnSalvarRanking');
+    btn.classList.add('disabled');
+
+    const consulta = rankingEditando
+      ? client.from('rankings').update(dados).eq('id', rankingEditando.id).select().single()
+      : client.from('rankings').insert([dados]).select().single();
+
+    const { data, error } = await consulta;
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      await mostrarAlerta('Erro ao salvar ranking: ' + error.message);
+      console.error(error);
+      return;
+    }
+
+    fecharModal('modalFormRanking');
+
+    rankingAtual = data;
+    await carregarDados();
+    selecionarRanking(data.id);
+  }
+
+  async function excluirRanking() {
+
+    if (!adminLiberado || !rankingEditando) return;
+
+    if (!await mostrarConfirm(`Excluir o ranking "${rankingEditando.nome}"? Os vínculos e ajustes dele também serão apagados. As classificações dos torneios continuam.`)) return;
+
+    const { error } = await client.from('rankings').delete().eq('id', rankingEditando.id);
+
+    if (error) {
+      await mostrarAlerta('Erro ao excluir ranking');
+      console.error(error);
+      return;
+    }
+
+    fecharModal('modalFormRanking');
+    rankingAtual = null;
+    await carregarDados();
+  }
+
+  // ---------- torneios do ranking ----------
+
+  function abrirVinculos() {
+
+    if (!adminLiberado || !rankingAtual) return;
+
+    const meus = new Map(vinculos.filter(v => v.ranking_id === rankingAtual.id).map(v => [String(v.torneio_id), v]));
+
+    document.getElementById('listaVinculos').innerHTML = torneios.length ? torneios.map(t => {
+
+      const v = meus.get(String(t.id));
+      const qtd = resultados.filter(r => String(r.torneio_id) === String(t.id)).length;
+      const calc = calcularPontosTorneio(rankingAtual, qtd, v?.ajuste_pontos || 0);
+
+      return `
+        <div class="linha-vinculo">
+          <input type="checkbox" class="vinc-check" data-torneio="${escapeHtml(t.id)}" ${v ? 'checked' : ''}>
+          <div class="info">
+            <strong>${escapeHtml(t.nome)}</strong>
+            ${formatarDataHora(t.criado_em)} · ${t.status === 'encerrado' ? 'encerrado' : 'em andamento'} ·
+            ${qtd ? `${qtd} classificados · ${formatarPontos(calc.total)} pts no total` : '<span class="tag-aviso">sem classificação</span>'}
+          </div>
+          <input type="number" class="vinc-ajuste" data-torneio="${escapeHtml(t.id)}" value="${v ? Number(v.ajuste_pontos) || '' : ''}" placeholder="Ajuste ±" step="1" title="Pontos a mais ou a menos no total deste torneio">
+        </div>
+      `;
+    }).join('') : '<p class="ch-vazio">Nenhum torneio cadastrado.</p>';
+
+    document.getElementById('modalVinculos').classList.add('aberto');
+  }
+
+  async function salvarVinculos() {
+
+    if (!adminLiberado || !rankingAtual) return;
+
+    const marcados = Array.from(document.querySelectorAll('#listaVinculos .vinc-check'))
+      .filter(c => c.checked)
+      .map(c => {
+        const torneioId = c.dataset.torneio;
+        const ajuste = document.querySelector(`#listaVinculos .vinc-ajuste[data-torneio="${CSS.escape(torneioId)}"]`).value;
+        return { ranking_id: rankingAtual.id, torneio_id: torneioId, ajuste_pontos: Number(ajuste) || 0 };
+      });
+
+    const btn = document.getElementById('btnSalvarVinculos');
+    btn.classList.add('disabled');
+
+    try {
+
+      const { error: erroApagar } = await client.from('ranking_torneios').delete().eq('ranking_id', rankingAtual.id);
+
+      if (erroApagar) throw erroApagar;
+
+      if (marcados.length) {
+        const { error: erroInserir } = await client.from('ranking_torneios').insert(marcados);
+        if (erroInserir) throw erroInserir;
+      }
+
+      fecharModal('modalVinculos');
+      await carregarDados();
+
+    } catch (erro) {
+      console.error(erro);
+      await mostrarAlerta('Erro ao salvar torneios do ranking: ' + (erro.message || erro));
+    } finally {
+      btn.classList.remove('disabled');
+    }
+  }
+
+  // ---------- ajustes manuais ----------
+
+  function abrirAjustes() {
+
+    if (!adminLiberado || !rankingAtual) return;
+
+    const nomes = Array.from(new Set([
+      ...classificacaoAtual.map(l => l.jogador),
+      ...jogadores.filter(j => j.ativo !== false).map(j => j.nome)
+    ])).sort((a, b) => a.localeCompare(b));
+
+    document.getElementById('ajJogador').innerHTML = '<option value="">Selecione o jogador</option>'
+      + nomes.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+
+    document.getElementById('ajPontos').value = '';
+    document.getElementById('ajMotivo').value = '';
+
+    renderizarAjustes();
+
+    document.getElementById('modalAjustes').classList.add('aberto');
+  }
+
+  function renderizarAjustes() {
+
+    const meus = ajustes.filter(a => a.ranking_id === rankingAtual.id);
+
+    document.getElementById('listaAjustes').innerHTML = meus.length ? meus.map(a => `
+      <div class="linha-desfazer">
+        <div class="linha-desfazer-info">
+          <strong>${escapeHtml(a.jogador)}</strong>
+          ${escapeHtml(a.motivo || 'Sem motivo')}<br>
+          <span class="ch-data">${formatarDataHora(a.criado_em)}</span>
+        </div>
+        <div class="linha-desfazer-valor">
+          <strong class="${a.pontos >= 0 ? 'positivo' : 'negativo'}">${a.pontos > 0 ? '+' : ''}${formatarPontos(a.pontos)}</strong>
+          <button class="btn-red" onclick="removerAjuste(${a.id})">Remover</button>
+        </div>
+      </div>
+    `).join('') : '<p class="ch-vazio">Nenhum ajuste neste ranking.</p>';
+  }
+
+  async function adicionarAjuste() {
+
+    const jogador = document.getElementById('ajJogador').value;
+    const pontos = Number(document.getElementById('ajPontos').value);
+    const motivo = document.getElementById('ajMotivo').value.trim();
+
+    if (!jogador || !pontos) {
+      await mostrarAlerta('Escolha o jogador e informe os pontos (positivo para somar, negativo para tirar).');
+      return;
+    }
+
+    const { error } = await client.from('ranking_ajustes').insert([{ ranking_id: rankingAtual.id, jogador, pontos, motivo: motivo || null }]);
+
+    if (error) {
+      await mostrarAlerta('Erro ao adicionar ajuste');
+      console.error(error);
+      return;
+    }
+
+    document.getElementById('ajPontos').value = '';
+    document.getElementById('ajMotivo').value = '';
+
+    await carregarDados();
+    renderizarAjustes();
+  }
+
+  async function removerAjuste(id) {
+
+    if (!await mostrarConfirm('Remover este ajuste?')) return;
+
+    const { error } = await client.from('ranking_ajustes').delete().eq('id', id);
+
+    if (error) {
+      await mostrarAlerta('Erro ao remover ajuste');
+      console.error(error);
+      return;
+    }
+
+    await carregarDados();
+    renderizarAjustes();
+  }
+
+  // ---------- início ----------
+
+  (async function inicializar() {
+
+    const { data } = await client.auth.getSession();
+
+    if (!data.session) {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent('rankings.html' + location.search);
+      return;
+    }
+
+    adminLiberado = true;
+    document.getElementById('btnNovoRanking').classList.remove('disabled');
+
+    await carregarDados();
+
+    iniciarRealtimeRobusto({
+      nome: 'ranking-realtime',
+      tabelas: ['rankings', 'ranking_torneios', 'ranking_ajustes', 'torneio_resultados', 'torneios'],
+      aoMudar: () => carregarDados()
+    });
+  })();
+
+</script>
+
+</body>
+</html>

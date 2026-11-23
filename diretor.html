@@ -7,6 +7,7 @@
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="js/comum.js"></script>
+  <script src="js/torneio-extras.js"></script>
 
   <link rel="stylesheet" href="styles.css">
 
@@ -172,6 +173,96 @@
       background: #1a1a1a;
       color: #fff;
     }
+
+    /* Modo escuro: Histórico/Log, Relatório e Classificação */
+    body.modo-escuro .ch-itens,
+    body.modo-escuro .rel-kpi {
+      background: #262626;
+    }
+
+    body.modo-escuro .rel-kpi-destaque {
+      background: #172554;
+      box-shadow: inset 0 0 0 1px #1e3a8a;
+    }
+
+    body.modo-escuro .rel-kpi-destaque strong {
+      color: #93c5fd;
+    }
+
+    body.modo-escuro .aba {
+      background: #2a2a2a;
+      color: #fff;
+    }
+
+    body.modo-escuro .aba.ativa {
+      background: #2563eb;
+    }
+
+    body.modo-escuro .ch-sessao,
+    body.modo-escuro .classif-linha {
+      border-bottom-color: #333;
+    }
+
+    body.modo-escuro .ch-badge {
+      color: inherit;
+    }
+
+    body.modo-escuro .ch-badge-insert { background: #14532d; color: #bbf7d0 !important; }
+    body.modo-escuro .ch-badge-update { background: #1e3a8a; color: #bfdbfe !important; }
+    body.modo-escuro .ch-badge-delete { background: #7f1d1d; color: #fecaca !important; }
+
+    body.modo-escuro tfoot th {
+      border-top-color: #444;
+    }
+
+    /* Título do torneio legível em qualquer tela */
+    .faixa-nome-torneio {
+      font-size: clamp(15px, 2.8vh, 30px);
+      padding: 6px 12px;
+    }
+
+    @media (max-width: 768px) {
+
+      #cardRelogio {
+        flex: 1 1 100% !important;
+        padding: 10px 12px !important;
+      }
+
+      #cardRelogio h2 {
+        font-size: 15px !important;
+      }
+
+      #relogioContador {
+        font-size: 44px !important;
+      }
+
+      #relogioBlindsAtual {
+        font-size: 20px !important;
+        margin-top: 8px !important;
+      }
+
+      #relogioTorneio > div:nth-child(2) {
+        padding: 8px 0 !important;
+      }
+
+      #painelEstatisticasTorneio {
+        flex: 1 1 100% !important;
+      }
+
+      .painel-info-linha {
+        padding: 9px 12px;
+        font-size: 14px;
+      }
+
+      .card-botoes-fixo h2 {
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+
+      .topo-diretor {
+        padding: 8px 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -195,7 +286,7 @@
   <div id="faixaNomeTorneio" class="faixa-nome-torneio">Carregando...</div>
 
   <div class="flex" style="align-items:flex-start;">
-    <div class="card" style="flex:0 1 400px;min-width:200px;background:#000;padding:16px;">
+    <div class="card" id="cardRelogio" style="flex:0 1 400px;min-width:200px;background:#000;padding:16px;">
       <div id="relogioTorneio" class="oculto">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <h2 style="margin:0;color:#fff;font-size:18px;">
@@ -244,6 +335,16 @@
           <button id="btnDesfazerTorneio" class="btn-tile btn-gray disabled" onclick="abrirCentralHistorico({ torneioId: torneioAtual ? torneioAtual.id : null, aoAlterar: carregarDados })">
             <span class="btn-tile-icone" id="desfazerTorneioIcone"></span>
             <span>Desfazer</span>
+          </button>
+
+          <button id="btnRelatorioTorneio" class="btn-tile btn-blue" onclick="abrirRelatorioTorneio()">
+            <span class="btn-tile-icone" style="font-size:26px;">📊</span>
+            <span>Relatório</span>
+          </button>
+
+          <button id="btnClassificacaoTorneio" class="btn-tile btn-green disabled" onclick="abrirClassificacaoTorneio()">
+            <span class="btn-tile-icone" style="font-size:26px;">🏆</span>
+            <span>Classificação</span>
           </button>
         </div>
       </div>
@@ -314,6 +415,11 @@
       <div class="painel-info-linha">
         <span>Prêmio Total</span>
         <span id="statPremioTotal">R$ 0,00</span>
+      </div>
+
+      <div class="painel-info-linha" style="cursor:pointer;" onclick="abrirRelatorioTorneio()" title="Ver relatório detalhado">
+        <span>Rake Acumulado</span>
+        <span id="statRakeAcumulado">R$ 0.00</span>
       </div>
 
       <div id="linhasPremiosInfo"></div>
@@ -406,6 +512,10 @@
 
     <a href="jogadores.html" class="btn-gray menu-item">
       Jogadores
+    </a>
+
+    <a href="rankings.html" class="btn-gray menu-item">
+      Ranking
     </a>
 
     <a href="index.html#cadastro" class="btn-gray menu-item">
@@ -1140,6 +1250,8 @@
       + Number(torneioAtual.ajuste_premiacao || 0);
 
     document.getElementById('statPremioTotal').textContent = `R$ ${totalPrizeStat.toFixed(2)}`;
+
+    atualizarRakeAcumulado();
 
     const estruturaPremiacao = estruturasPremiacao.find(e => e.id === torneioAtual.premiacao_estrutura_id);
     const linhasPremios = document.getElementById('linhasPremiosInfo');
@@ -2156,6 +2268,11 @@
 
     if (document.getElementById('modalDesfazer').classList.contains('aberto')) {
       renderizarListaDesfazer();
+    }
+
+    // Relatório aberto acompanha os lançamentos em tempo real.
+    if (document.getElementById('modalRelatorioTorneio')?.classList.contains('aberto')) {
+      renderizarRelatorioTorneio();
     }
   }
 
@@ -3978,6 +4095,7 @@
     document.getElementById('btnAdmin').textContent = 'Sair';
 
     document.getElementById('btnDesfazerTorneio').classList.remove('disabled');
+    document.getElementById('btnClassificacaoTorneio').classList.remove('disabled');
     document.getElementById('btnConfigTorneioMenu').classList.remove('disabled');
 
     if (torneioAtual && torneioAtual.status !== 'encerrado') {

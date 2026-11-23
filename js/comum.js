@@ -218,6 +218,93 @@ function calcularResultadoMovimentacoes(movs) {
 }
 
 // ---------------------------------------------------------------------------
+// Ranking: pontos por torneio
+// ---------------------------------------------------------------------------
+// total = pontos_base + pontos_por_jogador × nº de jogadores + ajuste do torneio
+// posição N recebe total × percentuais[N-1] / 100 (arredondado)
+// todo participante recebe ainda pontos_participacao
+
+function calcularPontosTorneio(ranking, qtdJogadores, ajuste = 0) {
+
+  const total = Math.max(
+    Number(ranking.pontos_base || 0)
+      + Number(ranking.pontos_por_jogador || 0) * qtdJogadores
+      + Number(ajuste || 0),
+    0
+  );
+
+  const percentuais = Array.isArray(ranking.percentuais) ? ranking.percentuais : [];
+
+  return {
+    total,
+    porPosicao: percentuais.map(p => Math.round(total * Number(p || 0) / 100)),
+    participacao: Number(ranking.pontos_participacao || 0)
+  };
+}
+
+// resultados: linhas de torneio_resultados (de todos os torneios do ranking)
+// vinculos:   linhas de ranking_torneios do ranking
+// ajustes:    linhas de ranking_ajustes do ranking
+function montarClassificacaoRanking(ranking, vinculos, resultados, ajustes) {
+
+  const porJogador = new Map();
+
+  function linha(nome) {
+    if (!porJogador.has(nome)) {
+      porJogador.set(nome, {
+        jogador: nome,
+        pontos: 0,
+        pontosTorneios: 0,
+        pontosAjuste: 0,
+        torneios: 0,
+        vitorias: 0,
+        premiados: 0,
+        melhor: null,
+        detalhes: []
+      });
+    }
+    return porJogador.get(nome);
+  }
+
+  vinculos.forEach(v => {
+
+    const doTorneio = resultados.filter(r => String(r.torneio_id) === String(v.torneio_id));
+
+    if (doTorneio.length === 0) return;
+
+    const calc = calcularPontosTorneio(ranking, doTorneio.length, v.ajuste_pontos);
+
+    doTorneio.forEach(r => {
+
+      const pontosPosicao = calc.porPosicao[r.posicao - 1] || 0;
+      const pontos = pontosPosicao + calc.participacao;
+      const l = linha(r.jogador);
+
+      l.pontos += pontos;
+      l.pontosTorneios += pontos;
+      l.torneios += 1;
+      if (r.posicao === 1) l.vitorias += 1;
+      if (pontosPosicao > 0) l.premiados += 1;
+      l.melhor = l.melhor === null ? r.posicao : Math.min(l.melhor, r.posicao);
+      l.detalhes.push({ torneio_id: v.torneio_id, posicao: r.posicao, pontos, jogadores: doTorneio.length });
+    });
+  });
+
+  ajustes.forEach(a => {
+    const l = linha(a.jogador);
+    l.pontos += Number(a.pontos || 0);
+    l.pontosAjuste += Number(a.pontos || 0);
+  });
+
+  return Array.from(porJogador.values()).sort((a, b) =>
+    b.pontos - a.pontos
+    || b.vitorias - a.vitorias
+    || (a.melhor ?? 999) - (b.melhor ?? 999)
+    || a.jogador.localeCompare(b.jogador)
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Central de Histórico / Log (Desfazer completo)
 // ---------------------------------------------------------------------------
 // Abas:

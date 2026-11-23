@@ -211,6 +211,105 @@
     .menu-subitem-tv {
       margin-left: 12px;
     }
+
+    #btnTelaCheiaTV {
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: min(2.4vh, 2vw);
+      cursor: pointer;
+    }
+
+    /* Tela cheia: esconde a barra de cima e o cursor parado */
+    body.tela-cheia .tv-topo {
+      display: none;
+    }
+
+    body.tela-cheia.cursor-oculto,
+    body.tela-cheia.cursor-oculto * {
+      cursor: none !important;
+    }
+
+    /* Tela em pé (celular, tablet ou TV na vertical): relógio em cima,
+       painel embaixo, tamanhos baseados na largura. */
+    @media (orientation: portrait), (max-aspect-ratio: 1/1) {
+
+      html, body {
+        overflow-y: auto;
+      }
+
+      body {
+        min-height: 100%;
+        height: auto;
+      }
+
+      .tv-topo {
+        font-size: 3.6vw;
+        padding: 1.2vh 3vw;
+      }
+
+      #btnMenuTV, #btnTelaCheiaTV {
+        font-size: 4vw;
+        padding: 0.6vw 2.4vw;
+      }
+
+      .tv-titulo {
+        font-size: 5vw;
+        padding: 1vh 2vw;
+      }
+
+      .tv-cabecalho {
+        font-size: 4.4vw;
+        padding: 1.6vh 4vw 0.8vh;
+      }
+
+      .tv-corpo {
+        flex-direction: column;
+        gap: 2vh;
+        padding: 1vh 3vw;
+      }
+
+      .tv-relogio-caixa,
+      .tv-painel {
+        flex: 0 0 auto;
+      }
+
+      .tv-contador {
+        font-size: 24vw;
+      }
+
+      .tv-blinds {
+        font-size: 9vw;
+        margin-top: 2vh;
+      }
+
+      .tv-linha {
+        font-size: 4.2vw;
+        padding: 1.6vh 3vw;
+      }
+
+      .tv-premios {
+        font-size: 6vw;
+        gap: 3vw 6vw;
+        padding: 2vh 3vw 3vh;
+      }
+
+      .tv-vazio {
+        font-size: 5vw;
+        padding: 0 6vw;
+      }
+    }
+
+    /* Telas muito baixas e largas (celular deitado) */
+    @media (orientation: landscape) and (max-height: 500px) {
+
+      .tv-topo { padding: 0.6vh 2vw; }
+      .tv-contador { font-size: min(14vw, 34vh); }
+      .tv-linha { padding: 1.2vh 1.6vw; font-size: min(4.2vh, 2.4vw); }
+      .tv-premios { font-size: min(7vh, 4.6vw); padding: 1vh 2vw; }
+    }
   </style>
 </head>
 <body>
@@ -236,6 +335,7 @@
 
       <a href="torneios.html" class="menu-item-tv">Torneios</a>
       <a href="jogadores.html" class="menu-item-tv">Jogadores</a>
+      <a href="rankings.html" class="menu-item-tv">Ranking</a>
       <a href="index.html#cadastro" class="menu-item-tv">Cadastrar Jogador</a>
       <a href="diretor.html#config" class="menu-item-tv">Configurações de Torneio</a>
       <button class="menu-item-tv" onclick="sair()">Sair</button>
@@ -247,7 +347,10 @@
       <button id="btnMenuTV" onclick="abrirMenuTV()">☰</button>
       <span>RPG Poker Club</span>
     </div>
-    <span id="tvRelogioParede"></span>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="tvRelogioParede"></span>
+      <button id="btnTelaCheiaTV" onclick="alternarTelaCheiaTV()" title="Tela cheia (F)">⛶</button>
+    </div>
   </div>
 
   <div class="tv-titulo" id="tvNomeTorneio">Carregando...</div>
@@ -333,6 +436,56 @@
   function abrirMenuTV() {
     document.getElementById('menuOverlayTV').classList.add('aberto');
   }
+
+  // ---- Tela cheia (botão ⛶, tecla F ou duplo clique no relógio) ----
+
+  function alternarTelaCheiaTV() {
+
+    const el = document.documentElement;
+    const emTelaCheia = document.fullscreenElement || document.webkitFullscreenElement;
+
+    if (emTelaCheia) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      return;
+    }
+
+    const pedir = el.requestFullscreen || el.webkitRequestFullscreen;
+
+    if (pedir) {
+      Promise.resolve(pedir.call(el)).catch(() => document.body.classList.toggle('tela-cheia'));
+    } else {
+      // iPhone não tem tela cheia de verdade: só esconde a barra de cima.
+      document.body.classList.toggle('tela-cheia');
+    }
+  }
+
+  function aoMudarTelaCheia() {
+    const ativo = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    document.body.classList.toggle('tela-cheia', ativo);
+  }
+
+  document.addEventListener('fullscreenchange', aoMudarTelaCheia);
+  document.addEventListener('webkitfullscreenchange', aoMudarTelaCheia);
+
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) {
+      alternarTelaCheiaTV();
+    }
+    if (e.key === 'Escape' && document.body.classList.contains('tela-cheia') && !document.fullscreenElement) {
+      document.body.classList.remove('tela-cheia');
+    }
+  });
+
+  document.getElementById('tvContador').addEventListener('dblclick', alternarTelaCheiaTV);
+
+  // Em tela cheia, o cursor some depois de 3 s parado.
+  let timerCursorTV = null;
+
+  document.addEventListener('mousemove', () => {
+    document.body.classList.remove('cursor-oculto');
+    clearTimeout(timerCursorTV);
+    timerCursorTV = setTimeout(() => document.body.classList.add('cursor-oculto'), 3000);
+  });
 
   function fecharMenuTV() {
     document.getElementById('menuOverlayTV').classList.remove('aberto');

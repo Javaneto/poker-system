@@ -834,6 +834,116 @@ tbody tr:hover {
 .ch-badge-update { background: #dbeafe; color: #1d4ed8; }
 .ch-badge-delete { background: #fee2e2; color: #b91c1c; }
 
+/* ---- Relatório do torneio ---- */
+
+.rel-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.rel-kpi {
+  background: #f8f9fb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.rel-kpi span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #767c88;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.rel-kpi strong {
+  display: block;
+  font-size: 18px;
+  margin-top: 2px;
+}
+
+.rel-kpi em {
+  display: block;
+  font-size: 11px;
+  color: #9aa0aa;
+  font-style: normal;
+}
+
+.rel-kpi-destaque {
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 1px #bfdbfe;
+}
+
+.rel-kpi-destaque strong {
+  color: #1d4ed8;
+}
+
+.tabela-rolavel {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabela-rolavel table {
+  min-width: 520px;
+}
+
+tfoot th {
+  color: #16181d;
+  border-top: 2px solid #e5e7eb;
+}
+
+/* ---- Classificação final ---- */
+
+.classif-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.classif-linha .classif-pos {
+  width: 72px;
+  flex: 0 0 72px;
+  margin: 0;
+  text-align: center;
+  font-weight: 800;
+}
+
+.classif-linha .classif-nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.classif-linha .classif-elim {
+  flex: 0 1 180px;
+  width: 180px;
+  margin: 0;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+@media (max-width: 768px) {
+
+  .classif-linha {
+    flex-wrap: wrap;
+  }
+
+  .classif-linha .classif-elim {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .rel-kpi strong {
+    font-size: 16px;
+  }
+}
+
 @media (max-width: 768px) {
 
   .modal-box.modal-grande {
@@ -966,4 +1076,128 @@ tbody tr:hover {
   .cabecalho-tipos {
     display: none;
   }
+}
+
+/* ---- Celular: ajustes gerais (cash game, torneio, jogadores, ranking) ---- */
+
+html, body {
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+
+  /* 16px evita o zoom automático do iPhone ao tocar num campo */
+  input, select, textarea {
+    font-size: 16px;
+  }
+
+  button {
+    min-height: 40px;
+  }
+
+  .topbar h1 {
+    font-size: 19px;
+  }
+
+  /* Modais abrem de baixo, ocupando a largura da tela */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-box {
+    max-width: 100% !important;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 18px 18px 0 0;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .modal-box.modal-grande {
+    height: 92vh;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .modal-acoes {
+    flex-wrap: wrap;
+  }
+
+  .modal-acoes button {
+    flex: 1 1 auto;
+  }
+
+  /* Botões quadrados do diretor: texto e ícone legíveis */
+  .btn-tile {
+    font-size: 10px;
+    min-height: 0;
+  }
+
+  .btn-tile .btn-tile-icone svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .linha-desfazer {
+    gap: 8px;
+  }
+
+  .linha-desfazer .linha-desfazer-info {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 380px) {
+
+  body {
+    padding: 8px;
+  }
+
+  .grid-tiles-2col {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .btn-tile {
+    font-size: 9px;
+  }
+}
+
+/* ---- Mini relógio do diretor (celular) ---- */
+
+.mini-relogio {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1800;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px calc(8px);
+  padding-top: calc(8px + env(safe-area-inset-top));
+  background: #000;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  cursor: pointer;
+}
+
+.mini-relogio.visivel {
+  display: flex;
+}
+
+.mini-relogio .mini-tempo {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-relogio .mini-nivel,
+.mini-relogio .mini-blinds {
+  font-size: 13px;
+  color: #ddd;
+}
+
+.mini-relogio.intervalo .mini-tempo {
+  color: #f87171;
 }
