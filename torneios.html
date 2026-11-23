@@ -419,7 +419,7 @@
     await carregarDados();
   }
 
-  function criarLinhaTipoFixo(tipoFixo, total, rake, containerId) {
+  function criarLinhaTipoFixo(tipoFixo, total, rake, containerId, ativo = false) {
 
     const div = document.createElement('div');
 
@@ -433,6 +433,23 @@
         <span class="tipo-nome-fixo">${escapeHtml(tipoFixo.nome)}</span>
         <input type="number" class="tipo-total" placeholder="Valor do bounty" min="0" value="${total}" style="flex:2;">
         <span style="color:#767c88;font-size:12px;">Descontado do prêmio a cada Registro/Rebuy</span>
+      `;
+
+      document.getElementById(containerId).appendChild(div);
+      return;
+    }
+
+    if (tipoFixo.chave === 'free') {
+
+      // Buy-in Free pode ter valor zero: a ativação é pela caixa "Ativo",
+      // não pelo valor preenchido.
+      div.innerHTML = `
+        <span class="tipo-nome-fixo">${escapeHtml(tipoFixo.nome)}</span>
+        <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+          <input type="checkbox" class="tipo-ativo" style="width:auto;margin:0;" ${ativo ? 'checked' : ''}> Ativo
+        </label>
+        <input type="number" class="tipo-total" placeholder="Valor (pode ser 0)" min="0" value="${total || ''}">
+        <input type="number" class="tipo-rake" placeholder="Rake" min="0" value="${rake || ''}">
       `;
 
       document.getElementById(containerId).appendChild(div);
@@ -477,16 +494,19 @@
         const inputRake = linha.querySelector('.tipo-rake');
         const rake = inputRake ? (parseFloat(inputRake.value) || 0) : 0;
         const ehBounty = linha.dataset.tipoChave === 'bounty';
+        const checkAtivo = linha.querySelector('.tipo-ativo');
 
         return {
           tipo: tipoNome,
           valor_total: total,
           valor_rake: rake,
           valor_prize: ehBounty ? 0 : Math.max(total - rake, 0),
-          ordem: index
+          ordem: index,
+          _ativo: checkAtivo ? checkAtivo.checked : total > 0
         };
       })
-      .filter(t => t.tipo && t.valor_total > 0);
+      .filter(t => t.tipo && t._ativo)
+      .map(({ _ativo, ...t }) => t);
   }
 
   function obterProximoNomeTorneio() {

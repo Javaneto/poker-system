@@ -454,6 +454,8 @@
 
     <input type="number" id="valorPagarHistorico" placeholder="Valor" min="0">
 
+    <textarea id="observacaoPagarHistorico" placeholder="Observação (opcional)" rows="2" maxlength="300" style="width:100%;box-sizing:border-box;margin-bottom:12px;resize:vertical;font:inherit;"></textarea>
+
     <div class="modal-acoes">
       <button class="btn-gray" onclick="fecharModalPagarHistorico()">
         Cancelar
@@ -1826,6 +1828,7 @@
         <div class="linha-desfazer-info">
           <strong>${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')}</strong>
           <span style="color:#999;">${dataFormatada}</span>
+          ${mov.observacao ? `<span style="color:#767c88;font-style:italic;">Obs: ${escapeHtml(mov.observacao)}</span>` : ''}
         </div>
         <div class="linha-desfazer-valor">
           <strong>R$ ${Number(mov.valor).toFixed(2)}</strong>
@@ -1842,6 +1845,7 @@
 
     document.getElementById('pagarHistoricoResumo').textContent = `Jogador: ${historicoJogadorAtual.nome}`;
     document.getElementById('valorPagarHistorico').value = '';
+    document.getElementById('observacaoPagarHistorico').value = '';
 
     document.getElementById('modalPagarHistorico').classList.add('aberto');
   }
@@ -1869,6 +1873,8 @@
       return;
     }
 
+    const observacao = document.getElementById('observacaoPagarHistorico').value.trim();
+
     const btn = document.getElementById('btnConfirmarPagarHistorico');
     btn.classList.add('disabled');
 
@@ -1883,7 +1889,8 @@
           pago: false,
           data: new Date().toISOString(),
           cpf: jogador.cpf,
-          telefone: jogador.telefone
+          telefone: jogador.telefone,
+          ...(observacao ? { observacao } : {})
         }
       ])
       .select()
@@ -2239,7 +2246,7 @@
     } else {
       tiposDisponiveis.forEach(t => {
         const existente = valoresTorneio.find(v => v.tipo === t.nome);
-        criarLinhaTipoFixo(t, existente ? existente.valor_total : 0, existente ? existente.valor_rake : 0, 'linhasTiposEditar');
+        criarLinhaTipoFixo(t, existente ? existente.valor_total : 0, existente ? existente.valor_rake : 0, 'linhasTiposEditar', !!existente);
       });
     }
 
@@ -2483,17 +2490,11 @@
       return;
     }
 
-    const { error: erroConfig } = await client
-      .from('configuracoes')
-      .update({ torneio_atual_id: null })
-      .eq('id', 1)
-      .eq('torneio_atual_id', torneioAtual.id);
+    // O torneio continua como "torneio atual" depois de encerrado,
+    // para o diretor permanecer na página dele e conferir o fechamento.
+    // Ele deixa de ser o atual quando outro torneio for selecionado.
 
     btn.classList.remove('disabled');
-
-    if (erroConfig) {
-      console.error(erroConfig);
-    }
 
     console.log('Torneio encerrado:', torneioAtual.id);
 
@@ -2577,8 +2578,10 @@
     tabela.innerHTML = '';
     tabelaMobile.innerHTML = '';
 
+    // Mesmo critério da página de cash game: fechamento unificado,
+    // vale tudo que ainda não teve a sessão finalizada (pagas ou não).
     const movimentacoesFiltradas = movimentacoes.filter(
-      mov => !mov.pago && !mov.sessao_finalizada_em
+      mov => !mov.sessao_finalizada_em
     );
 
     const termoPesquisaAberto = document.getElementById('pesquisaJogadorAbertoTorneio').value.trim().toLowerCase();
@@ -2972,7 +2975,7 @@
       }
   });
 
-  function criarLinhaTipoFixo(tipoFixo, total, rake, containerId) {
+  function criarLinhaTipoFixo(tipoFixo, total, rake, containerId, ativo = false) {
 
     const div = document.createElement('div');
 
@@ -2986,6 +2989,23 @@
         <span class="tipo-nome-fixo">${escapeHtml(tipoFixo.nome)}</span>
         <input type="number" class="tipo-total" placeholder="Valor do bounty" min="0" value="${total}" style="flex:2;">
         <span style="color:#767c88;font-size:12px;">Descontado do prêmio a cada Registro/Rebuy</span>
+      `;
+
+      document.getElementById(containerId).appendChild(div);
+      return;
+    }
+
+    if (tipoFixo.chave === 'free') {
+
+      // Buy-in Free pode ter valor zero: a ativação é pela caixa "Ativo",
+      // não pelo valor preenchido.
+      div.innerHTML = `
+        <span class="tipo-nome-fixo">${escapeHtml(tipoFixo.nome)}</span>
+        <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+          <input type="checkbox" class="tipo-ativo" style="width:auto;margin:0;" ${ativo ? 'checked' : ''}> Ativo
+        </label>
+        <input type="number" class="tipo-total" placeholder="Valor (pode ser 0)" min="0" value="${total || ''}">
+        <input type="number" class="tipo-rake" placeholder="Rake" min="0" value="${rake || ''}">
       `;
 
       document.getElementById(containerId).appendChild(div);
@@ -3030,16 +3050,19 @@
         const inputRake = linha.querySelector('.tipo-rake');
         const rake = inputRake ? (parseFloat(inputRake.value) || 0) : 0;
         const ehBounty = linha.dataset.tipoChave === 'bounty';
+        const checkAtivo = linha.querySelector('.tipo-ativo');
 
         return {
           tipo: tipoNome,
           valor_total: total,
           valor_rake: rake,
           valor_prize: ehBounty ? 0 : Math.max(total - rake, 0),
-          ordem: index
+          ordem: index,
+          _ativo: checkAtivo ? checkAtivo.checked : total > 0
         };
       })
-      .filter(t => t.tipo && t.valor_total > 0);
+      .filter(t => t.tipo && t._ativo)
+      .map(({ _ativo, ...t }) => t);
   }
 
   let estruturaEditandoId = null;
@@ -3728,13 +3751,20 @@
 
     if (valorTipo.tipo === 'Add-on') {
 
-      const totalPagoAntes = movimentacoesTorneio
-        .filter(m => m.jogador === jogador.nome && (m.tipo === 'Entrada' || m.tipo === 'Registro' || m.tipo === 'Rebuy' || m.tipo === 'Add-on'))
-        .reduce((soma, m) => soma + Number(m.valor || 0), 0);
+      // Resultado das movimentações em aberto do jogador (cash + torneio,
+      // mesmo cálculo da tabela "Movimentações em Aberto") somado ao add-on.
+      // Resultado negativo = jogador deve ao clube.
+      const movsAbertasJogador = movimentacoes.filter(
+        m => m.jogador === jogador.nome && !m.sessao_finalizada_em
+      );
 
-      const resultadoComEsteAddon = totalPagoAntes + Number(valorTipo.valor_total);
+      const { resultado } = calcularResultado(movsAbertasJogador);
 
-      resumo += `\n\nTotal: R$ ${resultadoComEsteAddon.toFixed(2)}`;
+      const totalAPagar = -resultado + Number(valorTipo.valor_total);
+
+      resumo += totalAPagar >= 0
+        ? `\n\nTotal a pagar: R$ ${totalAPagar.toFixed(2)}`
+        : `\n\nTotal a receber: R$ ${Math.abs(totalAPagar).toFixed(2)}`;
     }
 
     document.getElementById('modalPagamentoResumo').textContent = resumo;

@@ -263,6 +263,8 @@
 
     <input type="number" id="valorPagarHistorico" placeholder="Valor" min="0">
 
+    <textarea id="observacaoPagarHistorico" placeholder="Observação (opcional)" rows="2" maxlength="300" style="width:100%;box-sizing:border-box;margin-bottom:12px;resize:vertical;font:inherit;"></textarea>
+
     <div class="modal-acoes">
       <button class="btn-gray" onclick="fecharModalPagarHistorico()">
         Cancelar
@@ -810,6 +812,7 @@
         <div class="linha-desfazer-info">
           <strong>${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')}</strong>
           <span style="color:#999;">${dataFormatada}</span>
+          ${mov.observacao ? `<span style="color:#767c88;font-style:italic;">Obs: ${escapeHtml(mov.observacao)}</span>` : ''}
         </div>
         <div class="linha-desfazer-valor">
           <strong>R$ ${Number(mov.valor).toFixed(2)}</strong>
@@ -829,6 +832,7 @@
 
     document.getElementById('pagarHistoricoResumo').textContent = `Jogador: ${historicoJogadorAtual.nome}`;
     document.getElementById('valorPagarHistorico').value = '';
+    document.getElementById('observacaoPagarHistorico').value = '';
 
     document.getElementById('modalPagarHistorico').classList.add('aberto');
   }
@@ -856,6 +860,8 @@
       return;
     }
 
+    const observacao = document.getElementById('observacaoPagarHistorico').value.trim();
+
     const btn = document.getElementById('btnConfirmarPagarHistorico');
     btn.classList.add('disabled');
 
@@ -870,7 +876,8 @@
           pago: false,
           data: new Date().toISOString(),
           cpf: jogador.cpf,
-          telefone: jogador.telefone
+          telefone: jogador.telefone,
+          ...(observacao ? { observacao } : {})
         }
       ])
       .select()
