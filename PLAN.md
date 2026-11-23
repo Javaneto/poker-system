@@ -63,8 +63,7 @@ negativo = jogador deve ao clube):
   máximo de rebuys por jogador, mínimo de 2 jogadores para iniciar.
 - Ao lançar Add-on, mostrar **Total a pagar = resultado em aberto do jogador + add-on**.
 - Ajuste manual do prêmio (+/−) registrado e auditado. Prêmio garantido (GTD) opcional.
-- Ações oficiais no log do torneio: transferir de mesa, ajustar jogador, chop.
-- Classificação final (posição e "eliminado por") usada no ranking.
+- Classificação final (posição) usada no ranking.
 
 ### Relógio e blinds
 - Estrutura de blinds: lista de níveis {sb, bb, ante, duração (min), intervalo após (min)}.
@@ -187,7 +186,6 @@ negativo = jogador deve ao clube):
 - [ ] Inscrição/rebuy/add-on com validações (já registrado, só registrados, nível limite, máximo de rebuys, Buy-in Free sem valor).
 - [ ] Total a pagar no add-on; bounty; ajuste de prêmio; prêmio garantido.
 - [ ] Encerrar (RPC) mantendo o diretor na tela; excluir só sem lançamentos.
-- [ ] Log de eventos do torneio (transferência, ajuste, chop).
 
 ## Fase 9 — Blinds, relógio e tela pública
 - [ ] Migration `blind_structures` (níveis em tabela própria `blind_levels`).
@@ -202,7 +200,7 @@ negativo = jogador deve ao clube):
 - [ ] `prize_structures` (percentuais) + modelos prontos.
 - [ ] `domain/prizes.ts`: arredondamento com sobra (regra do legado) — testes com casos reais.
 - [ ] Publicar premiação no timer; distribuir prêmios (lança `payout` no ledger).
-- [ ] Classificação final (posição, eliminado por) com validação de posições repetidas.
+- [ ] Classificação final (posição) com validação de posições repetidas.
 - [ ] Checklist de fechamento (prêmios pagos, nada pendente, rake conferido) antes de encerrar.
 
 ## Fase 11 — Rake e relatórios
@@ -215,7 +213,7 @@ negativo = jogador deve ao clube):
 - [ ] `domain/ranking.ts` com a fórmula do cliente e desempate — testes.
 - [ ] Tela de ranking: configurar (prévia de pontos), vincular torneios, ajustes, pódio, detalhe por jogador, tela cheia.
 - [ ] Link público somente leitura (sem dados pessoais).
-- [ ] Estatísticas do jogador (jogos, vitórias, ITM, rebuys, lucro) e "Nemesis" (quem mais elimina quem).
+- [ ] Estatísticas do jogador (jogos, vitórias, ITM, rebuys, lucro).
 
 ## Fase 13 — Bar
 - [ ] Migrations `products`, `product_categories`, `bar_tabs`, `bar_tab_items`, `stock_movements`.
