@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-tema-escopo="publico" data-tema-padrao="escuro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Ranking — RPG Poker Club</title>
+
+  <script src="js/tema.js"></script>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="js/comum.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="ranking.css">
+
+  <style>
+    body { display: block; }
+
+    .pub-container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .pub-topo {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .pub-clube {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--destaque);
+      margin: 0 0 4px;
+    }
+
+    .pub-topo h1 { margin: 0; }
+
+    .pub-sub {
+      color: var(--apagado);
+      font-size: 13px;
+      margin: 4px 0 0;
+    }
+
+    .pub-mensagem {
+      text-align: center;
+      color: var(--apagado);
+      padding: 40px 16px;
+    }
+
+    .pub-rodape {
+      text-align: center;
+      color: var(--apagado-2);
+      font-size: 12px;
+      margin: 16px 0 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="pub-container">
+
+  <div class="pub-topo">
+    <div>
+      <p class="pub-clube">RPG Poker Club</p>
+      <h1 id="pubNome">Ranking</h1>
+      <p class="pub-sub" id="pubSub"></p>
+    </div>
+
+    <button type="button" class="tema-toggle" data-alternar-tema aria-label="Mudar para o modo claro">
+      <span class="tema-toggle-bolinha" aria-hidden="true"></span>
+      <svg class="ico-sol" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="ico-lua" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+
+  <div id="pubMensagem" class="card pub-mensagem">Carregando...</div>
+
+  <div id="pubArea" class="oculto">
+    <div id="podio" class="podio"></div>
+
+    <div class="card rk-placar">
+      <table>
+        <thead>
+          <tr>
+            <th class="pos-col">#</th>
+            <th>Jogador</th>
+            <th class="pontos-col">Pontos</th>
+            <th class="col-extra">Torneios</th>
+            <th>Vitórias</th>
+            <th class="col-extra">Premiado</th>
+            <th class="col-extra">Melhor</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaRanking"></tbody>
+      </table>
+    </div>
+
+    <p class="pub-rodape" id="pubAtualizado"></p>
+  </div>
+</div>
+
+<div id="modalDetalhe" class="modal-overlay">
+  <div class="modal-box" style="max-width:480px;">
+    <h2 id="detNome"></h2>
+    <div id="detConteudo"></div>
+    <div class="modal-acoes" style="margin-top:14px;">
+      <button class="btn-gray" style="flex:1;" onclick="fecharDetalhe()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Página pública: sem login. Só chama a função ranking_publico(token),
+  // que devolve um ranking e apenas se o código do link for válido.
+  const SUPABASE_URL = 'https://rpohgkhkfzuorngtellg.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
+
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+
+  const token = new URLSearchParams(location.search).get('t') || '';
+
+  let dados = null;
+  let classificacao = [];
+
+  function escapeHtml(texto) {
+    return String(texto ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function formatarPontos(valor) {
+    return Number(valor || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+  }
+
+  function mostrarMensagem(texto) {
+    document.getElementById('pubArea').classList.add('oculto');
+    const el = document.getElementById('pubMensagem');
+    el.classList.remove('oculto');
+    el.textContent = texto;
+  }
+
+  async function carregar() {
+
+    if (!/^[0-9a-f-]{36}$/i.test(token)) {
+      mostrarMensagem('Link inválido.');
+      return;
+    }
+
+    const { data, error } = await client.rpc('ranking_publico', { p_token: token });
+
+    if (error) {
+      console.error(error);
+      if (!dados) mostrarMensagem('Não foi possível carregar o ranking agora. Tente novamente em instantes.');
+      return;
+    }
+
+    if (!data) {
+      dados = null;
+      mostrarMensagem('Este link de ranking não existe ou foi desativado.');
+      return;
+    }
+
+    dados = data;
+    renderizar();
+  }
+
+  function renderizar() {
+
+    const r = dados.ranking;
+
+    classificacao = montarClassificacaoRanking(r, dados.vinculos, dados.resultados, dados.ajustes);
+
+    document.title = `${r.nome} — RPG Poker Club`;
+    document.getElementById('pubNome').textContent = r.nome;
+
+    const periodo = [r.data_inicio, r.data_fim]
+      .map(d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '…')
+      .join(' a ');
+
+    document.getElementById('pubSub').textContent =
+      `${r.ativo ? 'Em andamento' : 'Encerrado'} · ${periodo} · ${dados.vinculos.length} torneio(s)`;
+
+    document.getElementById('pubMensagem').classList.add('oculto');
+    document.getElementById('pubArea').classList.remove('oculto');
+
+    document.getElementById('podio').innerHTML = classificacao.slice(0, 3).map((l, i) => `
+      <div class="podio-item podio-${i + 1}">
+        <span class="podio-pos">${i + 1}º</span>
+        <span class="podio-nome" title="${escapeHtml(l.jogador)}">${escapeHtml(l.jogador)}</span>
+        <span class="podio-pontos"><strong>${formatarPontos(l.pontos)}</strong> pts</span>
+      </div>
+    `).join('');
+
+    const tabela = document.getElementById('tabelaRanking');
+
+    if (classificacao.length === 0) {
+      tabela.innerHTML = '<tr><td colspan="7" class="vazio-col">Ainda sem pontos.</td></tr>';
+    } else {
+
+      let posicaoAnterior = 0;
+
+      tabela.innerHTML = classificacao.map((l, i) => {
+        // Empate em pontos, vitórias e melhor colocação = mesma posição.
+        const anterior = classificacao[i - 1];
+        const empate = anterior && anterior.pontos === l.pontos && anterior.vitorias === l.vitorias && anterior.melhor === l.melhor;
+        const pos = empate ? posicaoAnterior : i + 1;
+        posicaoAnterior = pos;
+
+        return `
+          <tr class="linha-ranking" onclick="abrirDetalhe(${i})">
+            <td class="pos-col"><span class="pos ${pos <= 3 ? 'pos-' + pos : ''}">${pos}</span></td>
+            <td class="nome-col">${escapeHtml(l.jogador)}</td>
+            <td class="pontos-col">${formatarPontos(l.pontos)}</td>
+            <td class="col-extra">${l.torneios}</td>
+            <td>${l.vitorias}</td>
+            <td class="col-extra">${l.premiados}</td>
+            <td class="col-extra">${l.melhor ? l.melhor + 'º' : '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('pubAtualizado').textContent =
+      `Atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} · atualiza sozinho a cada minuto`;
+  }
+
+  function nomeTorneio(id) {
+    return dados.torneios.find(t => String(t.id) === String(id))?.nome || 'Torneio';
+  }
+
+  function abrirDetalhe(i) {
+
+    const l = classificacao[i];
+
+    if (!l) return;
+
+    document.getElementById('detNome').textContent = `${l.jogador} — ${formatarPontos(l.pontos)} pts`;
+
+    document.getElementById('detConteudo').innerHTML = (l.detalhes.length ? l.detalhes
+      .slice()
+      .sort((a, b) => b.pontos - a.pontos)
+      .map(d => `
+        <div class="linha-desfazer">
+          <div class="linha-desfazer-info">
+            <strong>${escapeHtml(nomeTorneio(d.torneio_id))}</strong>
+            ${d.posicao}º de ${d.jogadores}
+          </div>
+          <div class="linha-desfazer-valor"><strong>${formatarPontos(d.pontos)} pts</strong></div>
+        </div>
+      `).join('') : '<p class="ch-vazio">Nenhum torneio.</p>')
+      + (l.pontosAjuste ? `<p class="ch-vazio">Inclui ajuste de ${l.pontosAjuste > 0 ? '+' : ''}${formatarPontos(l.pontosAjuste)} pts.</p>` : '');
+
+    document.getElementById('modalDetalhe').classList.add('aberto');
+  }
+
+  function fecharDetalhe() {
+    document.getElementById('modalDetalhe').classList.remove('aberto');
+  }
+
+  document.getElementById('modalDetalhe').addEventListener('click', e => {
+    if (e.target.id === 'modalDetalhe') fecharDetalhe();
+  });
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharDetalhe(); });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') carregar();
+  });
+
+  setInterval(() => { if (document.visibilityState === 'visible') carregar(); }, 60000);
+
+  carregar();
+</script>
+
+</body>
+</html>
