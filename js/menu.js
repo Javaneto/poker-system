@@ -190,6 +190,66 @@
   function abrirMenu() { document.body.classList.add('mnu-aberto'); }
   function fecharMenu() { document.body.classList.remove('mnu-aberto'); }
 
+  // ---- Botão X de fechar em todos os modais (.modal-box) ----
+  // O X aciona o botão "Fechar"/"Cancelar"/"Voltar"/"OK" do próprio modal, para
+  // manter a limpeza que cada página faz ao fechar; sem ele, só esconde o modal.
+
+  const CSS_MODAL = `
+  .modal-box { position: relative; }
+  .modal-fechar-x {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    width: 36px; height: 36px; padding: 0; margin: 0; border: 0; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; color: #8b91a0; cursor: pointer; box-shadow: none;
+    transition: background .15s ease, color .15s ease;
+  }
+  .modal-fechar-x:hover { background: #f2f3f7; color: #16181d; }
+  .modal-fechar-x:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; }
+  .modal-fechar-x .mnu-ico { width: 20px; height: 20px; }
+  .modal-box > h2:first-of-type, .modal-box > .topbar:first-child { padding-right: 40px; }
+  body.modo-escuro .modal-fechar-x:hover { background: #1a1e29; color: #fff; }
+  `;
+
+  const TEXTOS_FECHAR = /^(fechar|cancelar|voltar|ok|não|nao)$/i;
+
+  function fecharModalPeloX(overlay) {
+    const botoes = Array.from(overlay.querySelectorAll('button:not(.modal-fechar-x)'));
+    const alvo = botoes.reverse().find(b => TEXTOS_FECHAR.test(b.textContent.trim()) || b.textContent.trim() === '×');
+    if (alvo) alvo.click();
+    else overlay.classList.remove('aberto');
+  }
+
+  function adicionarXNosModais(raiz) {
+    const caixas = raiz.matches && raiz.matches('.modal-box') ? [raiz] : Array.from((raiz.querySelectorAll ? raiz : document).querySelectorAll('.modal-box'));
+    caixas.forEach(caixa => {
+      if (caixa.querySelector(':scope > .modal-fechar-x')) return;
+      const overlay = caixa.closest('.modal-overlay');
+      if (!overlay) return;
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.className = 'modal-fechar-x';
+      botao.setAttribute('aria-label', 'Fechar');
+      botao.title = 'Fechar';
+      botao.innerHTML = icone('fechar');
+      botao.addEventListener('click', e => { e.stopPropagation(); fecharModalPeloX(overlay); });
+      caixa.insertBefore(botao, caixa.firstChild);
+    });
+  }
+
+  function iniciarXNosModais() {
+    const estilo = document.createElement('style');
+    estilo.textContent = CSS_MODAL;
+    document.head.appendChild(estilo);
+    adicionarXNosModais(document);
+    // Modais criados depois (Central de Histórico, relatórios do torneio...)
+    new MutationObserver(mutacoes => {
+      mutacoes.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) adicionarXNosModais(n); }));
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciarXNosModais);
+  else iniciarXNosModais();
+
   window.abrirMenu = abrirMenu;
   window.fecharMenu = fecharMenu;
 
