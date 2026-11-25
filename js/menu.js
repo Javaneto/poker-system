@@ -40,7 +40,7 @@
     { rotulo: 'Jogadores', icone: 'jogadores', href: 'jogadores.html' },
     { rotulo: 'Ranking', icone: 'ranking', href: 'rankings.html' },
     { rotulo: 'Cadastrar jogador', icone: 'cadastro', href: 'jogadores.html#novo', paginaAcao: 'jogadores.html', acao: 'abrirFormJogador' },
-    { rotulo: 'Config. de torneio', icone: 'config', href: 'diretor.html#config', id: 'btnConfigTorneioMenu', paginaAcao: 'diretor.html', acao: 'abrirModalEstruturas' }
+    { rotulo: 'Estruturas de Torneio', icone: 'config', href: 'diretor.html#config', id: 'btnConfigTorneioMenu', paginaAcao: 'diretor.html', acao: 'abrirModalEstruturas' }
   ];
 
   const CSS = `
