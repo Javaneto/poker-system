@@ -27,7 +27,7 @@
     }
 
     .chip-ranking.ativo {
-      background: #16181d;
+      background: #dc2626;
       color: white;
     }
 
@@ -43,37 +43,189 @@
       line-height: 1.6;
     }
 
+    /* ---- Placar escuro (mesma paleta da Tela da TV e do menu) ---- */
+    :root {
+      --rk-cartao: #0f1117;
+      --rk-cartao-2: #151924;
+      --rk-hover: #1a1e29;
+      --rk-borda: #1f2330;
+      --rk-texto: #c9ccd4;
+      --rk-apagado: #8b91a0;
+      --rk-vermelho: #dc2626;
+      --rk-ouro: #fbbf24;
+      --rk-prata: #cbd5e1;
+      --rk-bronze: #f59e0b;
+    }
+
+    /* Pódio: 2º, 1º, 3º, com o campeão mais alto no meio */
     .podio {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: end;
+      gap: 12px;
       margin: 6px 0 16px;
     }
 
     .podio-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      padding: 18px 12px 16px;
+      background: var(--rk-cartao);
+      border: 1px solid var(--rk-borda);
       border-radius: 14px;
-      padding: 14px;
       text-align: center;
-      color: #16181d;
+      color: #fff;
+      overflow: hidden;
     }
 
-    .podio-item .medalha { font-size: 28px; }
-    .podio-item strong { display: block; font-size: 16px; margin-top: 4px; }
-    .podio-item span { font-size: 13px; color: #464c56; }
+    .podio-item::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto;
+      height: 4px;
+      background: var(--cor-podio);
+    }
 
-    .podio-1 { background: linear-gradient(180deg, #fef3c7, #fde68a); }
-    .podio-2 { background: linear-gradient(180deg, #f3f4f6, #e5e7eb); }
-    .podio-3 { background: linear-gradient(180deg, #ffedd5, #fed7aa); }
+    .podio-1 { --cor-podio: var(--rk-ouro); order: 2; padding-top: 28px; padding-bottom: 26px; }
+    .podio-2 { --cor-podio: var(--rk-prata); order: 1; }
+    .podio-3 { --cor-podio: var(--rk-bronze); order: 3; }
+
+    .podio-pos {
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--cor-podio);
+    }
+
+    .podio-1 .podio-pos { font-size: 40px; }
+
+    .podio-nome {
+      max-width: 100%;
+      font-size: 17px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .podio-1 .podio-nome { font-size: 20px; }
+
+    .podio-pontos {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--rk-texto);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .podio-pontos strong {
+      color: #fff;
+      font-size: 1.25em;
+    }
+
+    /* Tabela de classificação */
+    .card.rk-placar {
+      background: var(--rk-cartao);
+      border-color: var(--rk-borda);
+      box-shadow: none;
+      padding: 6px 0;
+      overflow: hidden;
+    }
+
+    /* A regra geral do celular/tablet deixa tabelas roláveis de lado;
+       o placar sempre cabe na tela (colunas extras somem no celular). */
+    .rk-placar table {
+      display: table;
+      table-layout: fixed;
+      margin-top: 0;
+    }
+
+    /* Coluna do nome mais larga para o nome não quebrar em duas linhas */
+    .rk-placar thead th:nth-child(2) {
+      width: 30%;
+    }
+
+    .rk-placar th {
+      color: var(--rk-apagado);
+      border-bottom-color: var(--rk-borda);
+      padding: 12px 14px;
+    }
+
+    .rk-placar td {
+      color: var(--rk-texto);
+      font-weight: 600;
+      border-bottom-color: var(--rk-borda);
+      padding: 12px 14px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rk-placar tbody tr:nth-child(even) {
+      background: var(--rk-cartao-2);
+    }
+
+    .rk-placar tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .rk-placar tbody tr:hover {
+      background: var(--rk-hover);
+    }
+
+    .rk-placar .nome-col {
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .rk-placar .ch-badge {
+      margin: 0 0 0 4px;
+      background: var(--rk-hover);
+      color: var(--rk-texto);
+    }
 
     .pos-col {
-      width: 56px;
-      font-weight: 800;
+      width: 64px;
       text-align: center;
     }
 
-    .pontos-col {
+    .pos {
+      display: inline-grid;
+      place-items: center;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 6px;
+      border-radius: 999px;
       font-weight: 800;
-      color: #1d4ed8;
+      color: var(--rk-texto);
+    }
+
+    .pos-1, .pos-2, .pos-3 {
+      color: #0f1117;
+    }
+
+    .pos-1 { background: var(--rk-ouro); }
+    .pos-2 { background: var(--rk-prata); }
+    .pos-3 { background: var(--rk-bronze); }
+
+    .rk-placar .pontos-col {
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .rk-placar th.pontos-col {
+      color: var(--rk-vermelho);
+    }
+
+    .rk-placar .vazio-col {
+      color: var(--rk-apagado);
+      font-weight: 500;
+      white-space: normal;
+    }
+
+    .rk-placar .vazio-col strong {
+      color: #fff;
     }
 
     .linha-ranking { cursor: pointer; }
@@ -146,35 +298,113 @@
       color: #b45309;
     }
 
-    /* Modo TV (tela cheia) */
+    /* Modo TV (tela cheia): igual à Tela da TV, tamanhos seguem a tela */
     body.modo-tv {
-      background: #000;
+      --rk-margem: min(2.4vh, 2vw);
+      background: #07080c;
       color: #fff;
-      padding: 2vh 3vw;
+      padding: var(--rk-margem);
+    }
+
+    body.modo-tv .container {
+      max-width: none;
     }
 
     body.modo-tv .so-admin { display: none !important; }
 
-    body.modo-tv .card {
-      background: #111;
-      border-color: #222;
-      color: #fff;
+    body.modo-tv .topbar {
+      position: relative;
+      justify-content: center;
+      margin-bottom: var(--rk-margem);
     }
 
-    body.modo-tv th { color: #aaa; font-size: min(2.2vh, 1.6vw); }
-    body.modo-tv td { font-size: min(3vh, 2.2vw); border-bottom-color: #222; color: #fff; }
-    body.modo-tv .pontos-col { color: #facc15; }
-    body.modo-tv tbody tr:hover { background: transparent; }
-    body.modo-tv h1 { font-size: min(5vh, 3.5vw); }
-    body.modo-tv .resumo-ranking { color: #aaa; }
+    /* O título fica dentro de uma caixa: ela ocupa a largura toda */
+    body.modo-tv .topbar > div:first-child {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+
+    body.modo-tv h1 {
+      flex: 1 1 100%;
+      width: 100%;
+      margin: 0;
+      padding: min(1vh, 0.8vw) 2vw;
+      border-radius: min(1.6vh, 1.2vw);
+      background: linear-gradient(90deg, #7f1d1d, var(--rk-vermelho) 50%, #7f1d1d);
+      color: #fff;
+      text-align: center;
+      font-size: min(4vh, 3vw);
+    }
+
+    /* Botão "Sair da tela cheia" discreto, sobre a faixa */
+    body.modo-tv .topbar > div:last-child {
+      position: absolute;
+      right: min(1vh, 0.8vw);
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    body.modo-tv #btnModoTV {
+      background: rgba(0, 0, 0, .35);
+      color: #fff;
+      opacity: .6;
+      font-size: min(1.8vh, 1.4vw);
+      padding: 0.4em 0.9em;
+    }
+
+    body.modo-tv #btnModoTV:hover { opacity: 1; }
+
+    body.modo-tv .podio {
+      gap: var(--rk-margem);
+      margin: 0 0 var(--rk-margem);
+    }
+
+    body.modo-tv .podio-item {
+      border-radius: min(1.6vh, 1.2vw);
+      padding: min(2.4vh, 1.8vw) 1vw;
+    }
+
+    body.modo-tv .podio-1 { padding-top: min(4vh, 3vw); padding-bottom: min(3.6vh, 2.7vw); }
+    body.modo-tv .podio-pos { font-size: min(5vh, 3.6vw); }
+    body.modo-tv .podio-1 .podio-pos { font-size: min(7vh, 5vw); }
+    body.modo-tv .podio-nome { font-size: min(3.4vh, 2.4vw); }
+    body.modo-tv .podio-1 .podio-nome { font-size: min(4.2vh, 3vw); }
+    body.modo-tv .podio-pontos { font-size: min(2.6vh, 1.9vw); }
+
+    body.modo-tv .card.rk-placar {
+      border-radius: min(1.6vh, 1.2vw);
+      margin: 0;
+    }
+
+    body.modo-tv .rk-placar th { font-size: min(2vh, 1.5vw); padding: min(1.4vh, 1vw) min(2vh, 1.5vw); }
+    body.modo-tv .rk-placar td { font-size: min(3vh, 2.2vw); padding: min(1.3vh, 1vw) min(2vh, 1.5vw); }
+    body.modo-tv .pos-col { width: min(9vh, 6.5vw); }
+    body.modo-tv .pos { min-width: 1.6em; height: 1.6em; }
+    body.modo-tv .linha-ranking { cursor: default; }
 
     @media (max-width: 768px) {
       .form-grid { grid-template-columns: 1fr; }
-      .podio { gap: 6px; }
-      .podio-item { padding: 10px 6px; }
-      .podio-item strong { font-size: 13px; }
+      .podio { gap: 8px; }
+      .podio-item { padding: 14px 6px 12px; }
+      .podio-1 { padding-top: 22px; padding-bottom: 18px; }
+      .podio-pos { font-size: 24px; }
+      .podio-1 .podio-pos { font-size: 30px; }
+      .podio-nome, .podio-1 .podio-nome { font-size: 14px; }
+      .podio-pontos { font-size: 12px; }
       .linha-vinculo { flex-wrap: wrap; }
       .linha-vinculo input[type="number"] { width: 100%; }
+    }
+
+    /* Celular: tabela mostra o essencial; o resto aparece ao tocar no jogador */
+    @media (max-width: 600px) {
+      .rk-placar table { font-size: 14px; }
+      .rk-placar .col-extra { display: none; }
+      .rk-placar th, .rk-placar td { padding: 11px 8px; }
+      .rk-placar thead th:nth-child(2) { width: auto; }
+      .rk-placar thead th:nth-child(3) { width: 72px; }
+      .rk-placar thead th:nth-child(5) { width: 84px; }
+      .pos-col { width: 48px; }
+      .pos { min-width: 28px; height: 28px; font-size: 13px; }
     }
   </style>
 </head>
@@ -216,17 +446,17 @@
 
     <div id="podio" class="podio"></div>
 
-    <div class="card">
+    <div class="card rk-placar">
       <table>
         <thead>
           <tr>
             <th class="pos-col">#</th>
             <th>Jogador</th>
-            <th>Pontos</th>
-            <th>Torneios</th>
+            <th class="pontos-col">Pontos</th>
+            <th class="col-extra">Torneios</th>
             <th>Vitórias</th>
-            <th>Premiado</th>
-            <th>Melhor</th>
+            <th class="col-extra">Premiado</th>
+            <th class="col-extra">Melhor</th>
           </tr>
         </thead>
         <tbody id="tabelaRanking"></tbody>
@@ -553,20 +783,18 @@
       ${Number(rankingAtual.pontos_participacao) ? ` · +${formatarPontos(rankingAtual.pontos_participacao)} por participar` : ''}
     `;
 
-    const medalhas = ['🥇', '🥈', '🥉'];
-
     document.getElementById('podio').innerHTML = classificacaoAtual.slice(0, 3).map((l, i) => `
       <div class="podio-item podio-${i + 1}">
-        <div class="medalha">${medalhas[i]}</div>
-        <strong>${escapeHtml(l.jogador)}</strong>
-        <span>${formatarPontos(l.pontos)} pts</span>
+        <span class="podio-pos">${i + 1}º</span>
+        <span class="podio-nome" title="${escapeHtml(l.jogador)}">${escapeHtml(l.jogador)}</span>
+        <span class="podio-pontos"><strong>${formatarPontos(l.pontos)}</strong> pts</span>
       </div>
     `).join('');
 
     const tabela = document.getElementById('tabelaRanking');
 
     if (classificacaoAtual.length === 0) {
-      tabela.innerHTML = `<tr><td colspan="7" style="color:#767c88;">
+      tabela.innerHTML = `<tr><td colspan="7" class="vazio-col">
         Ainda sem pontos. Vincule torneios em <strong>Torneios</strong> e preencha a <strong>Classificação</strong> de cada torneio no Diretor.
       </td></tr>`;
       return;
@@ -585,13 +813,13 @@
 
       return `
         <tr class="linha-ranking" onclick="abrirDetalheJogadorRanking(${i})">
-          <td class="pos-col">${pos <= 3 ? medalhas[pos - 1] : pos + 'º'}</td>
-          <td>${escapeHtml(l.jogador)}${l.pontosAjuste ? ` <span class="ch-badge" title="Inclui ajuste manual">${l.pontosAjuste > 0 ? '+' : ''}${formatarPontos(l.pontosAjuste)}</span>` : ''}</td>
+          <td class="pos-col"><span class="pos ${pos <= 3 ? 'pos-' + pos : ''}">${pos}</span></td>
+          <td class="nome-col">${escapeHtml(l.jogador)}${l.pontosAjuste ? ` <span class="ch-badge" title="Inclui ajuste manual">${l.pontosAjuste > 0 ? '+' : ''}${formatarPontos(l.pontosAjuste)}</span>` : ''}</td>
           <td class="pontos-col">${formatarPontos(l.pontos)}</td>
-          <td>${l.torneios}</td>
+          <td class="col-extra">${l.torneios}</td>
           <td>${l.vitorias}</td>
-          <td>${l.premiados}</td>
-          <td>${l.melhor ? l.melhor + 'º' : '-'}</td>
+          <td class="col-extra">${l.premiados}</td>
+          <td class="col-extra">${l.melhor ? l.melhor + 'º' : '-'}</td>
         </tr>
       `;
     }).join('');
