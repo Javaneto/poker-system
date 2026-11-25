@@ -266,14 +266,11 @@
   </style>
 </head>
 <body>
-
+<script src="js/menu.js"></script>
 <div class="container">
 
   <div class="topo-diretor">
     <div style="display:flex;align-items:center;gap:10px;">
-      <button id="btnMenu" onclick="abrirMenu()">
-        ☰
-      </button>
 
       <span>RPG Poker Club</span>
     </div>
@@ -477,60 +474,6 @@
 
 </div>
 
-<div id="menuOverlay" class="menu-overlay" onclick="fecharMenuSeClicouFora(event)">
-  <div class="menu-lateral">
-    <div class="topbar" style="margin-bottom:16px;">
-      <h2 style="margin:0;font-size:20px;">Menu</h2>
-
-      <button class="btn-icone" style="font-size:22px;" onclick="fecharMenu()">
-        ×
-      </button>
-    </div>
-
-    <a href="index.html" class="btn-gray menu-item">
-      Mesa Cash
-    </a>
-
-    <button class="btn-gray menu-item" onclick="alternarSubmenuTorneio()" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>Torneio Ativo</span>
-      <span id="setaSubmenuTorneio">▾</span>
-    </button>
-
-    <div id="submenuTorneio" style="display:flex;flex-direction:column;gap:8px;">
-      <button class="btn-gray menu-item menu-subitem" onclick="fecharMenu()">
-        Diretor
-      </button>
-
-      <a href="detalhes.html" class="btn-gray menu-item menu-subitem">
-        Detalhes
-      </a>
-    </div>
-
-    <a href="torneios.html" class="btn-gray menu-item">
-      Torneios
-    </a>
-
-    <a href="jogadores.html" class="btn-gray menu-item">
-      Jogadores
-    </a>
-
-    <a href="rankings.html" class="btn-gray menu-item">
-      Ranking
-    </a>
-
-    <a href="index.html#cadastro" class="btn-gray menu-item">
-      Cadastrar Jogador
-    </a>
-
-    <button id="btnConfigTorneioMenu" class="btn-gray disabled menu-item" onclick="fecharMenu(); abrirModalEstruturas();">
-      Configurações de Torneio
-    </button>
-
-    <button id="btnAdmin" class="btn-gray menu-item" onclick="sair()">
-      Sair
-    </button>
-  </div>
-</div>
 
 <div id="modalHistoricoJogador" class="modal-overlay">
   <div class="modal-box" style="max-width:560px;">
@@ -1741,13 +1684,7 @@
 
   let adminLiberado = false;
 
-  function abrirMenu() {
-    document.getElementById('menuOverlay').classList.add('aberto');
-  }
 
-  function fecharMenu() {
-    document.getElementById('menuOverlay').classList.remove('aberto');
-  }
 
   function aplicarModoEscuro(ativo) {
 
@@ -1779,22 +1716,7 @@
     }
   })();
 
-  function fecharMenuSeClicouFora(e) {
-    if (e.target.id === 'menuOverlay') {
-      fecharMenu();
-    }
-  }
 
-  function alternarSubmenuTorneio() {
-
-    const submenu = document.getElementById('submenuTorneio');
-    const seta = document.getElementById('setaSubmenuTorneio');
-
-    const vaiAbrir = submenu.classList.contains('oculto');
-
-    submenu.classList.toggle('oculto');
-    seta.textContent = vaiAbrir ? '▾' : '▸';
-  }
 
   function escapeHtml(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, (c) => ({

@@ -179,12 +179,12 @@
   </style>
 </head>
 <body>
+<script src="js/menu.js"></script>
 
 <div class="container">
 
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:12px;">
-      <button class="btn-gray so-admin" onclick="abrirMenu()">☰</button>
       <h1 style="margin:0;" id="tituloPagina">Ranking</h1>
     </div>
 
@@ -235,21 +235,6 @@
   </div>
 </div>
 
-<div id="menuOverlay" class="menu-overlay" onclick="if (event.target === this) fecharMenu()">
-  <div class="menu-lateral">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <strong>Menu</strong>
-      <button class="btn-gray" onclick="fecharMenu()">×</button>
-    </div>
-    <a href="index.html" class="btn-gray menu-item">Mesa Cash</a>
-    <a href="diretor.html" class="btn-gray menu-item">Torneio Ativo — Diretor</a>
-    <a href="detalhes.html" class="btn-gray menu-item">Torneio Ativo — Detalhes</a>
-    <a href="torneios.html" class="btn-gray menu-item">Torneios</a>
-    <a href="jogadores.html" class="btn-gray menu-item">Jogadores</a>
-    <button class="btn-gray menu-item" onclick="fecharMenu()">Ranking</button>
-    <button class="btn-gray menu-item" onclick="sair()">Sair</button>
-  </div>
-</div>
 
 <!-- Configurar ranking -->
 <div id="modalFormRanking" class="modal-overlay">
@@ -426,8 +411,6 @@
     resolverConfirm = null;
   }
 
-  function abrirMenu() { document.getElementById('menuOverlay').classList.add('aberto'); }
-  function fecharMenu() { document.getElementById('menuOverlay').classList.remove('aberto'); }
   function fecharModal(id) { document.getElementById(id).classList.remove('aberto'); }
 
   document.addEventListener('keydown', e => {

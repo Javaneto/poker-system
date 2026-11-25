@@ -1,0 +1,197 @@
+// Menu lateral unificado do RPG Poker Club.
+// Basta incluir <script src="js/menu.js"></script> no <head> da página.
+// - Desktop: barra fixa à esquerda, recolhível (só ícones). Estado salvo no navegador.
+// - Celular (< 768px) e telas de TV (<body data-menu="overlay">): gaveta aberta pelo botão ☰.
+(function () {
+
+  const CHAVE_RECOLHIDO = 'rpgPokerClubMenuRecolhido';
+
+  const ICONES = {
+    cash: '<path d="M3 7h18v10H3z"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/>',
+    diretor: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>',
+    tv: '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    torneios: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+    jogadores: '<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.8 0 5 2 5 5"/>',
+    ranking: '<path d="M4 20V11M10 20V5M16 20v-6M22 20H2"/>',
+    cadastro: '<circle cx="10" cy="8" r="3.5"/><path d="M3 20c0-3.5 3-6 7-6 1.5 0 2.9.3 4 1M18 14v6M15 17h6"/>',
+    config: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    sair: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+    recolher: '<path d="M15 18l-6-6 6-6"/>',
+    menu: '<path d="M3 6h18M3 12h18M3 18h18"/>',
+    fechar: '<path d="M18 6L6 18M6 6l12 12"/>'
+  };
+
+  function icone(nome) {
+    return '<svg class="mnu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONES[nome] + '</svg>';
+  }
+
+  const pagina = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+
+  // acao: função da página chamada quando já estamos nela (senão navega para href).
+  // id/desabilitado: mantêm os ids que as páginas já usam para liberar por permissão.
+  const ITENS = [
+    { grupo: 'Operação' },
+    { rotulo: 'Mesa Cash', icone: 'cash', href: 'index.html' },
+    { rotulo: 'Diretor', icone: 'diretor', href: 'diretor.html' },
+    { rotulo: 'Tela da TV', icone: 'tv', href: 'detalhes.html' },
+    { rotulo: 'Torneios', icone: 'torneios', href: 'torneios.html' },
+    { grupo: 'Clube' },
+    { rotulo: 'Jogadores', icone: 'jogadores', href: 'jogadores.html' },
+    { rotulo: 'Ranking', icone: 'ranking', href: 'rankings.html' },
+    { rotulo: 'Cadastrar jogador', icone: 'cadastro', href: 'index.html#cadastro', id: 'btnAbrirCadastro', paginaAcao: 'index.html', acao: 'abrirModalCadastro' },
+    { rotulo: 'Config. de torneio', icone: 'config', href: 'diretor.html#config', id: 'btnConfigTorneioMenu', paginaAcao: 'diretor.html', acao: 'abrirModalEstruturas' }
+  ];
+
+  const CSS = `
+  :root { --mnu-larg: 248px; --mnu-larg-recolhido: 72px; }
+  .mnu-barra {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 2500;
+    width: var(--mnu-larg); display: flex; flex-direction: column;
+    background: #0f1117; color: #c9ccd4; border-right: 1px solid #1f2330;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    transition: width .2s ease, transform .2s ease; overflow: hidden;
+  }
+  .mnu-topo { display: flex; align-items: center; gap: 10px; padding: 16px 16px 12px; min-height: 64px; }
+  .mnu-logo {
+    flex: 0 0 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+    background: linear-gradient(135deg, #dc2626, #7f1d1d); color: #fff; font-weight: 800; font-size: 18px;
+  }
+  .mnu-nome { color: #fff; font-weight: 800; font-size: 15px; white-space: nowrap; }
+  .mnu-lista { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 4px 12px; display: flex; flex-direction: column; gap: 2px; }
+  .mnu-grupo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #5d6372; padding: 14px 12px 6px; white-space: nowrap; }
+  .mnu-item {
+    display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 12px;
+    border: 0; border-radius: 10px; background: transparent; color: inherit; font: inherit; font-size: 14px; font-weight: 600;
+    text-decoration: none; text-align: left; cursor: pointer; white-space: nowrap; box-shadow: none; margin: 0;
+    transition: background .15s ease, color .15s ease;
+  }
+  .mnu-item:hover { background: #1a1e29; color: #fff; }
+  .mnu-item.ativo { background: #dc2626; color: #fff; }
+  .mnu-item.disabled { opacity: .4; pointer-events: none; }
+  .mnu-ico { flex: 0 0 20px; width: 20px; height: 20px; }
+  .mnu-rodape { padding: 8px 12px 14px; border-top: 1px solid #1f2330; display: flex; flex-direction: column; gap: 2px; }
+  .mnu-recolher .mnu-ico { transition: transform .2s ease; }
+  .mnu-fechar { display: none; margin-left: auto; background: transparent; border: 0; color: #c9ccd4; cursor: pointer; padding: 8px; box-shadow: none; }
+  .mnu-abrir {
+    display: none; position: fixed; top: 10px; left: 10px; z-index: 2400; width: 44px; height: 44px;
+    border-radius: 12px; border: 1px solid #1f2330; background: #0f1117; color: #fff; cursor: pointer;
+    align-items: center; justify-content: center; padding: 0; box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  }
+  .mnu-fundo { display: none; position: fixed; inset: 0; z-index: 2450; background: rgba(15,17,23,.55); }
+
+  /* Desktop: barra fixa empurrando o conteúdo */
+  body.mnu-fixo { padding-left: calc(var(--mnu-larg) + 24px); transition: padding-left .2s ease; }
+  body.mnu-fixo.mnu-recolhido { padding-left: calc(var(--mnu-larg-recolhido) + 24px); }
+  body.mnu-recolhido .mnu-barra { width: var(--mnu-larg-recolhido); }
+  body.mnu-recolhido .mnu-nome, body.mnu-recolhido .mnu-rot { display: none; }
+  body.mnu-recolhido .mnu-grupo { visibility: hidden; height: 12px; padding: 0; }
+  body.mnu-recolhido .mnu-item { justify-content: center; padding: 0; }
+  body.mnu-recolhido .mnu-recolher .mnu-ico { transform: rotate(180deg); }
+
+  /* Gaveta: celular e telas de TV */
+  body.mnu-gaveta .mnu-barra { transform: translateX(-100%); width: min(280px, 85vw); box-shadow: 8px 0 30px rgba(0,0,0,.35); }
+  body.mnu-gaveta .mnu-abrir { display: flex; }
+  body.mnu-gaveta .mnu-fechar { display: block; }
+  body.mnu-gaveta .mnu-recolher { display: none; }
+  body.mnu-gaveta.mnu-aberto .mnu-barra { transform: none; }
+  body.mnu-gaveta.mnu-aberto .mnu-fundo { display: block; }
+  body.mnu-gaveta .mnu-nome, body.mnu-gaveta .mnu-rot { display: inline; }
+  body.mnu-gaveta .mnu-grupo { visibility: visible; height: auto; padding: 14px 12px 6px; }
+  body.mnu-gaveta .mnu-item { justify-content: flex-start; padding: 0 12px; }
+  body.mnu-gaveta:not(.mnu-tv) { padding-top: 64px; }
+  body.mnu-tv .mnu-abrir { width: 36px; height: 36px; top: 8px; left: 8px; opacity: .6; }
+  body.mnu-tv .mnu-abrir:hover { opacity: 1; }
+  body.mnu-tv .tv-topo { padding-left: 56px; }
+  body.mnu-tv.tela-cheia .tv-topo { padding-left: 0; }
+
+  /* Telas cheias / modo TV: menu some */
+  body.tela-cheia .mnu-abrir, body.modo-tv .mnu-barra, body.modo-tv .mnu-abrir { display: none !important; }
+  body.mnu-fixo.modo-tv { padding-left: 24px; }
+  `;
+
+  function montarItem(item) {
+    const naPaginaDaAcao = item.acao && pagina === item.paginaAcao;
+    const ativo = !item.acao && item.href === pagina;
+    const classes = 'mnu-item' + (ativo ? ' ativo' : '') + (item.id ? ' disabled' : '');
+    const conteudo = icone(item.icone) + '<span class="mnu-rot">' + item.rotulo + '</span>';
+    const atrib = (item.id ? ' id="' + item.id + '"' : '') + ' class="' + classes + '" title="' + item.rotulo + '"' + (ativo ? ' aria-current="page"' : '');
+
+    if (naPaginaDaAcao) {
+      return '<button type="button"' + atrib + ' data-acao="' + item.acao + '">' + conteudo + '</button>';
+    }
+    return '<a href="' + item.href + '"' + atrib + '>' + conteudo + '</a>';
+  }
+
+  function montar() {
+    if (document.getElementById('mnuBarra')) return;
+
+    const estilo = document.createElement('style');
+    estilo.textContent = CSS;
+    document.head.appendChild(estilo);
+
+    const html =
+      '<button type="button" class="mnu-abrir" id="mnuAbrir" aria-label="Abrir menu">' + icone('menu') + '</button>' +
+      '<div class="mnu-fundo" id="mnuFundo"></div>' +
+      '<nav class="mnu-barra" id="mnuBarra" aria-label="Menu principal">' +
+        '<div class="mnu-topo"><div class="mnu-logo">♠</div><span class="mnu-nome">RPG Poker Club</span>' +
+        '<button type="button" class="mnu-fechar" id="mnuFechar" aria-label="Fechar menu">' + icone('fechar') + '</button></div>' +
+        '<div class="mnu-lista">' +
+          ITENS.map(i => i.grupo ? '<div class="mnu-grupo">' + i.grupo + '</div>' : montarItem(i)).join('') +
+        '</div>' +
+        '<div class="mnu-rodape">' +
+          '<button type="button" class="mnu-item mnu-recolher" id="mnuRecolher" title="Recolher menu">' + icone('recolher') + '<span class="mnu-rot">Recolher</span></button>' +
+          '<button type="button" class="mnu-item" id="mnuSair" title="Sair">' + icone('sair') + '<span class="mnu-rot" id="btnAdmin">Sair</span></button>' +
+        '</div>' +
+      '</nav>';
+
+    document.body.insertAdjacentHTML('afterbegin', html);
+
+    const modoTV = document.body.dataset.menu === 'overlay';
+    if (modoTV) document.body.classList.add('mnu-tv');
+
+    try {
+      if (localStorage.getItem(CHAVE_RECOLHIDO) === '1') document.body.classList.add('mnu-recolhido');
+    } catch (e) { /* navegador sem storage: segue expandido */ }
+
+    const celular = window.matchMedia('(max-width: 767px)');
+    function aplicarModo() {
+      const gaveta = modoTV || celular.matches;
+      document.body.classList.toggle('mnu-gaveta', gaveta);
+      document.body.classList.toggle('mnu-fixo', !gaveta);
+      if (!gaveta) document.body.classList.remove('mnu-aberto');
+    }
+    aplicarModo();
+    celular.addEventListener('change', aplicarModo);
+
+    document.getElementById('mnuAbrir').addEventListener('click', abrirMenu);
+    document.getElementById('mnuFechar').addEventListener('click', fecharMenu);
+    document.getElementById('mnuFundo').addEventListener('click', fecharMenu);
+    document.getElementById('mnuRecolher').addEventListener('click', function () {
+      const recolhido = document.body.classList.toggle('mnu-recolhido');
+      try { localStorage.setItem(CHAVE_RECOLHIDO, recolhido ? '1' : '0'); } catch (e) { /* ignora */ }
+    });
+    document.getElementById('mnuSair').addEventListener('click', function () {
+      if (typeof window.sair === 'function') window.sair();
+      else location.href = 'login.html';
+    });
+    document.querySelectorAll('#mnuBarra [data-acao]').forEach(function (botao) {
+      botao.addEventListener('click', function () {
+        fecharMenu();
+        const fn = window[botao.dataset.acao];
+        if (typeof fn === 'function') fn();
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') fecharMenu();
+    });
+  }
+
+  function abrirMenu() { document.body.classList.add('mnu-aberto'); }
+  function fecharMenu() { document.body.classList.remove('mnu-aberto'); }
+
+  window.abrirMenu = abrirMenu;
+  window.fecharMenu = fecharMenu;
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar);
+  else montar();
+})();
