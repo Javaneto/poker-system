@@ -206,7 +206,10 @@
   .modal-fechar-x:hover { background: #f2f3f7; color: #16181d; }
   .modal-fechar-x:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; }
   .modal-fechar-x .mnu-ico { width: 20px; height: 20px; }
-  .modal-box > h2:first-of-type, .modal-box > .topbar:first-child { padding-right: 40px; }
+  /* Modais acima do menu lateral (z-index 2500) */
+  .modal-overlay { z-index: 3000; }
+  #modalCentralHistorico { z-index: 2900; } /* abaixo dos confirm/alerta abertos sobre ela */
+  .modal-box > h2:first-of-type, .modal-box > .modal-fechar-x + .topbar { padding-right: 44px; }
   body.modo-escuro .modal-fechar-x:hover { background: #1a1e29; color: #fff; }
   `;
 
