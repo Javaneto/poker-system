@@ -213,6 +213,11 @@
       grid-template-columns: repeat(2, 76px);
     }
 
+    /* Painel Torneio: 6 botões em 2 linhas de 3 */
+    .dir-painel .grid-tiles-3col {
+      grid-template-columns: repeat(3, minmax(0, 76px));
+    }
+
     /* ---- Estatísticas ---- */
 
     .card.dir-stats {
@@ -574,6 +579,10 @@
         gap: 8px;
       }
 
+      .dir-painel .grid-tiles-3col {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
       .card.dir-relogio {
         padding: 14px;
       }
@@ -676,7 +685,7 @@
         </div>
 
         <div id="infoTorneio" class="oculto">
-          <div class="grid-tiles-2col">
+          <div class="grid-tiles-2col grid-tiles-3col">
             <button id="btnConfigTorneioAtual" class="btn-tile btn-gray disabled" onclick="abrirModalConfigTorneioAtual()">
               <span class="btn-tile-icone" id="configTorneioIcone"></span>
               <span>Configurar</span>
