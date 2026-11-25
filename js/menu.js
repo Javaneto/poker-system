@@ -25,7 +25,8 @@
     return '<svg class="mnu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONES[nome] + '</svg>';
   }
 
-  const pagina = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  let pagina = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  if (!pagina.endsWith('.html')) pagina += '.html';
 
   // acao: função da página chamada quando já estamos nela (senão navega para href).
   // id/desabilitado: mantêm os ids que as páginas já usam para liberar por permissão.

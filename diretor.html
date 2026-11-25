@@ -4081,6 +4081,8 @@
     }
   }
 
+  window.addEventListener('hashchange', tratarHashInicial);
+
   (async function inicializar() {
 
     const autenticado = await exigirSessaoOuRedirecionar();
