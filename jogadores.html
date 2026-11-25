@@ -977,6 +977,11 @@
 
     await carregarDados();
 
+    if (window.location.hash === '#novo') {
+      history.replaceState(null, '', 'jogadores.html');
+      abrirFormJogador();
+    }
+
     iniciarRealtimeRobusto({
       nome: 'jogadores-realtime',
       tabelas: ['jogadores', 'movimentacoes'],

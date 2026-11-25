@@ -38,7 +38,7 @@
     { grupo: 'Clube' },
     { rotulo: 'Jogadores', icone: 'jogadores', href: 'jogadores.html' },
     { rotulo: 'Ranking', icone: 'ranking', href: 'rankings.html' },
-    { rotulo: 'Cadastrar jogador', icone: 'cadastro', href: 'index.html#cadastro', id: 'btnAbrirCadastro', paginaAcao: 'index.html', acao: 'abrirModalCadastro' },
+    { rotulo: 'Cadastrar jogador', icone: 'cadastro', href: 'jogadores.html#novo', paginaAcao: 'jogadores.html', acao: 'abrirFormJogador' },
     { rotulo: 'Config. de torneio', icone: 'config', href: 'diretor.html#config', id: 'btnConfigTorneioMenu', paginaAcao: 'diretor.html', acao: 'abrirModalEstruturas' }
   ];
 
@@ -112,9 +112,9 @@
   function montarItem(item) {
     const naPaginaDaAcao = item.acao && pagina === item.paginaAcao;
     const ativo = !item.acao && item.href === pagina;
-    const classes = 'mnu-item' + (ativo ? ' ativo' : '') + (item.id ? ' disabled' : '');
+    const classes = 'mnu-item' + (ativo ? ' ativo' : '') + (item.id && naPaginaDaAcao ? ' disabled' : '');
     const conteudo = icone(item.icone) + '<span class="mnu-rot">' + item.rotulo + '</span>';
-    const atrib = (item.id ? ' id="' + item.id + '"' : '') + ' class="' + classes + '" title="' + item.rotulo + '"' + (ativo ? ' aria-current="page"' : '');
+    const atrib = (item.id && naPaginaDaAcao ? ' id="' + item.id + '"' : '') + ' class="' + classes + '" title="' + item.rotulo + '"' + (ativo ? ' aria-current="page"' : '');
 
     if (naPaginaDaAcao) {
       return '<button type="button"' + atrib + ' data-acao="' + item.acao + '">' + conteudo + '</button>';
