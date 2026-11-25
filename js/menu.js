@@ -256,6 +256,31 @@
     });
   }
 
+  // ---- Tecla ESC: fecha só o modal que está por cima, um de cada vez ----
+  // Roda na fase de captura (antes dos atalhos das páginas, que fechavam todos
+  // de uma vez) e usa o mesmo caminho do X para manter a limpeza de cada página.
+
+  function modalDoTopo() {
+    const abertos = Array.from(document.querySelectorAll('.modal-overlay.aberto'))
+      .filter(el => getComputedStyle(el).display !== 'none');
+    if (abertos.length === 0) return null;
+    // Mesmo z-index: o último no DOM é o que aparece por cima.
+    return abertos.reduce((topo, el) => {
+      const zTopo = Number(getComputedStyle(topo).zIndex) || 0;
+      const zEl = Number(getComputedStyle(el).zIndex) || 0;
+      return zEl >= zTopo ? el : topo;
+    });
+  }
+
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || e.defaultPrevented) return;
+    const modal = modalDoTopo();
+    if (!modal) return; // sem modal aberto: segue para os atalhos da página (fechar menu, tela cheia...)
+    e.preventDefault();
+    e.stopPropagation();
+    fecharModalPeloX(modal);
+  }, true);
+
   function iniciarXNosModais() {
     const estilo = document.createElement('style');
     estilo.textContent = CSS_MODAL;
