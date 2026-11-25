@@ -228,8 +228,8 @@ a.btn-gray {
 }
 
 .btn-dark {
-  background: var(--texto);
-  color: white;
+  background: var(--ativo-fundo);
+  color: var(--ativo-texto);
 }
 
 .btn-blue {
