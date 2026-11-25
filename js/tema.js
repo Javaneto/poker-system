@@ -4,18 +4,24 @@
 // - Guarda a escolha no navegador e aplica <html data-tema="claro|escuro">.
 // - Muda junto em todas as abas abertas.
 // - Qualquer botão com [data-alternar-tema] alterna o tema ao ser clicado.
+// - Página com tema próprio: <html data-tema-escopo="tv" data-tema-padrao="escuro">.
+//   Ela guarda a escolha em outra chave, então não afeta nem é afetada pelas demais.
 (function () {
 
-  const CHAVE = 'rpgPokerClubTema';
+  const raiz = document.documentElement;
+  const escopo = raiz.dataset.temaEscopo || '';
+  const padrao = raiz.dataset.temaPadrao === 'escuro' ? 'escuro' : 'claro';
+
+  const CHAVE = escopo ? 'rpgPokerClubTema_' + escopo : 'rpgPokerClubTema';
   const CHAVE_ANTIGA = 'rpgPokerClubModoEscuro'; // usada pelo botão antigo do Diretor
 
   function lerTemaSalvo() {
     try {
       const salvo = localStorage.getItem(CHAVE);
       if (salvo === 'claro' || salvo === 'escuro') return salvo;
-      if (localStorage.getItem(CHAVE_ANTIGA) === '1') return 'escuro';
-    } catch (e) { /* navegador sem storage: segue no claro */ }
-    return 'claro';
+      if (!escopo && localStorage.getItem(CHAVE_ANTIGA) === '1') return 'escuro';
+    } catch (e) { /* navegador sem storage: segue no padrão */ }
+    return padrao;
   }
 
   function aplicar(tema) {
