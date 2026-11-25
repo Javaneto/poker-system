@@ -193,6 +193,8 @@
   window.abrirMenu = abrirMenu;
   window.fecharMenu = fecharMenu;
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar);
-  else montar();
+  // Monta já (o script fica logo após <body>), antes dos scripts da página,
+  // que habilitam itens do menu por id assim que confirmam o login.
+  if (document.body) montar();
+  else document.addEventListener('DOMContentLoaded', montar);
 })();
