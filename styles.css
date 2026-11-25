@@ -1291,15 +1291,86 @@ tfoot th {
   padding: 8px 10px;
 }
 
+/* Pontos do torneio em cada ranking (dentro da Classificação final) */
+.classif-pontos h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--apagado);
+  margin: 14px 0 4px;
+}
+
+.classif-ranking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--borda);
+}
+
+.classif-ranking-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.classif-ranking-info input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.classif-ranking-info strong {
+  display: block;
+}
+
+.classif-ranking-total {
+  display: block;
+  font-size: 12px;
+  color: var(--apagado);
+}
+
+.classif-ranking-total b {
+  color: var(--texto);
+}
+
+.classif-ranking .classif-ajuste {
+  width: 96px;
+  flex: 0 0 96px;
+  margin: 0;
+  text-align: center;
+}
+
 @media (max-width: 768px) {
 
+  /* Posição, nome e "Eliminado por" na mesma linha */
   .classif-linha {
-    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .classif-linha .classif-pos {
+    width: 56px;
+    flex: 0 0 56px;
+  }
+
+  .classif-linha .classif-nome {
+    flex: 1 1 0;
   }
 
   .classif-linha .classif-elim {
-    flex: 1 1 100%;
-    width: 100%;
+    flex: 0 0 46%;
+    width: 46%;
+    min-width: 0;
+  }
+
+  .classif-ranking .classif-ajuste {
+    width: 84px;
+    flex-basis: 84px;
   }
 
   .rel-kpi strong {

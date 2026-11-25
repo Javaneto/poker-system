@@ -269,6 +269,54 @@ function imprimirRelatorioTorneio() {
 // ---------------------------------------------------------------------------
 
 let classificacaoTorneioAtual = [];
+let rankingsClassificacao = [];
+
+function formatarPontosClassif(valor) {
+  return Number(valor || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+}
+
+// Texto do total de pontos do torneio num ranking (colocações + ajuste).
+function textoTotalRankingClassif(item) {
+  const qtd = classificacaoTorneioAtual.filter(c => c.posicao).length;
+  if (!qtd) return 'Informe as colocações para ver os pontos';
+  const calc = calcularPontosTorneio(item.ranking, qtd, item.ajuste);
+  const campeao = (calc.porPosicao[0] || 0) + calc.participacao;
+  return `${qtd} classificados · <b>${formatarPontosClassif(calc.total)} pts</b> no total · campeão ${formatarPontosClassif(campeao)} pts`;
+}
+
+// Pontos do torneio em cada ranking: vincular e ajustar sem ir em Rankings.
+function renderizarPontosClassificacao() {
+
+  const el = document.getElementById('classifPontos');
+
+  if (!el) return;
+
+  el.innerHTML = rankingsClassificacao.length === 0 ? '' : `
+    <h3>Pontos no Ranking</h3>
+    ${rankingsClassificacao.map((item, i) => `
+      <div class="classif-ranking">
+        <label class="classif-ranking-info">
+          <input type="checkbox" ${item.conta ? 'checked' : ''} onchange="rankingsClassificacao[${i}].conta = this.checked">
+          <span>
+            <strong>${escapeHtml(item.ranking.nome)}</strong>
+            <span class="classif-ranking-total" data-i="${i}">${textoTotalRankingClassif(item)}</span>
+          </span>
+        </label>
+        <input type="number" step="1" class="classif-ajuste" value="${item.ajuste || ''}" placeholder="Ajuste ±"
+          title="Pontos a mais ou a menos no total deste torneio"
+          oninput="rankingsClassificacao[${i}].ajuste = Number(this.value) || 0; atualizarTotaisRankingClassif()">
+      </div>
+    `).join('')}
+  `;
+}
+
+// Atualiza só os textos dos totais (sem redesenhar, para não perder o foco do campo).
+function atualizarTotaisRankingClassif() {
+  rankingsClassificacao.forEach((item, i) => {
+    const alvo = document.querySelector(`#classifPontos .classif-ranking-total[data-i="${i}"]`);
+    if (alvo) alvo.innerHTML = textoTotalRankingClassif(item);
+  });
+}
 
 async function abrirClassificacaoTorneio() {
 
@@ -281,10 +329,11 @@ async function abrirClassificacaoTorneio() {
       Deixe em branco quem não deve contar.
     </p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-      <button class="btn-gray" onclick="numerarClassificacaoPelaOrdem()">Numerar na ordem da lista</button>
+      <button class="btn-gray" onclick="numerarClassificacaoPelaOrdem()">Preenchimento Automático</button>
       <button class="btn-gray" onclick="limparClassificacao()">Limpar</button>
     </div>
-    <div id="classifLista" style="max-height:55vh;overflow-y:auto;"></div>
+    <div id="classifLista" style="max-height:45vh;overflow-y:auto;"></div>
+    <div id="classifPontos" class="classif-pontos"></div>
     <div class="modal-acoes" style="margin-top:14px;">
       <button class="btn-gray" onclick="document.getElementById('modalClassificacaoTorneio').classList.remove('aberto')">Cancelar</button>
       <button class="btn-green" id="btnSalvarClassificacao" onclick="salvarClassificacaoTorneio()">Salvar classificação</button>
@@ -294,12 +343,28 @@ async function abrirClassificacaoTorneio() {
   const lista = document.getElementById('classifLista');
 
   lista.innerHTML = '<p class="ch-vazio">Carregando...</p>';
+  document.getElementById('classifPontos').innerHTML = '';
   modal.classList.add('aberto');
 
-  const { data, error } = await client
-    .from('torneio_resultados')
-    .select('*')
-    .eq('torneio_id', String(torneioAtual.id));
+  const torneioIdAtual = String(torneioAtual.id);
+
+  const [{ data, error }, rk, vc] = await Promise.all([
+    client.from('torneio_resultados').select('*').eq('torneio_id', torneioIdAtual),
+    client.from('rankings').select('*').order('id'),
+    client.from('ranking_torneios').select('*').eq('torneio_id', torneioIdAtual)
+  ]);
+
+  // Rankings ativos e os que já contam este torneio: dá para vincular e
+  // ajustar os pontos do torneio aqui mesmo, sem ir em Rankings.
+  const vinculosDoTorneio = new Map((vc.data || []).map(v => [v.ranking_id, v]));
+
+  rankingsClassificacao = (rk.error || vc.error) ? [] : (rk.data || [])
+    .filter(r => r.ativo || vinculosDoTorneio.has(r.id))
+    .map(r => ({
+      ranking: r,
+      conta: vinculosDoTorneio.has(r.id),
+      ajuste: Number(vinculosDoTorneio.get(r.id)?.ajuste_pontos) || 0
+    }));
 
   if (error) {
     lista.innerHTML = /torneio_resultados/.test(error.message || '')
@@ -329,6 +394,8 @@ function renderizarClassificacao() {
   const lista = document.getElementById('classifLista');
   const nomes = classificacaoTorneioAtual.map(c => c.jogador);
 
+  renderizarPontosClassificacao();
+
   if (classificacaoTorneioAtual.length === 0) {
     lista.innerHTML = '<p class="ch-vazio">Nenhum jogador registrado neste torneio.</p>';
     return;
@@ -336,7 +403,7 @@ function renderizarClassificacao() {
 
   lista.innerHTML = classificacaoTorneioAtual.map((c, i) => `
     <div class="classif-linha">
-      <input type="number" min="1" class="classif-pos" value="${c.posicao}" placeholder="Pos." data-i="${i}" oninput="classificacaoTorneioAtual[${i}].posicao = this.value ? Number(this.value) : ''">
+      <input type="number" min="1" class="classif-pos" value="${c.posicao}" placeholder="Pos." data-i="${i}" oninput="classificacaoTorneioAtual[${i}].posicao = this.value ? Number(this.value) : ''; atualizarTotaisRankingClassif()">
       <strong class="classif-nome">${escapeHtml(c.jogador)}</strong>
       <select class="classif-elim" data-i="${i}" onchange="classificacaoTorneioAtual[${i}].eliminado_por = this.value" title="Eliminado por">
         <option value="">Eliminado por...</option>
@@ -404,8 +471,28 @@ async function salvarClassificacaoTorneio() {
       if (erroInserir) throw erroInserir;
     }
 
+    // Vínculo com cada ranking e o ajuste de pontos do torneio.
+    const contam = rankingsClassificacao.filter(r => r.conta);
+    const naoContam = rankingsClassificacao.filter(r => !r.conta).map(r => r.ranking.id);
+
+    if (contam.length > 0) {
+      const { error: erroVinculo } = await client.from('ranking_torneios').upsert(
+        contam.map(r => ({ ranking_id: r.ranking.id, torneio_id: torneioId, ajuste_pontos: r.ajuste || 0 })),
+        { onConflict: 'ranking_id,torneio_id' }
+      );
+      if (erroVinculo) throw erroVinculo;
+    }
+
+    if (naoContam.length > 0) {
+      const { error: erroDesvincular } = await client.from('ranking_torneios')
+        .delete().eq('torneio_id', torneioId).in('ranking_id', naoContam);
+      if (erroDesvincular) throw erroDesvincular;
+    }
+
     document.getElementById('modalClassificacaoTorneio').classList.remove('aberto');
-    await mostrarAlerta(`Classificação salva (${comPosicao.length} jogador(es)). Para contar no Ranking, vincule este torneio em Rankings.`);
+    await mostrarAlerta(contam.length > 0
+      ? `Classificação salva (${comPosicao.length} jogador(es)). Conta no Ranking: ${contam.map(r => r.ranking.nome).join(', ')}.`
+      : `Classificação salva (${comPosicao.length} jogador(es)). Marque um ranking em "Pontos no Ranking" para este torneio contar.`);
 
   } catch (erro) {
     console.error(erro);
