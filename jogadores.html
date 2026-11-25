@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jogadores — RPG Poker Club</title>
 
+  <script src="js/tema.js"></script>
+
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="js/comum.js"></script>
 
@@ -19,15 +21,15 @@
     }
 
     .kpi {
-      background: white;
-      border: 1px solid #e9eaef;
+      background: var(--superficie);
+      border: 1px solid var(--borda);
       border-radius: 14px;
       padding: 16px;
     }
 
     .kpi-rotulo {
       font-size: 12px;
-      color: #767c88;
+      color: var(--apagado);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.03em;
@@ -41,7 +43,7 @@
 
     .kpi-sub {
       font-size: 12px;
-      color: #9aa0aa;
+      color: var(--apagado-2);
     }
 
     .filtros-chips {
@@ -52,8 +54,8 @@
     }
 
     .chip {
-      background: #eef0f4;
-      color: #374151;
+      background: var(--superficie-3);
+      color: var(--texto-2);
       box-shadow: none;
       padding: 7px 12px;
       font-size: 13px;
@@ -61,8 +63,8 @@
     }
 
     .chip.ativo {
-      background: #16181d;
-      color: white;
+      background: var(--ativo-fundo);
+      color: var(--ativo-texto);
     }
 
     .linha-filtros {
@@ -90,11 +92,11 @@
       white-space: nowrap;
     }
 
-    .situacao-jogo { background: #dbeafe; color: #1d4ed8; }
-    .situacao-deve { background: #fee2e2; color: #b91c1c; }
-    .situacao-credito { background: #dcfce7; color: #15803d; }
-    .situacao-ok { background: #eef0f4; color: #464c56; }
-    .situacao-inativo { background: #f3f4f6; color: #9aa0aa; }
+    .situacao-jogo { background: var(--tint-azul); color: var(--tx-azul); }
+    .situacao-deve { background: var(--tint-vermelho); color: var(--tx-vermelho); }
+    .situacao-credito { background: var(--tint-verde); color: var(--tx-verde); }
+    .situacao-ok { background: var(--superficie-3); color: var(--texto-2); }
+    .situacao-inativo { background: var(--superficie-3); color: var(--apagado-2); }
 
     .linha-jogador {
       cursor: pointer;
@@ -104,8 +106,8 @@
       width: 34px;
       height: 34px;
       border-radius: 50%;
-      background: #e0e7ff;
-      color: #3730a3;
+      background: var(--tint-indigo);
+      color: var(--tx-indigo);
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -126,20 +128,20 @@
       align-items: center;
       gap: 10px;
       padding: 12px 0;
-      border-bottom: 1px solid #f0f1f3;
+      border-bottom: 1px solid var(--borda);
       cursor: pointer;
     }
 
     .card-jogador-mobile .info {
       font-size: 13px;
-      color: #464c56;
+      color: var(--texto-2);
       min-width: 0;
     }
 
     .card-jogador-mobile .info strong {
       display: block;
       font-size: 15px;
-      color: #16181d;
+      color: var(--texto);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -153,7 +155,7 @@
     }
 
     .grade-detalhe .item {
-      background: #f8f9fb;
+      background: var(--superficie-2);
       border-radius: 10px;
       padding: 10px 12px;
     }
@@ -161,7 +163,7 @@
     .grade-detalhe .item span {
       display: block;
       font-size: 11px;
-      color: #767c88;
+      color: var(--apagado);
       font-weight: 700;
       text-transform: uppercase;
     }
@@ -172,7 +174,7 @@
 
     .dados-cadastro {
       font-size: 14px;
-      color: #464c56;
+      color: var(--texto-2);
       line-height: 1.7;
       margin-bottom: 14px;
     }
@@ -190,7 +192,7 @@
     .form-grid label {
       font-size: 12px;
       font-weight: 700;
-      color: #767c88;
+      color: var(--apagado);
       display: block;
       margin-bottom: 4px;
     }
@@ -198,12 +200,14 @@
     textarea {
       width: 100%;
       padding: 11px 14px;
-      border: 1px solid #d9dbe1;
+      border: 1px solid var(--borda-forte);
       border-radius: 10px;
       margin-bottom: 10px;
       font: inherit;
       font-size: 14px;
       resize: vertical;
+      background: var(--superficie);
+      color: var(--texto);
     }
 
     .check-linha {
@@ -221,7 +225,7 @@
 
     .aniversariantes {
       font-size: 13px;
-      color: #464c56;
+      color: var(--texto-2);
     }
 
     @media (max-width: 768px) {
@@ -312,7 +316,7 @@
       <button class="chip" data-filtro="inativos" onclick="definirFiltro('inativos')">Inativos</button>
     </div>
 
-    <p id="contagem" style="color:#767c88;font-size:13px;margin:4px 0 0 0;"></p>
+    <p id="contagem" style="color:var(--apagado);font-size:13px;margin:4px 0 0 0;"></p>
 
     <table class="relatorio-desktop">
       <thead>
@@ -401,7 +405,7 @@
       </div>
     </div>
 
-    <p id="formAvisoNome" class="oculto" style="color:#b45309;font-size:13px;margin-top:-4px;">
+    <p id="formAvisoNome" class="oculto" style="color:var(--tx-ambar);font-size:13px;margin-top:-4px;">
       Ao mudar o nome, todas as movimentações deste jogador também passam para o novo nome.
     </p>
 
@@ -599,7 +603,7 @@
   }
 
   function htmlSaldo(valor) {
-    if (Math.abs(valor) < 0.005) return '<span style="color:#9aa0aa;">R$ 0.00</span>';
+    if (Math.abs(valor) < 0.005) return '<span style="color:var(--apagado-2);">R$ 0.00</span>';
     const classe = valor > 0 ? 'positivo' : 'negativo';
     const sinal = valor > 0 ? '+' : '-';
     return `<span class="${classe}">${sinal} ${formatarMoeda(Math.abs(valor))}</span>`;
@@ -663,8 +667,8 @@
     const mobile = document.getElementById('listaJogadoresMobile');
 
     if (lista.length === 0) {
-      tabela.innerHTML = '<tr><td colspan="6" style="color:#767c88;">Nenhum jogador encontrado.</td></tr>';
-      mobile.innerHTML = '<p style="color:#767c88;">Nenhum jogador encontrado.</p>';
+      tabela.innerHTML = '<tr><td colspan="6" style="color:var(--apagado);">Nenhum jogador encontrado.</td></tr>';
+      mobile.innerHTML = '<p style="color:var(--apagado);">Nenhum jogador encontrado.</p>';
       return;
     }
 
@@ -677,7 +681,7 @@
               <span class="avatar">${escapeHtml(iniciais(j.nome))}</span>
               <div>
                 <span class="jogador-clicavel">${escapeHtml(j.nome)}</span>
-                ${j.apelido ? `<br><span style="color:#9aa0aa;font-size:12px;">${escapeHtml(j.apelido)}</span>` : ''}
+                ${j.apelido ? `<br><span style="color:var(--apagado-2);font-size:12px;">${escapeHtml(j.apelido)}</span>` : ''}
               </div>
             </div>
           </td>
@@ -778,14 +782,14 @@
           <div class="linha-desfazer">
             <div class="linha-desfazer-info">
               <strong>${escapeHtml(m.tipo)}${m.tipo_registro && m.tipo_registro !== m.tipo ? ' · ' + escapeHtml(m.tipo_registro) : ''}</strong>
-              ${escapeHtml(m.modalidade || '-')} · ${m.sessao_finalizada_em ? 'finalizada' : '<span style="color:#1d4ed8;font-weight:700;">em aberto</span>'}
-              ${m.observacao ? `<br><em style="color:#767c88;">Obs: ${escapeHtml(m.observacao)}</em>` : ''}<br>
-              <span style="color:#9aa0aa;font-size:12px;">${formatarDataHora(m.data)}</span>
+              ${escapeHtml(m.modalidade || '-')} · ${m.sessao_finalizada_em ? 'finalizada' : '<span style="color:var(--tx-azul);font-weight:700;">em aberto</span>'}
+              ${m.observacao ? `<br><em style="color:var(--apagado);">Obs: ${escapeHtml(m.observacao)}</em>` : ''}<br>
+              <span style="color:var(--apagado-2);font-size:12px;">${formatarDataHora(m.data)}</span>
             </div>
             <div class="linha-desfazer-valor"><strong>${formatarMoeda(m.valor)}</strong></div>
           </div>
         `).join('')
-      : '<p style="color:#767c88;">Nenhuma movimentação.</p>';
+      : '<p style="color:var(--apagado);">Nenhuma movimentação.</p>';
 
     document.getElementById('btnAtivarDetalhe').textContent = j.ativo === false ? 'Reativar' : 'Inativar';
 

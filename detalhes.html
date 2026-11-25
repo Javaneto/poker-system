@@ -5,22 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalhes — RPG Poker Club</title>
 
+  <script src="js/tema.js"></script>
+
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
+    /* Mesma paleta do resto do sistema (styles.css). O tema vem de js/tema.js. */
     :root {
-      /* Mesma paleta do menu lateral e do Diretor */
+      --tv-fundo: #f2f3f7;
+      --tv-cartao: #ffffff;
+      --tv-cartao-2: #f6f7fa;
+      --tv-borda: #e2e4ea;
+      --tv-texto: #464c56;
+      --tv-forte: #16181d;
+      --tv-apagado: #767c88;
+      --tv-intervalo: #dc2626;
+      --tv-ouro: #d97706;
+      --tv-sombra: 0 1px 2px rgba(16,24,40,0.04), 0 1px 8px rgba(16,24,40,0.04);
+      --tv-verde: #16a34a;
+      --tv-ambar: #d97706;
+    }
+
+    html[data-tema="escuro"] {
       --tv-fundo: #07080c;
       --tv-cartao: #0f1117;
       --tv-cartao-2: #151924;
-      --tv-linha-par: #1a1e29;
       --tv-borda: #1f2330;
       --tv-texto: #c9ccd4;
+      --tv-forte: #ffffff;
       --tv-apagado: #8b91a0;
-      --tv-vermelho: #dc2626;
-      --tv-vermelho-escuro: #7f1d1d;
+      --tv-intervalo: #f87171;
+      --tv-ouro: #fbbf24;
+      --tv-sombra: none;
       --tv-verde: #22c55e;
       --tv-ambar: #f59e0b;
+    }
+
+    :root {
+      --tv-vermelho: #dc2626;
+      --tv-vermelho-escuro: #7f1d1d;
       /* Tudo escala pelo menor lado da tela (vmin) ou pela altura/largura */
       --tv-raio: min(1.6vh, 1.2vw);
       --tv-gap: min(1.8vh, 1.4vw);
@@ -40,7 +63,7 @@
 
     body {
       background: var(--tv-fundo);
-      color: #fff;
+      color: var(--tv-forte);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
       display: flex;
       flex-direction: column;
@@ -71,7 +94,7 @@
       align-items: center;
       gap: min(1vh, 0.8vw);
       font-weight: 800;
-      color: #fff;
+      color: var(--tv-forte);
     }
 
     .tv-marca-logo {
@@ -92,7 +115,7 @@
 
     #tvRelogioParede {
       font-weight: 700;
-      color: #fff;
+      color: var(--tv-forte);
     }
 
     #btnTelaCheiaTV {
@@ -109,7 +132,7 @@
     }
 
     #btnTelaCheiaTV:hover {
-      color: #fff;
+      color: var(--tv-forte);
     }
 
     /* ---- Faixa com o nome do torneio ---- */
@@ -119,6 +142,7 @@
       margin: 0 var(--tv-margem);
       border-radius: var(--tv-raio);
       background: linear-gradient(90deg, var(--tv-vermelho-escuro), var(--tv-vermelho) 50%, var(--tv-vermelho-escuro));
+      color: #fff;
       text-align: center;
       padding: min(1vh, 0.8vw) 2vw;
       font-size: min(3.2vh, 2.4vw);
@@ -175,7 +199,7 @@
 
     .tv-status[data-estado="rodando"] { color: var(--tv-verde); }
     .tv-status[data-estado="pausado"] { color: var(--tv-ambar); }
-    .tv-status[data-estado="intervalo"] { color: #f87171; }
+    .tv-status[data-estado="intervalo"] { color: var(--tv-intervalo); }
     .tv-status[data-estado="encerrado"] { color: var(--tv-apagado); }
 
     /* ---- Corpo: relógio + blinds à esquerda, tabela à direita.
@@ -203,6 +227,7 @@
       border-radius: var(--tv-raio);
       min-width: 0;
       min-height: 0;
+      box-shadow: var(--tv-sombra);
     }
 
     .tv-contador-caixa {
@@ -222,7 +247,7 @@
     }
 
     .tv-contador.intervalo {
-      color: #f87171;
+      color: var(--tv-intervalo);
     }
 
     .tv-blinds-caixa {
@@ -280,13 +305,13 @@
     }
 
     .tv-linha > :last-child {
-      color: #fff;
+      color: var(--tv-forte);
       font-weight: 800;
     }
 
     .tv-linha-destaque {
       background: linear-gradient(90deg, rgba(220, 38, 38, .22), rgba(220, 38, 38, .08)) !important;
-      color: #fff;
+      color: var(--tv-forte);
     }
 
     /* ---- Premiação ---- */
@@ -313,6 +338,7 @@
       background: var(--tv-cartao);
       border: 1px solid var(--tv-borda);
       border-radius: var(--tv-raio);
+      box-shadow: var(--tv-sombra);
       font-size: min(5.2vh, 3.6vw);
       font-weight: 800;
     }
@@ -322,7 +348,7 @@
     }
 
     .tv-premio:first-child .tv-premio-pos {
-      color: #fbbf24;
+      color: var(--tv-ouro);
     }
 
     .tv-vazio {

@@ -217,17 +217,16 @@
     position: absolute; top: 10px; right: 10px; z-index: 2;
     width: 36px; height: 36px; padding: 0; margin: 0; border: 0; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    background: transparent; color: #8b91a0; cursor: pointer; box-shadow: none;
+    background: transparent; color: var(--apagado, #8b91a0); cursor: pointer; box-shadow: none;
     transition: background .15s ease, color .15s ease;
   }
-  .modal-fechar-x:hover { background: #f2f3f7; color: #16181d; }
+  .modal-fechar-x:hover { background: var(--superficie-3, #f2f3f7); color: var(--texto, #16181d); }
   .modal-fechar-x:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; }
   .modal-fechar-x .mnu-ico { width: 20px; height: 20px; }
   /* Modais acima do menu lateral (z-index 2500) */
   .modal-overlay { z-index: 3000; }
   #modalCentralHistorico { z-index: 2900; } /* abaixo dos confirm/alerta abertos sobre ela */
   .modal-box > h2:first-of-type, .modal-box > .modal-fechar-x + .topbar { padding-right: 44px; }
-  body.modo-escuro .modal-fechar-x:hover { background: #1a1e29; color: #fff; }
   `;
 
   const TEXTOS_FECHAR = /^(fechar|cancelar|voltar|ok|não|nao)$/i;

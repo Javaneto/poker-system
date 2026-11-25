@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Torneios — RPG Poker Club</title>
 
+  <script src="js/tema.js"></script>
+
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <link rel="stylesheet" href="styles.css">
@@ -61,7 +63,7 @@
 
         <div id="linhasTiposPagamento"></div>
 
-        <p style="color:#666;font-size:12px;margin-top:-4px;">
+        <p style="color:var(--apagado);font-size:12px;margin-top:-4px;">
           Marque os tipos que valem para este torneio. Para ativar/desativar tipos globalmente, use "Configurações de Torneio".
         </p>
 
@@ -79,17 +81,17 @@
       <div id="novoTorneioEtapa2" class="oculto">
         <h2 style="margin-top:0;">Novo Torneio — Estrutura de Blinds</h2>
 
-        <p style="color:#666;font-size:13px;margin-top:0;">Estrutura de Blinds</p>
+        <p style="color:var(--apagado);font-size:13px;margin-top:0;">Estrutura de Blinds</p>
 
         <select id="novoTorneioEstruturaBlinds" style="margin-bottom:16px;">
           <option value="">Nenhuma selecionada</option>
         </select>
 
-        <p style="color:#666;font-size:12px;margin-bottom:4px;">Duração do Intervalo Manual (min)</p>
+        <p style="color:var(--apagado);font-size:12px;margin-bottom:4px;">Duração do Intervalo Manual (min)</p>
 
         <input type="number" id="novoTorneioIntervaloManual" min="1" placeholder="10">
 
-        <p style="color:#666;font-size:12px;margin-top:-4px;">
+        <p style="color:var(--apagado);font-size:12px;margin-top:-4px;">
           Se a estrutura desejada ainda não existe, você pode criar ou editar em "Configurar Torneio → Estrutura de Blinds" depois de criar o torneio.
         </p>
 
@@ -498,7 +500,7 @@
       div.innerHTML = `
         <span class="tipo-nome-fixo">${escapeHtml(tipoFixo.nome)}</span>
         <input type="number" class="tipo-total" placeholder="Valor do bounty" min="0" value="${total}" style="flex:2;">
-        <span style="color:#767c88;font-size:12px;">Descontado do prêmio a cada Registro/Rebuy</span>
+        <span style="color:var(--apagado);font-size:12px;">Descontado do prêmio a cada Registro/Rebuy</span>
       `;
 
       document.getElementById(containerId).appendChild(div);
@@ -608,7 +610,7 @@
     const tiposDisponiveis = TIPOS_REGISTRO_FIXOS.filter(t => tiposRegistroAtivos.includes(t.chave));
 
     if (tiposDisponiveis.length === 0) {
-      container.innerHTML = '<p style="color:#666;">Nenhum tipo ativo globalmente. Ative em "Configurações de Torneio".</p>';
+      container.innerHTML = '<p style="color:var(--apagado);">Nenhum tipo ativo globalmente. Ative em "Configurações de Torneio".</p>';
     } else {
       tiposDisponiveis.forEach(t => criarLinhaTipoFixo(t, 0, 0, 'linhasTiposPagamento'));
     }
