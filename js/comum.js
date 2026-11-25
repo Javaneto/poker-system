@@ -227,7 +227,7 @@ function calcularResultadoMovimentacoes(movs) {
 // ---------------------------------------------------------------------------
 // total = pontos_base + pontos_por_jogador × nº de jogadores + ajuste do torneio
 // posição N recebe total × percentuais[N-1] / 100 (arredondado)
-// todo participante recebe ainda pontos_participacao
+// todo participante recebe ainda pontos_participacao (fixos ou % do total)
 
 function calcularPontosTorneio(ranking, qtdJogadores, ajuste = 0) {
 
@@ -240,10 +240,15 @@ function calcularPontosTorneio(ranking, qtdJogadores, ajuste = 0) {
 
   const percentuais = Array.isArray(ranking.percentuais) ? ranking.percentuais : [];
 
+  // Participação: pontos fixos, ou % do total do torneio (participacao_tipo = 'percentual').
+  const participacao = ranking.participacao_tipo === 'percentual'
+    ? Math.round(total * Number(ranking.pontos_participacao || 0) / 100)
+    : Number(ranking.pontos_participacao || 0);
+
   return {
     total,
     porPosicao: percentuais.map(p => Math.round(total * Number(p || 0) / 100)),
-    participacao: Number(ranking.pontos_participacao || 0)
+    participacao
   };
 }
 

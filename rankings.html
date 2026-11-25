@@ -12,406 +12,7 @@
 
   <link rel="stylesheet" href="styles.css">
 
-  <style>
-    .lista-rankings {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .chip-ranking {
-      background: var(--superficie-3);
-      color: var(--texto-2);
-      box-shadow: none;
-      border-radius: 999px;
-      padding: 8px 14px;
-    }
-
-    .chip-ranking.ativo {
-      background: var(--destaque);
-      color: white;
-    }
-
-    .chip-ranking .inativo-tag {
-      font-size: 11px;
-      opacity: 0.7;
-      margin-left: 4px;
-    }
-
-    .resumo-ranking {
-      color: var(--texto-2);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    /* ---- Placar (segue o tema claro/escuro, mesma paleta da Tela da TV) ---- */
-    :root {
-      --rk-cartao: var(--superficie);
-      --rk-cartao-2: var(--superficie-2);
-      --rk-hover: var(--hover);
-      --rk-borda: var(--borda);
-      --rk-texto: var(--texto-2);
-      --rk-apagado: var(--apagado);
-      --rk-vermelho: var(--destaque);
-      --rk-ouro: var(--ouro);
-      --rk-prata: var(--prata);
-      --rk-bronze: var(--bronze);
-    }
-
-    /* Pódio: 2º, 1º, 3º, com o campeão mais alto no meio */
-    .podio {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      align-items: end;
-      gap: 12px;
-      margin: 6px 0 16px;
-    }
-
-    .podio-item {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      min-width: 0;
-      padding: 18px 12px 16px;
-      background: var(--rk-cartao);
-      border: 1px solid var(--rk-borda);
-      box-shadow: var(--sombra);
-      border-radius: 14px;
-      text-align: center;
-      color: var(--texto);
-      overflow: hidden;
-    }
-
-    .podio-item::before {
-      content: '';
-      position: absolute;
-      inset: 0 0 auto;
-      height: 4px;
-      background: var(--cor-podio);
-    }
-
-    .podio-1 { --cor-podio: var(--rk-ouro); order: 2; padding-top: 28px; padding-bottom: 26px; }
-    .podio-2 { --cor-podio: var(--rk-prata); order: 1; }
-    .podio-3 { --cor-podio: var(--rk-bronze); order: 3; }
-
-    .podio-pos {
-      font-size: 30px;
-      font-weight: 800;
-      line-height: 1;
-      color: var(--cor-podio);
-    }
-
-    .podio-1 .podio-pos { font-size: 40px; }
-
-    .podio-nome {
-      max-width: 100%;
-      font-size: 17px;
-      font-weight: 800;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .podio-1 .podio-nome { font-size: 20px; }
-
-    .podio-pontos {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--rk-texto);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .podio-pontos strong {
-      color: var(--texto);
-      font-size: 1.25em;
-    }
-
-    /* Tabela de classificação */
-    .card.rk-placar {
-      background: var(--rk-cartao);
-      border-color: var(--rk-borda);
-      box-shadow: var(--sombra);
-      container-type: inline-size;
-      padding: 6px 0;
-      overflow: hidden;
-    }
-
-    /* A regra geral do celular/tablet deixa tabelas roláveis de lado;
-       o placar sempre cabe na tela (colunas extras somem no celular). */
-    .rk-placar table {
-      display: table;
-      table-layout: fixed;
-      margin-top: 0;
-    }
-
-    /* Coluna do nome mais larga para o nome não quebrar em duas linhas */
-    .rk-placar thead th:nth-child(2) {
-      width: 30%;
-    }
-
-    .rk-placar th {
-      color: var(--rk-apagado);
-      border-bottom-color: var(--rk-borda);
-      padding: 12px 14px;
-    }
-
-    .rk-placar td {
-      color: var(--rk-texto);
-      font-weight: 600;
-      border-bottom-color: var(--rk-borda);
-      padding: 12px 14px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .rk-placar tbody tr:nth-child(even) {
-      background: var(--rk-cartao-2);
-    }
-
-    .rk-placar tbody tr:last-child td {
-      border-bottom: 0;
-    }
-
-    .rk-placar tbody tr:hover {
-      background: var(--rk-hover);
-    }
-
-    .rk-placar .nome-col {
-      color: var(--texto);
-      font-weight: 700;
-    }
-
-    .rk-placar .ch-badge {
-      margin: 0 0 0 4px;
-      background: var(--rk-hover);
-      color: var(--rk-texto);
-    }
-
-    .pos-col {
-      width: 64px;
-      text-align: center;
-    }
-
-    .pos {
-      display: inline-grid;
-      place-items: center;
-      min-width: 32px;
-      height: 32px;
-      padding: 0 6px;
-      border-radius: 999px;
-      font-weight: 800;
-      color: var(--rk-texto);
-    }
-
-    .pos-1, .pos-2, .pos-3 {
-      color: var(--medalha-texto);
-    }
-
-    .pos-1 { background: var(--rk-ouro); }
-    .pos-2 { background: var(--rk-prata); }
-    .pos-3 { background: var(--rk-bronze); }
-
-    .rk-placar .pontos-col {
-      font-weight: 800;
-      color: var(--texto);
-    }
-
-    .rk-placar th.pontos-col {
-      color: var(--rk-vermelho);
-    }
-
-    .rk-placar .vazio-col {
-      color: var(--rk-apagado);
-      font-weight: 500;
-      white-space: normal;
-    }
-
-    .rk-placar .vazio-col strong {
-      color: var(--texto);
-    }
-
-    .linha-ranking { cursor: pointer; }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0 10px;
-    }
-
-    .form-grid .largura-total { grid-column: 1 / -1; }
-
-    .form-grid label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--apagado);
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .previa-pontos {
-      background: var(--superficie-2);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 13px;
-      color: var(--texto-2);
-      margin-bottom: 12px;
-    }
-
-    .linha-vinculo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--borda);
-    }
-
-    .linha-vinculo input[type="checkbox"] {
-      width: auto;
-      margin: 0;
-      flex: 0 0 auto;
-    }
-
-    .linha-vinculo .info {
-      flex: 1;
-      font-size: 13px;
-      color: var(--texto-2);
-      min-width: 0;
-    }
-
-    .linha-vinculo .info strong {
-      display: block;
-      font-size: 14px;
-      color: var(--texto);
-    }
-
-    .linha-vinculo input[type="number"] {
-      width: 110px;
-      margin: 0;
-      flex: 0 0 auto;
-    }
-
-    .tag-aviso {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: var(--tint-ambar);
-      color: var(--tx-ambar);
-    }
-
-    /* Modo TV (tela cheia): igual à Tela da TV, tamanhos seguem a tela */
-    body.modo-tv {
-      --rk-margem: min(2.4vh, 2vw);
-      background: var(--fundo);
-      color: var(--texto);
-      padding: var(--rk-margem);
-    }
-
-    body.modo-tv .container {
-      max-width: none;
-    }
-
-    body.modo-tv .so-admin { display: none !important; }
-
-    body.modo-tv .topbar {
-      position: relative;
-      justify-content: center;
-      margin-bottom: var(--rk-margem);
-    }
-
-    /* O título fica dentro de uma caixa: ela ocupa a largura toda */
-    body.modo-tv .topbar > div:first-child {
-      flex: 1 1 100%;
-      min-width: 0;
-    }
-
-    body.modo-tv h1 {
-      flex: 1 1 100%;
-      width: 100%;
-      margin: 0;
-      padding: min(1vh, 0.8vw) 2vw;
-      border-radius: min(1.6vh, 1.2vw);
-      background: linear-gradient(90deg, #7f1d1d, var(--rk-vermelho) 50%, #7f1d1d);
-      color: #fff;
-      text-align: center;
-      font-size: min(4vh, 3vw);
-    }
-
-    /* Botão "Sair da tela cheia" discreto, sobre a faixa */
-    body.modo-tv .topbar > div:last-child {
-      position: absolute;
-      right: min(1vh, 0.8vw);
-      top: 50%;
-      transform: translateY(-50%);
-    }
-
-    body.modo-tv #btnModoTV {
-      background: rgba(0, 0, 0, .35);
-      color: #fff;
-      opacity: .6;
-      font-size: min(1.8vh, 1.4vw);
-      padding: 0.4em 0.9em;
-    }
-
-    body.modo-tv #btnModoTV:hover { opacity: 1; }
-
-    body.modo-tv .podio {
-      gap: var(--rk-margem);
-      margin: 0 0 var(--rk-margem);
-    }
-
-    body.modo-tv .podio-item {
-      border-radius: min(1.6vh, 1.2vw);
-      padding: min(2.4vh, 1.8vw) 1vw;
-    }
-
-    body.modo-tv .podio-1 { padding-top: min(4vh, 3vw); padding-bottom: min(3.6vh, 2.7vw); }
-    body.modo-tv .podio-pos { font-size: min(5vh, 3.6vw); }
-    body.modo-tv .podio-1 .podio-pos { font-size: min(7vh, 5vw); }
-    body.modo-tv .podio-nome { font-size: min(3.4vh, 2.4vw); }
-    body.modo-tv .podio-1 .podio-nome { font-size: min(4.2vh, 3vw); }
-    body.modo-tv .podio-pontos { font-size: min(2.6vh, 1.9vw); }
-
-    body.modo-tv .card.rk-placar {
-      border-radius: min(1.6vh, 1.2vw);
-      margin: 0;
-    }
-
-    body.modo-tv .rk-placar th { font-size: min(2vh, 1.5vw); padding: min(1.4vh, 1vw) min(2vh, 1.5vw); }
-    body.modo-tv .rk-placar td { font-size: min(3vh, 2.2vw); padding: min(1.3vh, 1vw) min(2vh, 1.5vw); }
-    body.modo-tv .pos-col { width: min(9vh, 6.5vw); }
-    body.modo-tv .pos { min-width: 1.6em; height: 1.6em; }
-    body.modo-tv .linha-ranking { cursor: default; }
-
-    @media (max-width: 768px) {
-      .form-grid { grid-template-columns: 1fr; }
-      .podio { gap: 8px; }
-      .podio-item { padding: 14px 6px 12px; }
-      .podio-1 { padding-top: 22px; padding-bottom: 18px; }
-      .podio-pos { font-size: 24px; }
-      .podio-1 .podio-pos { font-size: 30px; }
-      .podio-nome, .podio-1 .podio-nome { font-size: 14px; }
-      .podio-pontos { font-size: 12px; }
-      .linha-vinculo { flex-wrap: wrap; }
-      .linha-vinculo input[type="number"] { width: 100%; }
-    }
-
-    /* Placar estreito (celular, ou tela média com o menu aberto): tabela mostra o essencial;
-       o resto aparece ao tocar no jogador */
-    @container (max-width: 640px) {
-      .rk-placar table { font-size: 14px; }
-      .rk-placar .col-extra { display: none; }
-      .rk-placar th, .rk-placar td { padding: 11px 8px; }
-      .rk-placar thead th:nth-child(2) { width: auto; }
-      .rk-placar thead th:nth-child(3) { width: 72px; }
-      .rk-placar thead th:nth-child(5) { width: 84px; }
-      .pos-col { width: 48px; }
-      .pos { min-width: 28px; height: 28px; font-size: 13px; }
-    }
-  </style>
+  <link rel="stylesheet" href="ranking.css">
 </head>
 <body>
 <script src="js/menu.js"></script>
@@ -444,6 +45,7 @@
           <button class="btn-gray" onclick="abrirVinculos()">Torneios</button>
           <button class="btn-gray" onclick="abrirAjustes()">Ajuste manual</button>
           <button class="btn-gray" onclick="abrirFormRanking(rankingAtual)">Configurar</button>
+          <button class="btn-blue" onclick="abrirLinkPublico()">Link público</button>
         </div>
       </div>
       <div class="resumo-ranking" id="resumoRanking"></div>
@@ -499,7 +101,13 @@
       </div>
       <div>
         <label for="rParticipacao">Pontos por participar</label>
-        <input type="number" id="rParticipacao" min="0" step="1">
+        <div class="campo-com-unidade">
+          <input type="number" id="rParticipacao" min="0" step="1">
+          <select id="rParticipacaoTipo" aria-label="Tipo dos pontos por participar">
+            <option value="pontos">pts</option>
+            <option value="percentual">% do total</option>
+          </select>
+        </div>
       </div>
       <div>
         <label class="check-linha" style="margin-top:22px;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="rAtivo" style="width:auto;margin:0;"> Ranking ativo</label>
@@ -517,6 +125,39 @@
       <span style="flex:1;"></span>
       <button class="btn-gray" onclick="fecharModal('modalFormRanking')">Cancelar</button>
       <button class="btn-green" id="btnSalvarRanking" onclick="salvarRanking()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Link público -->
+<div id="modalLinkPublico" class="modal-overlay">
+  <div class="modal-box" style="max-width:520px;">
+    <h2 style="margin-bottom:4px;">Link público</h2>
+    <p style="color:var(--apagado);font-size:13px;margin-top:0;">
+      Quem tiver o link vê só o placar deste ranking (nome, posição e pontos), sem precisar de login.
+      Não mostra CPF, telefone nem valores, e não dá acesso a mais nada do sistema.
+    </p>
+
+    <div id="linkPublicoAtivo" class="oculto">
+      <input type="text" id="linkPublicoUrl" readonly onclick="this.select()">
+      <div class="modal-acoes" style="flex-wrap:wrap;margin-top:0;">
+        <button class="btn-blue" onclick="copiarLinkPublico()" id="btnCopiarLink">Copiar link</button>
+        <button class="btn-gray" onclick="abrirLinkPublicoNovaAba()">Abrir</button>
+        <span style="flex:1;"></span>
+        <button class="btn-gray" onclick="gerarLinkPublico(true)">Gerar novo link</button>
+        <button class="btn-red" onclick="desativarLinkPublico()">Desativar</button>
+      </div>
+      <p style="color:var(--apagado);font-size:12px;">
+        "Gerar novo link" ou "Desativar" fazem o link antigo parar de funcionar na hora.
+      </p>
+    </div>
+
+    <div id="linkPublicoInativo" class="oculto">
+      <button class="btn-blue" style="width:100%;" onclick="gerarLinkPublico(false)">Criar link público</button>
+    </div>
+
+    <div class="modal-acoes">
+      <button class="btn-gray" style="flex:1;" onclick="fecharModal('modalLinkPublico')">Fechar</button>
     </div>
   </div>
 </div>
@@ -785,7 +426,7 @@
       · ${meusAjustes.length} ajuste(s) manual(is)<br>
       Pontos por torneio: ${formatarPontos(rankingAtual.pontos_base)} + ${formatarPontos(rankingAtual.pontos_por_jogador)} por jogador,
       distribuídos ${(rankingAtual.percentuais || []).join('% / ')}%
-      ${Number(rankingAtual.pontos_participacao) ? ` · +${formatarPontos(rankingAtual.pontos_participacao)} por participar` : ''}
+      ${Number(rankingAtual.pontos_participacao) ? ` · +${formatarPontos(rankingAtual.pontos_participacao)}${rankingAtual.participacao_tipo === 'percentual' ? '% do total' : ''} por participar` : ''}
     `;
 
     document.getElementById('podio').innerHTML = classificacaoAtual.slice(0, 3).map((l, i) => `
@@ -867,6 +508,84 @@
     document.getElementById('modalDetalheRanking').classList.add('aberto');
   }
 
+  // ---------- link público ----------
+
+  function urlLinkPublico(token) {
+    return new URL(`ranking-publico.html?t=${token}`, document.baseURI).href;
+  }
+
+  function abrirLinkPublico() {
+
+    if (!adminLiberado || !rankingAtual) return;
+
+    const token = rankingAtual.token_publico;
+
+    document.getElementById('linkPublicoAtivo').classList.toggle('oculto', !token);
+    document.getElementById('linkPublicoInativo').classList.toggle('oculto', !!token);
+    document.getElementById('linkPublicoUrl').value = token ? urlLinkPublico(token) : '';
+    document.getElementById('btnCopiarLink').textContent = 'Copiar link';
+
+    document.getElementById('modalLinkPublico').classList.add('aberto');
+  }
+
+  async function salvarTokenPublico(token) {
+
+    const { data, error } = await client
+      .from('rankings')
+      .update({ token_publico: token })
+      .eq('id', rankingAtual.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error(error);
+      await mostrarAlerta(/token_publico/.test(error.message || '')
+        ? 'O link público ainda não foi ativado. Rode o arquivo sql/006_ranking_publico.sql no Supabase.'
+        : 'Erro ao salvar o link público: ' + error.message);
+      return false;
+    }
+
+    rankingAtual = data;
+    rankings = rankings.map(x => x.id === data.id ? data : x);
+    return true;
+  }
+
+  async function gerarLinkPublico(trocar) {
+
+    if (!adminLiberado || !rankingAtual) return;
+
+    if (trocar && !await mostrarConfirm('Gerar um novo link? O link atual para de funcionar e quem tem ele vai precisar do novo.')) return;
+
+    if (await salvarTokenPublico(crypto.randomUUID())) abrirLinkPublico();
+  }
+
+  async function desativarLinkPublico() {
+
+    if (!adminLiberado || !rankingAtual) return;
+
+    if (!await mostrarConfirm('Desativar o link público? Quem tem o link não vai mais conseguir ver o ranking.')) return;
+
+    if (await salvarTokenPublico(null)) abrirLinkPublico();
+  }
+
+  async function copiarLinkPublico() {
+
+    const input = document.getElementById('linkPublicoUrl');
+
+    try {
+      await navigator.clipboard.writeText(input.value);
+    } catch (e) {
+      input.select();
+      document.execCommand('copy');
+    }
+
+    document.getElementById('btnCopiarLink').textContent = 'Copiado ✓';
+  }
+
+  function abrirLinkPublicoNovaAba() {
+    window.open(document.getElementById('linkPublicoUrl').value, '_blank', 'noopener');
+  }
+
   // ---------- configurar ranking ----------
 
   function abrirFormRanking(ranking = null) {
@@ -882,6 +601,7 @@
     document.getElementById('rBase').value = ranking ? ranking.pontos_base : 100;
     document.getElementById('rPorJogador').value = ranking ? ranking.pontos_por_jogador : 10;
     document.getElementById('rParticipacao').value = ranking ? ranking.pontos_participacao : 0;
+    document.getElementById('rParticipacaoTipo').value = ranking?.participacao_tipo === 'percentual' ? 'percentual' : 'pontos';
     document.getElementById('rAtivo').checked = ranking ? ranking.ativo : true;
     document.getElementById('rPercentuais').value = (ranking?.percentuais || PERCENTUAIS_PADRAO).join(', ');
     document.getElementById('btnExcluirRanking').classList.toggle('oculto', !ranking);
@@ -900,6 +620,7 @@
       pontos_base: Number(document.getElementById('rBase').value) || 0,
       pontos_por_jogador: Number(document.getElementById('rPorJogador').value) || 0,
       pontos_participacao: Number(document.getElementById('rParticipacao').value) || 0,
+      participacao_tipo: document.getElementById('rParticipacaoTipo').value,
       percentuais: lerPercentuais(document.getElementById('rPercentuais').value)
     };
   }
@@ -911,7 +632,7 @@
 
     const exemplo = n => {
       const c = calcularPontosTorneio(r, n, 0);
-      return `<strong>${n} jogadores</strong>: total ${formatarPontos(c.total)} → ${c.porPosicao.slice(0, 5).map((p, i) => `${i + 1}º ${formatarPontos(p)}`).join(', ')}${c.porPosicao.length > 5 ? '...' : ''}`;
+      return `<strong>${n} jogadores</strong>: total ${formatarPontos(c.total)} → ${c.porPosicao.slice(0, 5).map((p, i) => `${i + 1}º ${formatarPontos(p)}`).join(', ')}${c.porPosicao.length > 5 ? '...' : ''}${c.participacao ? ` · +${formatarPontos(c.participacao)} por participar` : ''}`;
     };
 
     document.getElementById('previaPontos').innerHTML = `
@@ -922,8 +643,8 @@
     `;
   }
 
-  ['rBase', 'rPorJogador', 'rParticipacao', 'rPercentuais'].forEach(id =>
-    document.getElementById(id).addEventListener('input', atualizarPreviaPontos)
+  ['rBase', 'rPorJogador', 'rParticipacao', 'rParticipacaoTipo', 'rPercentuais'].forEach(id =>
+    ['input', 'change'].forEach(ev => document.getElementById(id).addEventListener(ev, atualizarPreviaPontos))
   );
 
   async function salvarRanking() {
@@ -954,7 +675,7 @@
     btn.classList.remove('disabled');
 
     if (error) {
-      await mostrarAlerta('Erro ao salvar ranking: ' + error.message);
+      await mostrarAlerta(/participacao_tipo/.test(error.message || '') ? 'Para usar pontos por participar em %, rode antes o arquivo sql/006_ranking_publico.sql no Supabase.' : 'Erro ao salvar ranking: ' + error.message);
       console.error(error);
       return;
     }
