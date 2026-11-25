@@ -463,11 +463,23 @@ async function renderizarAbertasCentral(conteudo) {
   const somenteTorneio = document.getElementById('chFiltroTorneio').checked && centralHistorico.opcoes.torneioId;
   const termo = textoBuscaCentral();
 
-  let abertas = await buscarTodas(() => {
-    let q = client.from('movimentacoes').select('*').is('sessao_finalizada_em', null).order('id', { ascending: false });
-    if (somenteTorneio) q = q.eq('torneio_id', centralHistorico.opcoes.torneioId);
-    return q;
-  });
+  let abertas = await buscarTodas(() =>
+    client.from('movimentacoes').select('*').is('sessao_finalizada_em', null).order('id', { ascending: false })
+  );
+
+  if (somenteTorneio) {
+    // Pagamentos feitos na tela do torneio são gravados sem torneio_id.
+    // Incluímos os pagamentos em aberto dos jogadores que têm entradas
+    // em aberto neste torneio, para que também possam ser desfeitos.
+    const torneioId = String(centralHistorico.opcoes.torneioId);
+    const doTorneio = m => m.torneio_id != null && String(m.torneio_id) === torneioId;
+    const jogadoresTorneio = new Set(abertas.filter(doTorneio).map(m => m.jogador));
+
+    abertas = abertas.filter(m =>
+      doTorneio(m)
+      || (m.tipo === 'Pagamento' && m.torneio_id == null && jogadoresTorneio.has(m.jogador))
+    );
+  }
 
   abertas = abertas.filter(m => movCombinaBusca(m, termo));
 
