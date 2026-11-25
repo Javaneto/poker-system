@@ -13,3 +13,6 @@ alter table public.configuracoes
 alter table public.torneios
   add column if not exists limite_rebuy int check (limite_rebuy is null or limite_rebuy >= 0),
   add column if not exists limite_addon int check (limite_addon is null or limite_addon >= 0);
+
+-- Faz a API do Supabase enxergar as colunas novas na hora.
+notify pgrst, 'reload schema';
