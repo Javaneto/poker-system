@@ -1225,24 +1225,6 @@
   </div>
 </div>
 
-<div id="modalDesfazer" class="modal-overlay">
-  <div class="modal-box" style="max-width:560px;">
-    <h2>Desfazer Movimentação</h2>
-
-    <p style="color:#666;font-size:13px;margin-top:-8px;">
-      Mostrando todas as movimentações em aberto do torneio selecionado.
-    </p>
-
-    <div id="listaDesfazer" style="max-height:340px;overflow-y:auto;"></div>
-
-    <div class="modal-acoes" style="margin-top:16px;">
-      <button class="btn-gray" onclick="fecharModalDesfazer()">
-        Fechar
-      </button>
-    </div>
-  </div>
-</div>
-
 <div id="modalSelecionarJogador" class="modal-overlay">
   <div class="modal-box">
     <h2 id="modalSelecionarJogadorTitulo">Selecionar Jogador</h2>
@@ -1563,13 +1545,13 @@
     const bounty = valoresTorneio.find(v => v.tipo === 'Bounty (K.O.)');
 
     document.getElementById('statBounty').textContent = (bounty && Number(bounty.valor_total) > 0)
-      ? `R$ ${Number(bounty.valor_total).toFixed(2)}`
+      ? `${formatarMoeda(Number(bounty.valor_total))}`
       : 'N/D';
 
     const totalPrizeStat = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_prize || 0), 0)
       + Number(torneioAtual.ajuste_premiacao || 0);
 
-    document.getElementById('statPremioTotal').textContent = `R$ ${totalPrizeStat.toFixed(2)}`;
+    document.getElementById('statPremioTotal').textContent = `${formatarMoeda(totalPrizeStat)}`;
 
     atualizarRakeAcumulado();
 
@@ -1603,37 +1585,41 @@
       return percentuais.map(pct => totalPrize * (Number(pct) / 100));
     }
 
-    let sobra = 0;
-    const resultados = [];
+    // Contas em centavos inteiros: evita erro de ponto flutuante no limite de 60%.
+    const unidadeCent = Math.round(unidade * 100);
+    let sobraCent = 0;
+    const resultadosCent = [];
 
     percentuais.forEach(pct => {
 
-      const bruto = totalPrize * (Number(pct) / 100) + sobra;
+      const brutoCent = Math.round(totalPrize * Number(pct)) + sobraCent;
 
-      const multiplos = Math.floor(bruto / unidade);
-      const fracao = (bruto - multiplos * unidade) / unidade;
+      const multiplos = Math.floor(brutoCent / unidadeCent);
+      const restoCent = brutoCent - multiplos * unidadeCent;
 
-      const valor = fracao >= 0.6 ? (multiplos + 1) * unidade : multiplos * unidade;
+      const valorCent = restoCent * 10 >= unidadeCent * 6 ? (multiplos + 1) * unidadeCent : multiplos * unidadeCent;
 
-      sobra = bruto - valor;
+      sobraCent = brutoCent - valorCent;
 
-      resultados.push(valor);
+      resultadosCent.push(valorCent);
     });
 
-    if (resultados.length > 0) {
-      resultados[resultados.length - 1] = Math.round((resultados[resultados.length - 1] + sobra) * 100) / 100;
+    if (resultadosCent.length > 0) {
+      resultadosCent[resultadosCent.length - 1] += sobraCent;
     }
 
-    return resultados;
+    return resultadosCent.map(c => c / 100);
   }
 
   function formatarMoedaSemZeros(valor) {
 
     const arredondado = Math.round(Number(valor) * 100) / 100;
 
-    return Number.isInteger(arredondado)
-      ? `R$ ${arredondado}`
-      : `R$ ${arredondado.toFixed(2)}`;
+    return arredondado.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: Number.isInteger(arredondado) ? 0 : 2
+    });
   }
 
   async function sincronizarRelogioTorneio() {
@@ -2213,7 +2199,7 @@
     const { resultado: saldo } = calcularResultado(movs);
     const resultadoEl = document.getElementById('historicoJogadorResultado');
 
-    resultadoEl.textContent = `${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}`;
+    resultadoEl.textContent = `${saldo >= 0 ? '+' : '-'} ${formatarMoeda(Math.abs(saldo))}`;
     resultadoEl.className = saldo >= 0 ? 'positivo' : 'negativo';
 
     document.getElementById('btnPagarHistorico').classList.toggle('disabled', !adminLiberado);
@@ -2247,7 +2233,7 @@
           ${mov.observacao ? `<span style="color:#767c88;font-style:italic;">Obs: ${escapeHtml(mov.observacao)}</span>` : ''}
         </div>
         <div class="linha-desfazer-valor">
-          <strong>R$ ${Number(mov.valor).toFixed(2)}</strong>
+          <strong>${formatarMoeda(Number(mov.valor))}</strong>
         </div>
       `;
 
@@ -2306,6 +2292,7 @@
           data: new Date().toISOString(),
           cpf: jogador.cpf,
           telefone: jogador.telefone,
+          torneio_id: torneioAtual ? torneioAtual.id : null,
           ...(observacao ? { observacao } : {})
         }
       ])
@@ -2371,11 +2358,14 @@
     // Confere com o banco antes de fechar: a lista usada é a mais atual.
     await carregarDados();
 
-    if (idsMovimentacoesAbertasVisiveisTorneio.length === 0) return;
+    // Copia agora: o Realtime pode mudar a lista enquanto a confirmação está aberta.
+    const ids = [...idsMovimentacoesAbertasVisiveisTorneio];
+
+    if (ids.length === 0) return;
 
     const qtdJogadores = new Set(
       movimentacoes
-        .filter(mov => idsMovimentacoesAbertasVisiveisTorneio.includes(mov.id))
+        .filter(mov => ids.includes(mov.id))
         .map(mov => mov.jogador)
     ).size;
 
@@ -2387,7 +2377,8 @@
     const { error } = await client
       .from('movimentacoes')
       .update({ sessao_finalizada_em: new Date().toISOString() })
-      .in('id', idsMovimentacoesAbertasVisiveisTorneio);
+      .in('id', ids)
+      .is('sessao_finalizada_em', null);
 
     btn.classList.remove('disabled');
 
@@ -2397,7 +2388,7 @@
       return;
     }
 
-    console.log('Sessões finalizadas em lote:', idsMovimentacoesAbertasVisiveisTorneio.length, 'movimentações');
+    console.log('Sessões finalizadas em lote:', ids.length, 'movimentações');
 
     await carregarDados();
   }
@@ -2566,9 +2557,6 @@
       filtrarJogadoresModal();
     }
 
-    if (document.getElementById('modalDesfazer').classList.contains('aberto')) {
-      renderizarListaDesfazer();
-    }
 
     // Relatório aberto acompanha os lançamentos em tempo real.
     if (document.getElementById('modalRelatorioTorneio')?.classList.contains('aberto')) {
@@ -2679,7 +2667,7 @@
     }
 
     document.getElementById('valoresResumoTexto').innerHTML = valoresTorneio.length > 0
-      ? valoresTorneio.map(v => `${escapeHtml(v.tipo)}: R$ ${Number(v.valor_total).toFixed(2)}`).join('<br>')
+      ? valoresTorneio.map(v => `${escapeHtml(v.tipo)}: ${formatarMoeda(Number(v.valor_total))}`).join('<br>')
       : 'Nenhum valor configurado ainda.';
 
     const estruturaBlindsAtual = estruturasBlinds.find(e => e.id === torneioAtual.estrutura_blinds_id);
@@ -2735,7 +2723,7 @@
     const tiposPreenchidos = lerLinhasTiposPagamento('linhasTiposEditar');
 
     document.getElementById('valoresResumoTexto').innerHTML = tiposPreenchidos.length > 0
-      ? tiposPreenchidos.map(t => `${escapeHtml(t.tipo)}: R$ ${Number(t.valor_total).toFixed(2)}`).join('<br>')
+      ? tiposPreenchidos.map(t => `${escapeHtml(t.tipo)}: ${formatarMoeda(Number(t.valor_total))}`).join('<br>')
       : 'Nenhum valor configurado ainda.';
 
     document.getElementById('modalEditarValoresTorneio').classList.remove('aberto');
@@ -2768,7 +2756,7 @@
     if (torneioAtual.status === 'encerrado') return;
 
     document.getElementById('ajustePremiacaoAtual').textContent =
-      `R$ ${Number(torneioAtual.ajuste_premiacao || 0).toFixed(2)}`;
+      `${formatarMoeda(Number(torneioAtual.ajuste_premiacao || 0))}`;
     document.getElementById('valorAjustePremiacao').value = '';
 
     document.getElementById('modalAjustarPremiacao').classList.add('aberto');
@@ -2813,7 +2801,7 @@
     await carregarDados();
 
     document.getElementById('ajustePremiacaoAtual').textContent =
-      `R$ ${Number(torneioAtual.ajuste_premiacao || 0).toFixed(2)}`;
+      `${formatarMoeda(Number(torneioAtual.ajuste_premiacao || 0))}`;
   }
 
   function fecharModalConfigTorneioAtual() {
@@ -3037,10 +3025,10 @@
         tabela.innerHTML += `
           <tr>
             <td class="jogador-clicavel" data-ids="${idsHistorico}" data-nome="${escapeHtml(jogador.nome)}">${escapeHtml(jogador.nome)}</td>
-            <td>R$ ${entrada.toFixed(2)}</td>
-            <td>R$ ${saida.toFixed(2)}</td>
+            <td>${formatarMoeda(entrada)}</td>
+            <td>${formatarMoeda(saida)}</td>
             <td class="${classeSaldo}">
-              ${sinalSaldo} R$ ${Math.abs(saldo).toFixed(2)}
+              ${sinalSaldo} ${formatarMoeda(Math.abs(saldo))}
             </td>
           </tr>
         `;
@@ -3049,10 +3037,10 @@
           <div class="linha-desfazer">
             <div class="linha-desfazer-info">
               <strong class="jogador-clicavel" data-ids="${idsHistorico}" data-nome="${escapeHtml(jogador.nome)}">${escapeHtml(jogador.nome)}</strong>
-              Entrou R$ ${entrada.toFixed(2)} · Saiu R$ ${saida.toFixed(2)}
+              Entrou ${formatarMoeda(entrada)} · Saiu ${formatarMoeda(saida)}
             </div>
             <div class="linha-desfazer-valor">
-              <strong class="${classeSaldo}">${sinalSaldo} R$ ${Math.abs(saldo).toFixed(2)}</strong>
+              <strong class="${classeSaldo}">${sinalSaldo} ${formatarMoeda(Math.abs(saldo))}</strong>
             </div>
           </div>
         `;
@@ -3076,7 +3064,9 @@
       return;
     }
 
-    const nomesJogadores = Array.from(new Set(movimentacoesTorneio.map(m => m.jogador))).sort();
+    const nomesJogadores = Array.from(new Set(
+      movimentacoesTorneio.filter(m => m.tipo !== 'Pagamento').map(m => m.jogador)
+    )).sort();
 
     if (nomesJogadores.length === 0) {
       tabela.innerHTML = '<tr><td colspan="5" style="color:#666;">Nenhum jogador registrado ainda.</td></tr>';
@@ -3090,7 +3080,9 @@
       const registro = movsJogador.find(m => m.tipo === 'Registro' || (m.tipo === 'Entrada' && NOMES_BUYIN.includes(m.tipo_registro)));
       const qtdRebuys = movsJogador.filter(m => m.tipo === 'Rebuy' || (m.tipo === 'Entrada' && m !== registro && m.tipo_registro !== 'Add-on')).length;
       const temAddon = movsJogador.some(m => m.tipo === 'Add-on' || m.tipo_registro === 'Add-on');
-      const totalPago = movsJogador.reduce((soma, m) => soma + Number(m.valor), 0);
+      const totalPago = movsJogador
+        .filter(m => m.tipo !== 'Pagamento' && m.tipo !== 'Saída')
+        .reduce((soma, m) => soma + Number(m.valor), 0);
 
       tabela.innerHTML += `
         <tr>
@@ -3098,105 +3090,16 @@
           <td>${registro ? escapeHtml(registro.tipo_registro) : '-'}</td>
           <td>${qtdRebuys}</td>
           <td>${temAddon ? '✓' : '-'}</td>
-          <td>R$ ${totalPago.toFixed(2)}</td>
+          <td>${formatarMoeda(totalPago)}</td>
         </tr>
       `;
     });
   }
 
-  function obterMovimentacoesAbertasTorneio() {
 
-    if (!torneioAtual) return [];
 
-    return movimentacoes
-      .filter(mov => !mov.pago && !mov.sessao_finalizada_em && mov.torneio_id === torneioAtual.id)
-      .sort((a, b) => b.id - a.id);
-  }
 
-  function abrirModalDesfazer() {
 
-    if (!adminLiberado) return;
-
-    renderizarListaDesfazer();
-
-    document.getElementById('modalDesfazer').classList.add('aberto');
-  }
-
-  function fecharModalDesfazer() {
-
-    document.getElementById('modalDesfazer').classList.remove('aberto');
-  }
-
-  function renderizarListaDesfazer() {
-
-    const lista = document.getElementById('listaDesfazer');
-
-    lista.innerHTML = '';
-
-    const abertas = obterMovimentacoesAbertasTorneio();
-
-    if (abertas.length === 0) {
-      lista.innerHTML = '<p style="color:#666;padding:8px 0;">Nenhuma movimentação em aberto no torneio.</p>';
-      return;
-    }
-
-    abertas.forEach(mov => {
-
-      const div = document.createElement('div');
-
-      div.className = 'linha-desfazer';
-
-      const dataFormatada = new Date(mov.data).toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      div.innerHTML = `
-        <div class="linha-desfazer-info">
-          <strong>${escapeHtml(mov.jogador)}</strong>
-          ${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')} · R$ ${Number(mov.valor).toFixed(2)}<br>
-          <span style="color:#999;">${dataFormatada}</span>
-        </div>
-      `;
-
-      const btn = document.createElement('button');
-
-      btn.className = 'btn-red';
-      btn.textContent = 'Desfazer';
-      btn.onclick = () => desfazerMovimentacaoPorId(mov.id);
-
-      div.appendChild(btn);
-
-      lista.appendChild(div);
-    });
-  }
-
-  async function desfazerMovimentacaoPorId(id) {
-
-    if (!adminLiberado) return;
-
-    if (!await mostrarConfirm('Desfazer esta movimentação? Essa ação não pode ser desfeita.')) return;
-
-    const { error } = await client
-      .from('movimentacoes')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      await mostrarAlerta('Erro ao desfazer movimentação');
-      console.error(error);
-      return;
-    }
-
-    console.log('Movimentação desfeita:', id);
-
-    await carregarDados();
-
-    renderizarListaDesfazer();
-  }
 
   function abrirModalSelecionarJogador(valorTipo) {
 
@@ -3206,7 +3109,7 @@
 
     document.getElementById('modalSelecionarJogadorTitulo').textContent = valorTipo === 'REGISTRO'
       ? 'Selecionar Jogador — Registro/Inscrição'
-      : `Selecionar Jogador — ${valorTipo.tipo} (R$ ${Number(valorTipo.valor_total).toFixed(2)})`;
+      : `Selecionar Jogador — ${valorTipo.tipo} (${formatarMoeda(Number(valorTipo.valor_total))})`;
 
     document.getElementById('pesquisaJogadorModal').value = '';
 
@@ -3370,7 +3273,7 @@
 
       btn.className = 'btn-blue';
       btn.style.marginBottom = '8px';
-      btn.textContent = `${v.tipo} — R$ ${Number(v.valor_total).toFixed(2)}`;
+      btn.textContent = `${v.tipo} — ${formatarMoeda(Number(v.valor_total))}`;
       btn.onclick = () => {
         fecharModalEscolherBuyIn();
         abrirModalPagamento(jogador, v);
@@ -3456,7 +3359,7 @@
       const total = parseFloat(inputTotal.value) || 0;
       const rake = parseFloat(inputRake.value) || 0;
       const prize = Math.max(total - rake, 0);
-      spanPrize.textContent = `R$ ${prize.toFixed(2)}`;
+      spanPrize.textContent = `${formatarMoeda(prize)}`;
     }
 
     inputTotal.addEventListener('input', recalcular);
@@ -4196,14 +4099,14 @@
 
     pagamentoPendente = { jogador, valorTipo };
 
-    let resumo = `${jogador.nome} — ${valorTipo.tipo} de R$ ${Number(valorTipo.valor_total).toFixed(2)}`;
+    let resumo = `${jogador.nome} — ${valorTipo.tipo} de ${formatarMoeda(Number(valorTipo.valor_total))}`;
 
     if (NOMES_BUYIN.includes(valorTipo.tipo) || NOMES_REBUY.includes(valorTipo.tipo)) {
 
       const bounty = valoresTorneio.find(v => v.tipo === 'Bounty (K.O.)');
 
       if (bounty && Number(bounty.valor_total) > 0) {
-        resumo += ` (R$ ${Number(bounty.valor_total).toFixed(2)} vai pro bounty)`;
+        resumo += ` (${formatarMoeda(Number(bounty.valor_total))} vai pro bounty)`;
       }
     }
 
@@ -4221,8 +4124,8 @@
       const totalAPagar = -resultado + Number(valorTipo.valor_total);
 
       resumo += totalAPagar >= 0
-        ? `\n\nTotal a pagar: R$ ${totalAPagar.toFixed(2)}`
-        : `\n\nTotal a receber: R$ ${Math.abs(totalAPagar).toFixed(2)}`;
+        ? `\n\nTotal a pagar: ${formatarMoeda(totalAPagar)}`
+        : `\n\nTotal a receber: ${formatarMoeda(Math.abs(totalAPagar))}`;
     }
 
     document.getElementById('modalPagamentoResumo').textContent = resumo;
@@ -4362,7 +4265,8 @@
           pago: false,
           data: new Date().toISOString(),
           cpf: jogador.cpf,
-          telefone: jogador.telefone
+          telefone: jogador.telefone,
+          torneio_id: torneioAtual.id
         }
       ]);
 
@@ -4413,7 +4317,6 @@
     document.getElementById('modalEditarBlindsTorneio').classList.remove('aberto');
     fecharModalAjustarPremiacao();
     fecharModalSelecionarJogador();
-    fecharModalDesfazer();
     fecharModalPagamento();
   });
 

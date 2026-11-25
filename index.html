@@ -147,24 +147,6 @@
 </div>
 
 
-<div id="modalDesfazer" class="modal-overlay">
-  <div class="modal-box" style="max-width:560px;">
-    <h2>Desfazer Movimentação</h2>
-
-    <p style="color:#666;font-size:13px;margin-top:-8px;">
-      Mostrando todas as movimentações em aberto da mesa atual.
-    </p>
-
-    <div id="listaDesfazer" style="max-height:340px;overflow-y:auto;"></div>
-
-    <div class="modal-acoes" style="margin-top:16px;">
-      <button class="btn-gray" onclick="fecharModalDesfazer()">
-        Fechar
-      </button>
-    </div>
-  </div>
-</div>
-
 <div id="modalDetalheHistorico" class="modal-overlay">
   <div class="modal-box" style="max-width:400px;">
     <h2 id="detalheHistoricoTitulo">Detalhe</h2>
@@ -480,7 +462,7 @@
             <span style="color:#999;">${dataMov}</span>
           </div>
           <div class="linha-desfazer-valor">
-            <strong>R$ ${Number(m.valor).toFixed(2)}</strong>
+            <strong>${formatarMoeda(Number(m.valor))}</strong>
           </div>
         </div>
       `;
@@ -492,10 +474,10 @@
 
       <p style="color:#666;margin-bottom:4px;">Resultado</p>
       <p style="margin-top:0;font-size:22px;" class="${resultado >= 0 ? 'positivo' : 'negativo'}">
-        ${resultado >= 0 ? '+' : '-'} R$ ${Math.abs(resultado).toFixed(2)}
+        ${resultado >= 0 ? '+' : '-'} ${formatarMoeda(Math.abs(resultado))}
       </p>
 
-      <p style="color:#666;margin-bottom:8px;">Entrou R$ ${entrada.toFixed(2)} · Saiu R$ ${saida.toFixed(2)}</p>
+      <p style="color:#666;margin-bottom:8px;">Entrou ${formatarMoeda(entrada)} · Saiu ${formatarMoeda(saida)}</p>
       <div style="max-height:260px;overflow-y:auto;">${listaHtml}</div>
     `;
 
@@ -665,11 +647,14 @@
     // Confere com o banco antes de fechar: a lista usada é a mais atual.
     await carregarDados();
 
-    if (idsMovimentacoesAbertasVisiveis.length === 0) return;
+    // Copia agora: o Realtime pode mudar a lista enquanto a confirmação está aberta.
+    const ids = [...idsMovimentacoesAbertasVisiveis];
+
+    if (ids.length === 0) return;
 
     const qtdJogadores = new Set(
       movimentacoes
-        .filter(mov => idsMovimentacoesAbertasVisiveis.includes(mov.id))
+        .filter(mov => ids.includes(mov.id))
         .map(mov => mov.jogador)
     ).size;
 
@@ -681,7 +666,8 @@
     const { error } = await client
       .from('movimentacoes')
       .update({ sessao_finalizada_em: new Date().toISOString() })
-      .in('id', idsMovimentacoesAbertasVisiveis);
+      .in('id', ids)
+      .is('sessao_finalizada_em', null);
 
     btn.classList.remove('disabled');
 
@@ -691,7 +677,7 @@
       return;
     }
 
-    console.log('Sessões finalizadas em lote:', idsMovimentacoesAbertasVisiveis.length, 'movimentações');
+    console.log('Sessões finalizadas em lote:', ids.length, 'movimentações');
 
     await carregarDados();
   }
@@ -707,7 +693,7 @@
     const { resultado: saldo } = calcularResultado(movs);
     const resultadoEl = document.getElementById('historicoJogadorResultado');
 
-    resultadoEl.textContent = `${saldo >= 0 ? '+' : '-'} R$ ${Math.abs(saldo).toFixed(2)}`;
+    resultadoEl.textContent = `${saldo >= 0 ? '+' : '-'} ${formatarMoeda(Math.abs(saldo))}`;
     resultadoEl.className = saldo >= 0 ? 'positivo' : 'negativo';
 
     document.getElementById('btnPagarHistorico').classList.toggle('disabled', !adminLiberado);
@@ -741,7 +727,7 @@
           ${mov.observacao ? `<span style="color:#767c88;font-style:italic;">Obs: ${escapeHtml(mov.observacao)}</span>` : ''}
         </div>
         <div class="linha-desfazer-valor">
-          <strong>R$ ${Number(mov.valor).toFixed(2)}</strong>
+          <strong>${formatarMoeda(Number(mov.valor))}</strong>
           <button class="btn-dark" onclick="imprimirMovimentacaoPorId(${mov.id})">
             Imprimir
           </button>
@@ -941,10 +927,10 @@
         mesa.innerHTML += `
           <tr>
             <td class="jogador-clicavel" data-ids="${idsHistorico}" data-nome="${escapeHtml(jogador.nome)}">${escapeHtml(jogador.nome)}</td>
-            <td>R$ ${entrada.toFixed(2)}</td>
-            <td>R$ ${saida.toFixed(2)}</td>
+            <td>${formatarMoeda(entrada)}</td>
+            <td>${formatarMoeda(saida)}</td>
             <td class="${classeSaldo}">
-              ${sinalSaldo} R$ ${Math.abs(saldo).toFixed(2)}
+              ${sinalSaldo} ${formatarMoeda(Math.abs(saldo))}
             </td>
           </tr>
         `;
@@ -953,10 +939,10 @@
           <div class="linha-desfazer">
             <div class="linha-desfazer-info">
               <strong class="jogador-clicavel" data-ids="${idsHistorico}" data-nome="${escapeHtml(jogador.nome)}">${escapeHtml(jogador.nome)}</strong>
-              Entrou R$ ${entrada.toFixed(2)} · Saiu R$ ${saida.toFixed(2)}
+              Entrou ${formatarMoeda(entrada)} · Saiu ${formatarMoeda(saida)}
             </div>
             <div class="linha-desfazer-valor">
-              <strong class="${classeSaldo}">${sinalSaldo} R$ ${Math.abs(saldo).toFixed(2)}</strong>
+              <strong class="${classeSaldo}">${sinalSaldo} ${formatarMoeda(Math.abs(saldo))}</strong>
             </div>
           </div>
         `;
@@ -1021,11 +1007,11 @@
           <div class="linha-desfazer-info">
             <strong class="jogador-clicavel" data-jogador="${escapeHtml(item.jogador)}" data-sessao="${item.sessaoFinalizadaEm}">${escapeHtml(item.jogador)}</strong>
             ${statusTipo} · <span class="${classeStatus}">${statusPagamento}</span><br>
-            Entrou R$ ${item.entrada.toFixed(2)} · Saiu R$ ${item.saida.toFixed(2)}<br>
+            Entrou ${formatarMoeda(item.entrada)} · Saiu ${formatarMoeda(item.saida)}<br>
             <span style="color:#999;">${dataFormatada}</span>
           </div>
           <div class="linha-desfazer-valor">
-            <strong class="${classeValor}">${sinal}R$ ${Math.abs(item.resultado).toFixed(2)}</strong>
+            <strong class="${classeValor}">${sinal}${formatarMoeda(Math.abs(item.resultado))}</strong>
           </div>
         </div>
       `;
@@ -1036,7 +1022,7 @@
           <td class="jogador-clicavel" data-jogador="${escapeHtml(item.jogador)}" data-sessao="${item.sessaoFinalizadaEm}">${escapeHtml(item.jogador)}</td>
           <td>${statusTipo}</td>
           <td class="${classeStatus}">${statusPagamento}</td>
-          <td class="${classeValor}">${sinal}R$ ${Math.abs(item.resultado).toFixed(2)}</td>
+          <td class="${classeValor}">${sinal}${formatarMoeda(Math.abs(item.resultado))}</td>
         </tr>
       `;
     });
@@ -1050,9 +1036,6 @@
       renderizarHistoricoJogador();
     }
 
-    if (document.getElementById('modalDesfazer').classList.contains('aberto')) {
-      renderizarListaDesfazer();
-    }
   }
 
   function abrirModalCadastro() {
@@ -1417,7 +1400,7 @@
     selecionarModalidade('Não Pago');
 
     document.getElementById('modalResumo').textContent =
-      `${entradaPendente.jogador.nome} — Entrada de R$ ${entradaPendente.valor.toFixed(2)}`;
+      `${entradaPendente.jogador.nome} — Entrada de ${formatarMoeda(entradaPendente.valor)}`;
 
     document.getElementById('modalConfirmacao').classList.add('aberto');
   }
@@ -1513,7 +1496,7 @@
   function abrirModalConfirmacaoSaida() {
 
     document.getElementById('modalResumoSaida').textContent =
-      `${saidaPendente.jogador.nome} — Saída de R$ ${saidaPendente.valor.toFixed(2)}`;
+      `${saidaPendente.jogador.nome} — Saída de ${formatarMoeda(saidaPendente.valor)}`;
 
     document.getElementById('modalConfirmacaoSaida').classList.add('aberto');
   }
@@ -1629,7 +1612,7 @@
         </p>
 
         <h2 style="text-align:center;">
-          R$ ${Number(mov.valor).toFixed(2)}
+          ${formatarMoeda(Number(mov.valor))}
         </h2>
 
         <br>
@@ -1685,7 +1668,6 @@
     fecharModalDetalheHistorico();
     fecharModalPagarHistorico();
     fecharModalHistoricoJogador();
-    fecharModalDesfazer();
     fecharModalCadastro();
     fecharModalConfirmacao();
     fecharModalConfirmacaoSaida();
@@ -1705,97 +1687,10 @@
     document.getElementById('btnSaida').classList.remove('disabled');
   }
 
-  function obterMovimentacoesAbertasMesa() {
 
-    return movimentacoes
-      .filter(mov => !mov.sessao_finalizada_em)
-      .sort((a, b) => b.id - a.id);
-  }
 
-  function abrirModalDesfazer() {
 
-    if (!adminLiberado) return;
 
-    renderizarListaDesfazer();
-
-    document.getElementById('modalDesfazer').classList.add('aberto');
-  }
-
-  function fecharModalDesfazer() {
-
-    document.getElementById('modalDesfazer').classList.remove('aberto');
-  }
-
-  function renderizarListaDesfazer() {
-
-    const lista = document.getElementById('listaDesfazer');
-
-    lista.innerHTML = '';
-
-    const abertas = obterMovimentacoesAbertasMesa();
-
-    if (abertas.length === 0) {
-      lista.innerHTML = '<p style="color:#666;padding:8px 0;">Nenhuma movimentação em aberto.</p>';
-      return;
-    }
-
-    abertas.forEach(mov => {
-
-      const div = document.createElement('div');
-
-      div.className = 'linha-desfazer';
-
-      const dataFormatada = new Date(mov.data).toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      div.innerHTML = `
-        <div class="linha-desfazer-info">
-          <strong>${escapeHtml(mov.jogador)}</strong>
-          ${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')} · R$ ${Number(mov.valor).toFixed(2)}<br>
-          <span style="color:#999;">${dataFormatada}</span>
-        </div>
-      `;
-
-      const btn = document.createElement('button');
-
-      btn.className = 'btn-red';
-      btn.textContent = 'Desfazer';
-      btn.onclick = () => desfazerMovimentacaoPorId(mov.id);
-
-      div.appendChild(btn);
-
-      lista.appendChild(div);
-    });
-  }
-
-  async function desfazerMovimentacaoPorId(id) {
-
-    if (!adminLiberado) return;
-
-    if (!await mostrarConfirm('Desfazer esta movimentação? Essa ação não pode ser desfeita.')) return;
-
-    const { error } = await client
-      .from('movimentacoes')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      await mostrarAlerta('Erro ao desfazer movimentação');
-      console.error(error);
-      return;
-    }
-
-    console.log('Movimentação desfeita:', id);
-
-    await carregarDados();
-
-    renderizarListaDesfazer();
-  }
 
   function verMaisRelatorio() {
 

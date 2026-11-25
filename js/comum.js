@@ -102,13 +102,18 @@ function iniciarRealtimeRobusto({ nome, tabelas, aoMudar, intervaloSeguranca = 3
       client.removeChannel(canal);
     }
 
-    canal = client.channel(`${nome}-${Date.now()}`);
+    const este = client.channel(`${nome}-${Date.now()}`);
+    canal = este;
 
     tabelas.forEach(tabela => {
       canal.on('postgres_changes', { event: '*', schema: 'public', table: tabela }, avisarMudanca);
     });
 
     canal.subscribe(status => {
+
+      // Canal antigo (removido ao reconectar) avisa CLOSED: ignorar,
+      // senão cada reconexão agenda outra e entra em ciclo.
+      if (este !== canal) return;
 
       console.log('Status do canal Realtime:', status);
 
@@ -188,7 +193,7 @@ function formatarDataHora(valor) {
 }
 
 function formatarMoeda(valor) {
-  return 'R$ ' + Number(valor || 0).toFixed(2);
+  return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 // Mesmo cálculo de resultado usado nas páginas de cash game e diretor.
@@ -468,9 +473,9 @@ async function renderizarAbertasCentral(conteudo) {
   );
 
   if (somenteTorneio) {
-    // Pagamentos feitos na tela do torneio são gravados sem torneio_id.
-    // Incluímos os pagamentos em aberto dos jogadores que têm entradas
-    // em aberto neste torneio, para que também possam ser desfeitos.
+    // Pagamentos feitos no Diretor passam a levar torneio_id. Os antigos
+    // foram gravados sem vínculo: mostramos os pagamentos sem torneio dos
+    // jogadores deste torneio, marcados como "sem vínculo" para conferência.
     const torneioId = String(centralHistorico.opcoes.torneioId);
     const doTorneio = m => m.torneio_id != null && String(m.torneio_id) === torneioId;
     const jogadoresTorneio = new Set(abertas.filter(doTorneio).map(m => m.jogador));
@@ -494,7 +499,7 @@ async function renderizarAbertasCentral(conteudo) {
       <div class="linha-desfazer">
         <div class="linha-desfazer-info">
           <strong>${escapeHtml(mov.jogador)}</strong>
-          ${htmlDetalhesMov(mov)}<br>
+          ${htmlDetalhesMov(mov)}${somenteTorneio && mov.torneio_id == null ? ' · <em class="ch-obs">sem vínculo com o torneio (pode ser do cash)</em>' : ''}<br>
           <span class="ch-data">${formatarDataHora(mov.data)}</span>
         </div>
         <div class="linha-desfazer-valor">
@@ -518,10 +523,11 @@ async function renderizarSessoesCentral(conteudo) {
     .not('sessao_finalizada_em', 'is', null)
     .order('sessao_finalizada_em', { ascending: false })
     .order('id', { ascending: false })
-    .limit(centralHistorico.limiteSessoes * 15);
+    .limit(centralHistorico.limiteSessoes * 15 + 1);
 
   if (error) throw error;
 
+  const limiteLinhas = centralHistorico.limiteSessoes * 15;
   const grupos = new Map();
 
   (data || []).forEach(mov => {
@@ -530,10 +536,17 @@ async function renderizarSessoesCentral(conteudo) {
     grupos.get(chave).push(mov);
   });
 
-  let sessoes = Array.from(grupos.values())
+  // Se a consulta bateu no limite, a sessão mais antiga pode estar
+  // incompleta: descarta para não mostrar resultado errado nem reabrir
+  // só parte dela (ela aparece completa no "Ver mais").
+  const consultaCortada = (data || []).length > limiteLinhas;
+  const todosGrupos = Array.from(grupos.values());
+  if (consultaCortada && todosGrupos.length > 1) todosGrupos.pop();
+
+  let sessoes = todosGrupos
     .filter(movs => !termo || movs.some(m => movCombinaBusca(m, termo)));
 
-  const temMais = sessoes.length > centralHistorico.limiteSessoes;
+  const temMais = consultaCortada || sessoes.length > centralHistorico.limiteSessoes;
 
   sessoes = sessoes.slice(0, centralHistorico.limiteSessoes);
 
@@ -736,10 +749,25 @@ async function restaurarMovCentral(idLog) {
 
   if (!await mostrarConfirm(`Restaurar ${dados.tipo} de ${formatarMoeda(dados.valor)} de ${dados.jogador}?`)) return;
 
-  // Volta com o mesmo id quando possível, para manter o histórico ligado.
+  if (dados.id != null) {
+    const { data: existente } = await client.from('movimentacoes').select('id').eq('id', dados.id).maybeSingle();
+    if (existente) {
+      await mostrarAlerta('Esta movimentação já foi restaurada.');
+      return;
+    }
+  }
+
+  // Volta com o mesmo id, para manter o histórico ligado. Se o id já
+  // existir (restaurada por outro aparelho), não grava de novo.
   let { error } = await client.from('movimentacoes').insert([dados]);
 
-  if (error) {
+  if (error && error.code === '23505') {
+    await mostrarAlerta('Esta movimentação já foi restaurada.');
+    await aposAlteracaoCentral();
+    return;
+  }
+
+  if (error && dados.id != null) {
     delete dados.id;
     ({ error } = await client.from('movimentacoes').insert([dados]));
   }
