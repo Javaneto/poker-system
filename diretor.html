@@ -2977,9 +2977,12 @@
       criarBotaoTilePagamento(ICONES_SVG.register, 'Registro', () => abrirModalSelecionarJogador('REGISTRO'));
     }
 
-    rebuys.forEach(v => {
-      criarBotaoTilePagamento(ICONES_SVG.refresh, v.tipo, () => abrirModalSelecionarJogador(v));
-    });
+    // Um único botão Rebuy; se houver Duplo/Triplo, a escolha é feita após selecionar o jogador.
+    if (rebuys.length === 1) {
+      criarBotaoTilePagamento(ICONES_SVG.refresh, rebuys[0].tipo, () => abrirModalSelecionarJogador(rebuys[0]));
+    } else if (rebuys.length > 1) {
+      criarBotaoTilePagamento(ICONES_SVG.refresh, 'Rebuy', () => abrirModalSelecionarJogador('REBUY'));
+    }
 
     outros.forEach(v => {
       criarBotaoTilePagamento(ICONES_SVG.plus, v.tipo, () => abrirModalSelecionarJogador(v));
@@ -3109,7 +3112,9 @@
 
     document.getElementById('modalSelecionarJogadorTitulo').textContent = valorTipo === 'REGISTRO'
       ? 'Selecionar Jogador — Registro/Inscrição'
-      : `Selecionar Jogador — ${valorTipo.tipo} (${formatarMoeda(Number(valorTipo.valor_total))})`;
+      : valorTipo === 'REBUY'
+        ? 'Selecionar Jogador — Rebuy'
+        : `Selecionar Jogador — ${valorTipo.tipo} (${formatarMoeda(Number(valorTipo.valor_total))})`;
 
     document.getElementById('pesquisaJogadorModal').value = '';
 
@@ -3146,7 +3151,9 @@
 
     const restringirARegistrados = pagamentoTipoSelecionado
       && !ehRegistro
-      && (pagamentoTipoSelecionado.tipo === 'Add-on' || NOMES_REBUY.includes(pagamentoTipoSelecionado.tipo));
+      && (pagamentoTipoSelecionado === 'REBUY'
+        || pagamentoTipoSelecionado.tipo === 'Add-on'
+        || NOMES_REBUY.includes(pagamentoTipoSelecionado.tipo));
 
     const nomesRegistrados = restringirARegistrados
       ? new Set(movimentacoesTorneio.filter(m => NOMES_BUYIN.includes(m.tipo_registro)).map(m => m.jogador))
@@ -3224,6 +3231,13 @@
 
     if (alvo === 'REGISTRO') {
       processarRegistro(jogador);
+      return;
+    }
+
+    if (alvo === 'REBUY') {
+      const rebuys = variantesRebuy();
+      if (rebuys.length === 1) abrirModalPagamento(jogador, rebuys[0]);
+      else if (rebuys.length > 1) abrirModalEscolherBuyIn(jogador, rebuys);
       return;
     }
 
