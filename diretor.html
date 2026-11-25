@@ -1746,6 +1746,18 @@
 
     relogioAcaoEmAndamento = true;
 
+    // Primeira vez que o relógio é iniciado: pedir confirmação.
+    const primeiroInicio = !torneioAtual.relogio_rodando
+      && !torneioAtual.relogio_iniciado_em
+      && !(Number(torneioAtual.tempo_decorrido_segundos) > 0)
+      && !(Number(torneioAtual.relogio_nivel_atual) > 0)
+      && !torneioAtual.relogio_em_intervalo;
+
+    if (primeiroInicio && !await mostrarConfirm(`Iniciar o torneio "${torneioAtual.nome}"? O relógio começa a contar o nível 1.`)) {
+      relogioAcaoEmAndamento = false;
+      return;
+    }
+
     let novosDados;
 
     if (torneioAtual.relogio_rodando) {
