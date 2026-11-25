@@ -1359,13 +1359,12 @@ tfoot th {
   }
 
   .classif-linha .classif-nome {
-    flex: 0 1 auto;
-    max-width: 42%;
+    flex: 1 1 0;
   }
 
   .classif-linha .classif-elim {
-    flex: 1 1 0;
-    width: auto;
+    flex: 0 0 46%;
+    width: 46%;
     min-width: 0;
   }
 
