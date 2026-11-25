@@ -511,7 +511,7 @@
   // ---------- link público ----------
 
   function urlLinkPublico(token) {
-    return new URL(`ranking-publico.html?t=${token}`, location.href).href;
+    return new URL(`ranking-publico.html?t=${token}`, document.baseURI).href;
   }
 
   function abrirLinkPublico() {
@@ -644,7 +644,7 @@
   }
 
   ['rBase', 'rPorJogador', 'rParticipacao', 'rParticipacaoTipo', 'rPercentuais'].forEach(id =>
-    document.getElementById(id).addEventListener('input', atualizarPreviaPontos)
+    ['input', 'change'].forEach(ev => document.getElementById(id).addEventListener(ev, atualizarPreviaPontos))
   );
 
   async function salvarRanking() {
