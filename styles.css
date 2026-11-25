@@ -1647,6 +1647,7 @@ body.mnu-gaveta .mini-relogio {
   display: flex;
   gap: 6px;
   margin-bottom: 16px;
+  padding-right: 44px; /* espaço do X de fechar */
 }
 
 .wizard-passos span {
@@ -1656,7 +1657,7 @@ body.mnu-gaveta .mini-relogio {
   font-weight: 700;
   padding: 8px 4px;
   border-radius: 8px;
-  background: var(--tile-cinza);
+  background: var(--superficie-3);
   color: var(--apagado);
   white-space: nowrap;
   overflow: hidden;
@@ -1664,7 +1665,8 @@ body.mnu-gaveta .mini-relogio {
 }
 
 .wizard-passos span.feito {
-  color: var(--texto);
+  background: var(--tint-azul);
+  color: var(--tx-azul);
 }
 
 .wizard-passos span.ativo {
