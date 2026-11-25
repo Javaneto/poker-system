@@ -346,8 +346,17 @@ function renderizarClassificacao() {
   `).join('');
 }
 
+// Preenche só as posições vazias, na ordem da lista, com as colocações ainda livres
+// (as já informadas são mantidas e nunca repetidas).
 function numerarClassificacaoPelaOrdem() {
-  classificacaoTorneioAtual.forEach((c, i) => { c.posicao = i + 1; });
+  const usadas = new Set(classificacaoTorneioAtual.map(c => Number(c.posicao)).filter(p => p > 0));
+  let proxima = 1;
+  classificacaoTorneioAtual.forEach(c => {
+    if (c.posicao) return;
+    while (usadas.has(proxima)) proxima++;
+    c.posicao = proxima;
+    usadas.add(proxima);
+  });
   renderizarClassificacao();
 }
 
