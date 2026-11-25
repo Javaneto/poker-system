@@ -362,7 +362,6 @@ function garantirModalCentralHistorico() {
     <div class="modal-box modal-grande">
       <div class="topbar" style="margin-bottom:10px;">
         <h2 style="margin:0;">Histórico / Log</h2>
-        <button class="btn-gray" onclick="fecharCentralHistorico()">Fechar</button>
       </div>
 
       <div class="abas">
