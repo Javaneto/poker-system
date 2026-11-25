@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RPG Poker Club</title>
 
+  <script src="js/tema.js"></script>
+
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="js/comum.js"></script>
 
@@ -167,7 +169,7 @@
 
     <div class="topbar" style="margin-bottom:16px;">
       <div>
-        <p style="color:#666;margin-bottom:4px;">Resultado</p>
+        <p style="color:var(--apagado);margin-bottom:4px;">Resultado</p>
         <p id="historicoJogadorResultado" style="font-size:22px;margin:0;">R$ 0,00</p>
       </div>
 
@@ -459,7 +461,7 @@
         <div class="linha-desfazer">
           <div class="linha-desfazer-info">
             <strong>${escapeHtml(m.tipo)} · ${escapeHtml(m.modalidade || '-')}</strong>
-            <span style="color:#999;">${dataMov}</span>
+            <span style="color:var(--apagado-2);">${dataMov}</span>
           </div>
           <div class="linha-desfazer-valor">
             <strong>${formatarMoeda(Number(m.valor))}</strong>
@@ -469,15 +471,15 @@
     }).join('');
 
     document.getElementById('detalheHistoricoConteudo').innerHTML = `
-      <p style="color:#666;margin-bottom:4px;">Sessão finalizada em</p>
+      <p style="color:var(--apagado);margin-bottom:4px;">Sessão finalizada em</p>
       <p style="margin-top:0;">${dataFinal}</p>
 
-      <p style="color:#666;margin-bottom:4px;">Resultado</p>
+      <p style="color:var(--apagado);margin-bottom:4px;">Resultado</p>
       <p style="margin-top:0;font-size:22px;" class="${resultado >= 0 ? 'positivo' : 'negativo'}">
         ${resultado >= 0 ? '+' : '-'} ${formatarMoeda(Math.abs(resultado))}
       </p>
 
-      <p style="color:#666;margin-bottom:8px;">Entrou ${formatarMoeda(entrada)} · Saiu ${formatarMoeda(saida)}</p>
+      <p style="color:var(--apagado);margin-bottom:8px;">Entrou ${formatarMoeda(entrada)} · Saiu ${formatarMoeda(saida)}</p>
       <div style="max-height:260px;overflow-y:auto;">${listaHtml}</div>
     `;
 
@@ -702,7 +704,7 @@
     lista.innerHTML = '';
 
     if (movs.length === 0) {
-      lista.innerHTML = '<p style="color:#666;">Nenhuma movimentação em aberto.</p>';
+      lista.innerHTML = '<p style="color:var(--apagado);">Nenhuma movimentação em aberto.</p>';
       return;
     }
 
@@ -723,8 +725,8 @@
       div.innerHTML = `
         <div class="linha-desfazer-info">
           <strong>${escapeHtml(mov.tipo)} · ${escapeHtml(mov.modalidade || '-')}</strong>
-          <span style="color:#999;">${dataFormatada}</span>
-          ${mov.observacao ? `<span style="color:#767c88;font-style:italic;">Obs: ${escapeHtml(mov.observacao)}</span>` : ''}
+          <span style="color:var(--apagado-2);">${dataFormatada}</span>
+          ${mov.observacao ? `<span style="color:var(--apagado);font-style:italic;">Obs: ${escapeHtml(mov.observacao)}</span>` : ''}
         </div>
         <div class="linha-desfazer-valor">
           <strong>${formatarMoeda(Number(mov.valor))}</strong>
@@ -970,7 +972,7 @@
     console.log('Renderizando itens do histórico:', itensVisiveis.length);
 
     if (itensVisiveis.length === 0) {
-      relatorio.innerHTML = '<p style="color:#666;padding:8px 0;">Nenhuma sessão finalizada ainda.</p>';
+      relatorio.innerHTML = '<p style="color:var(--apagado);padding:8px 0;">Nenhuma sessão finalizada ainda.</p>';
     }
 
     itensVisiveis.forEach(item => {
@@ -1008,7 +1010,7 @@
             <strong class="jogador-clicavel" data-jogador="${escapeHtml(item.jogador)}" data-sessao="${item.sessaoFinalizadaEm}">${escapeHtml(item.jogador)}</strong>
             ${statusTipo} · <span class="${classeStatus}">${statusPagamento}</span><br>
             Entrou ${formatarMoeda(item.entrada)} · Saiu ${formatarMoeda(item.saida)}<br>
-            <span style="color:#999;">${dataFormatada}</span>
+            <span style="color:var(--apagado-2);">${dataFormatada}</span>
           </div>
           <div class="linha-desfazer-valor">
             <strong class="${classeValor}">${sinal}${formatarMoeda(Math.abs(item.resultado))}</strong>

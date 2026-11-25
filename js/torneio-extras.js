@@ -169,7 +169,7 @@ function renderizarRelatorioTorneio() {
     <div class="tabela-rolavel">
       <table>
         <thead><tr><th>Tipo</th><th>Qtd</th><th>Valor</th><th>Rake</th><th>Prêmio</th><th>Bounty</th></tr></thead>
-        <tbody>${linhasTipo || '<tr><td colspan="6" style="color:#767c88;">Nenhuma entrada.</td></tr>'}</tbody>
+        <tbody>${linhasTipo || '<tr><td colspan="6" style="color:var(--apagado);">Nenhuma entrada.</td></tr>'}</tbody>
         ${linhasTipo ? `<tfoot><tr><th>Total</th><th>${tot.qtdEntradas + tot.qtdAddons}</th><th>${formatarMoeda(tot.arrecadado)}</th><th>${formatarMoeda(tot.rake)}</th><th>${formatarMoeda(tot.prize)}</th><th>${formatarMoeda(tot.bounty)}</th></tr></tfoot>` : ''}
       </table>
     </div>
@@ -178,7 +178,7 @@ function renderizarRelatorioTorneio() {
     <div class="tabela-rolavel">
       <table>
         <thead><tr><th>Jogador</th><th>Entradas</th><th>Total</th><th>Rake gerado</th><th>Situação</th></tr></thead>
-        <tbody>${linhasJogador || '<tr><td colspan="5" style="color:#767c88;">Nenhum jogador.</td></tr>'}</tbody>
+        <tbody>${linhasJogador || '<tr><td colspan="5" style="color:var(--apagado);">Nenhum jogador.</td></tr>'}</tbody>
       </table>
     </div>
   `;

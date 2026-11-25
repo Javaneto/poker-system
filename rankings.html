@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ranking — RPG Poker Club</title>
 
+  <script src="js/tema.js"></script>
+
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="js/comum.js"></script>
 
@@ -19,15 +21,15 @@
     }
 
     .chip-ranking {
-      background: #eef0f4;
-      color: #374151;
+      background: var(--superficie-3);
+      color: var(--texto-2);
       box-shadow: none;
       border-radius: 999px;
       padding: 8px 14px;
     }
 
     .chip-ranking.ativo {
-      background: #dc2626;
+      background: var(--destaque);
       color: white;
     }
 
@@ -38,23 +40,23 @@
     }
 
     .resumo-ranking {
-      color: #464c56;
+      color: var(--texto-2);
       font-size: 13px;
       line-height: 1.6;
     }
 
-    /* ---- Placar escuro (mesma paleta da Tela da TV e do menu) ---- */
+    /* ---- Placar (segue o tema claro/escuro, mesma paleta da Tela da TV) ---- */
     :root {
-      --rk-cartao: #0f1117;
-      --rk-cartao-2: #151924;
-      --rk-hover: #1a1e29;
-      --rk-borda: #1f2330;
-      --rk-texto: #c9ccd4;
-      --rk-apagado: #8b91a0;
-      --rk-vermelho: #dc2626;
-      --rk-ouro: #fbbf24;
-      --rk-prata: #cbd5e1;
-      --rk-bronze: #f59e0b;
+      --rk-cartao: var(--superficie);
+      --rk-cartao-2: var(--superficie-2);
+      --rk-hover: var(--hover);
+      --rk-borda: var(--borda);
+      --rk-texto: var(--texto-2);
+      --rk-apagado: var(--apagado);
+      --rk-vermelho: var(--destaque);
+      --rk-ouro: var(--ouro);
+      --rk-prata: var(--prata);
+      --rk-bronze: var(--bronze);
     }
 
     /* Pódio: 2º, 1º, 3º, com o campeão mais alto no meio */
@@ -78,7 +80,7 @@
       border: 1px solid var(--rk-borda);
       border-radius: 14px;
       text-align: center;
-      color: #fff;
+      color: var(--texto);
       overflow: hidden;
     }
 
@@ -122,7 +124,7 @@
     }
 
     .podio-pontos strong {
-      color: #fff;
+      color: var(--texto);
       font-size: 1.25em;
     }
 
@@ -175,7 +177,7 @@
     }
 
     .rk-placar .nome-col {
-      color: #fff;
+      color: var(--texto);
       font-weight: 700;
     }
 
@@ -202,7 +204,7 @@
     }
 
     .pos-1, .pos-2, .pos-3 {
-      color: #0f1117;
+      color: var(--medalha-texto);
     }
 
     .pos-1 { background: var(--rk-ouro); }
@@ -211,7 +213,7 @@
 
     .rk-placar .pontos-col {
       font-weight: 800;
-      color: #fff;
+      color: var(--texto);
     }
 
     .rk-placar th.pontos-col {
@@ -225,7 +227,7 @@
     }
 
     .rk-placar .vazio-col strong {
-      color: #fff;
+      color: var(--texto);
     }
 
     .linha-ranking { cursor: pointer; }
@@ -241,17 +243,17 @@
     .form-grid label {
       font-size: 12px;
       font-weight: 700;
-      color: #767c88;
+      color: var(--apagado);
       display: block;
       margin-bottom: 4px;
     }
 
     .previa-pontos {
-      background: #f8f9fb;
+      background: var(--superficie-2);
       border-radius: 10px;
       padding: 10px 12px;
       font-size: 13px;
-      color: #464c56;
+      color: var(--texto-2);
       margin-bottom: 12px;
     }
 
@@ -260,7 +262,7 @@
       align-items: center;
       gap: 10px;
       padding: 10px 0;
-      border-bottom: 1px solid #f0f1f3;
+      border-bottom: 1px solid var(--borda);
     }
 
     .linha-vinculo input[type="checkbox"] {
@@ -272,14 +274,14 @@
     .linha-vinculo .info {
       flex: 1;
       font-size: 13px;
-      color: #464c56;
+      color: var(--texto-2);
       min-width: 0;
     }
 
     .linha-vinculo .info strong {
       display: block;
       font-size: 14px;
-      color: #16181d;
+      color: var(--texto);
     }
 
     .linha-vinculo input[type="number"] {
@@ -294,15 +296,15 @@
       font-weight: 700;
       padding: 2px 8px;
       border-radius: 999px;
-      background: #fef3c7;
-      color: #b45309;
+      background: var(--tint-ambar);
+      color: var(--tx-ambar);
     }
 
     /* Modo TV (tela cheia): igual à Tela da TV, tamanhos seguem a tela */
     body.modo-tv {
       --rk-margem: min(2.4vh, 2vw);
-      background: #07080c;
-      color: #fff;
+      background: var(--fundo);
+      color: var(--texto);
       padding: var(--rk-margem);
     }
 
@@ -427,7 +429,7 @@
   <div class="lista-rankings so-admin" id="listaRankings"></div>
 
   <div id="semRanking" class="card oculto">
-    <p style="color:#767c88;margin:0;">Nenhum ranking criado ainda. Clique em <strong>+ Novo ranking</strong> para começar.</p>
+    <p style="color:var(--apagado);margin:0;">Nenhum ranking criado ainda. Clique em <strong>+ Novo ranking</strong> para começar.</p>
   </div>
 
   <div id="areaRanking" class="oculto">
@@ -774,7 +776,7 @@
     const semClassificacao = meusVinculos.filter(v => !resultados.some(r => String(r.torneio_id) === String(v.torneio_id))).length;
 
     document.getElementById('resumoRanking').innerHTML = `
-      ${rankingAtual.ativo ? '<span class="positivo">Ativo</span>' : '<span style="color:#767c88;font-weight:700;">Encerrado</span>'}
+      ${rankingAtual.ativo ? '<span class="positivo">Ativo</span>' : '<span style="color:var(--apagado);font-weight:700;">Encerrado</span>'}
       · Período: ${periodo}
       · ${meusVinculos.length} torneio(s)${semClassificacao ? ` <span class="tag-aviso">${semClassificacao} sem classificação</span>` : ''}
       · ${meusAjustes.length} ajuste(s) manual(is)<br>
@@ -911,7 +913,7 @@
 
     document.getElementById('previaPontos').innerHTML = `
       ${exemplo(10)}<br>${exemplo(30)}<br>
-      <span style="color:${Math.abs(soma - 100) < 0.01 ? '#15803d' : '#b45309'};">
+      <span style="color:${Math.abs(soma - 100) < 0.01 ? 'var(--tx-verde)' : 'var(--tx-ambar)'};">
         Soma dos percentuais: ${soma.toFixed(1)}%${Math.abs(soma - 100) < 0.01 ? ' ✓' : ' (o normal é 100%)'}
       </span>
     `;
