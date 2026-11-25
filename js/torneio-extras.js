@@ -99,7 +99,6 @@ function abrirRelatorioTorneio() {
       <h2 style="margin:0;" id="relTitulo">Relatório do Torneio</h2>
       <div style="display:flex;gap:8px;">
         <button class="btn-gray" onclick="imprimirRelatorioTorneio()">Imprimir / PDF</button>
-        <button class="btn-gray" onclick="document.getElementById('modalRelatorioTorneio').classList.remove('aberto')">Fechar</button>
       </div>
     </div>
     <div id="relConteudo"></div>
