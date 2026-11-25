@@ -102,7 +102,7 @@ body {
   padding: 0 4px;
   border-radius: 999px;
   background: var(--superficie-3);
-  border: 1px solid var(--borda);
+  border: 1px solid var(--borda-forte);
   box-shadow: none;
   flex: 0 0 auto;
 }

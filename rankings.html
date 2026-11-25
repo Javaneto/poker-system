@@ -78,6 +78,7 @@
       padding: 18px 12px 16px;
       background: var(--rk-cartao);
       border: 1px solid var(--rk-borda);
+      box-shadow: var(--sombra);
       border-radius: 14px;
       text-align: center;
       color: var(--texto);
@@ -132,7 +133,8 @@
     .card.rk-placar {
       background: var(--rk-cartao);
       border-color: var(--rk-borda);
-      box-shadow: none;
+      box-shadow: var(--sombra);
+      container-type: inline-size;
       padding: 6px 0;
       overflow: hidden;
     }
@@ -397,8 +399,9 @@
       .linha-vinculo input[type="number"] { width: 100%; }
     }
 
-    /* Celular: tabela mostra o essencial; o resto aparece ao tocar no jogador */
-    @media (max-width: 600px) {
+    /* Placar estreito (celular, ou tela média com o menu aberto): tabela mostra o essencial;
+       o resto aparece ao tocar no jogador */
+    @container (max-width: 640px) {
       .rk-placar table { font-size: 14px; }
       .rk-placar .col-extra { display: none; }
       .rk-placar th, .rk-placar td { padding: 11px 8px; }
