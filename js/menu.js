@@ -71,6 +71,10 @@
   .mnu-item.disabled { opacity: .4; pointer-events: none; }
   .mnu-ico { flex: 0 0 20px; width: 20px; height: 20px; }
   .mnu-rodape { padding: 8px 12px 14px; border-top: 1px solid #1f2330; display: flex; flex-direction: column; gap: 2px; }
+  .mnu-recolher {
+    flex: 0 0 40px; width: 40px; height: 40px; min-height: 40px; padding: 0; margin-left: auto;
+    justify-content: center; color: #8b91a0;
+  }
   .mnu-recolher .mnu-ico { transition: transform .2s ease; }
   .mnu-fechar { display: none; margin-left: auto; background: transparent; border: 0; color: #c9ccd4; cursor: pointer; padding: 8px; box-shadow: none; }
   .mnu-abrir {
@@ -88,12 +92,18 @@
   body.mnu-recolhido .mnu-grupo { visibility: hidden; height: 12px; padding: 0; }
   body.mnu-recolhido .mnu-item { justify-content: center; padding: 0; }
   body.mnu-recolhido .mnu-recolher .mnu-ico { transform: rotate(180deg); }
+  /* Recolhido: no topo fica só o botão de expandir, no lugar do logo */
+  body.mnu-recolhido .mnu-logo { display: none; }
+  body.mnu-recolhido .mnu-topo { justify-content: center; padding-left: 0; padding-right: 0; }
+  body.mnu-recolhido .mnu-recolher { margin-left: 0; }
 
   /* Gaveta: celular e telas de TV */
   body.mnu-gaveta .mnu-barra { transform: translateX(-100%); width: min(280px, 85vw); box-shadow: 8px 0 30px rgba(0,0,0,.35); }
   body.mnu-gaveta .mnu-abrir { display: flex; }
   body.mnu-gaveta .mnu-fechar { display: block; }
   body.mnu-gaveta .mnu-recolher { display: none; }
+  body.mnu-gaveta .mnu-logo { display: grid; }
+  body.mnu-gaveta .mnu-topo { justify-content: flex-start; padding: 16px 16px 12px; }
   body.mnu-gaveta.mnu-aberto .mnu-barra { transform: none; }
   body.mnu-gaveta.mnu-aberto .mnu-fundo { display: block; }
   body.mnu-gaveta .mnu-nome, body.mnu-gaveta .mnu-rot { display: inline; }
@@ -135,12 +145,12 @@
       '<div class="mnu-fundo" id="mnuFundo"></div>' +
       '<nav class="mnu-barra" id="mnuBarra" aria-label="Menu principal">' +
         '<div class="mnu-topo"><div class="mnu-logo">♠</div><span class="mnu-nome">RPG Poker Club</span>' +
+        '<button type="button" class="mnu-item mnu-recolher" id="mnuRecolher" title="Recolher menu" aria-label="Recolher menu">' + icone('recolher') + '</button>' +
         '<button type="button" class="mnu-fechar" id="mnuFechar" aria-label="Fechar menu">' + icone('fechar') + '</button></div>' +
         '<div class="mnu-lista">' +
           ITENS.map(i => i.grupo ? '<div class="mnu-grupo">' + i.grupo + '</div>' : montarItem(i)).join('') +
         '</div>' +
         '<div class="mnu-rodape">' +
-          '<button type="button" class="mnu-item mnu-recolher" id="mnuRecolher" title="Recolher menu">' + icone('recolher') + '<span class="mnu-rot">Recolher</span></button>' +
           '<button type="button" class="mnu-item" id="mnuSair" title="Sair">' + icone('sair') + '<span class="mnu-rot" id="btnAdmin">Sair</span></button>' +
         '</div>' +
       '</nav>';
@@ -151,7 +161,12 @@
     if (modoTV) document.body.classList.add('mnu-tv');
 
     try {
-      if (localStorage.getItem(CHAVE_RECOLHIDO) === '1') document.body.classList.add('mnu-recolhido');
+      if (localStorage.getItem(CHAVE_RECOLHIDO) === '1') {
+        document.body.classList.add('mnu-recolhido');
+        const botao = document.getElementById('mnuRecolher');
+        botao.title = 'Expandir menu';
+        botao.setAttribute('aria-label', botao.title);
+      }
     } catch (e) { /* navegador sem storage: segue expandido */ }
 
     const celular = window.matchMedia('(max-width: 767px)');
@@ -169,6 +184,8 @@
     document.getElementById('mnuFundo').addEventListener('click', fecharMenu);
     document.getElementById('mnuRecolher').addEventListener('click', function () {
       const recolhido = document.body.classList.toggle('mnu-recolhido');
+      this.title = recolhido ? 'Expandir menu' : 'Recolher menu';
+      this.setAttribute('aria-label', this.title);
       try { localStorage.setItem(CHAVE_RECOLHIDO, recolhido ? '1' : '0'); } catch (e) { /* ignora */ }
     });
     document.getElementById('mnuSair').addEventListener('click', function () {
