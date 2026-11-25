@@ -13,22 +13,32 @@
 <script src="js/menu.js"></script>
 <div class="container">
 
-  <div class="topbar">
-    <h1>Torneios</h1>
+  <header class="pagina-cabecalho">
+    <div>
+      <span class="pagina-sobretitulo">Operação</span>
+      <h1>Torneios</h1>
+      <p id="contadorTorneios" class="pagina-subtitulo"></p>
+    </div>
 
-  </div>
+    <button id="btnNovoTorneio" class="btn-red btn-com-icone disabled" onclick="abrirModalNovoTorneio()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Novo Torneio</span>
+    </button>
+  </header>
 
   <div class="card">
-    <div class="topbar">
-      <select id="filtroStatusTorneios" onchange="renderizarListaTorneios()" style="max-width:220px;margin-bottom:0;">
+    <div class="torneios-filtros">
+      <div id="filtroSegmentado" class="segmentado" role="group" aria-label="Filtrar torneios por status">
+        <button type="button" data-valor="aberto" class="ativo" aria-pressed="true" onclick="filtrarTorneiosPorStatus('aberto')">Ativos</button>
+        <button type="button" data-valor="encerrado" aria-pressed="false" onclick="filtrarTorneiosPorStatus('encerrado')">Encerrados</button>
+        <button type="button" data-valor="" aria-pressed="false" onclick="filtrarTorneiosPorStatus('')">Todos</button>
+      </div>
+
+      <select id="filtroStatusTorneios" class="oculto" onchange="renderizarListaTorneios()" aria-hidden="true" tabindex="-1">
         <option value="aberto">Ativos</option>
         <option value="encerrado">Encerrados</option>
         <option value="">Todos</option>
       </select>
-
-      <button id="btnNovoTorneio" class="btn-dark disabled" onclick="abrirModalNovoTorneio()">
-        + Novo Torneio
-      </button>
     </div>
 
     <div id="listaTorneios" class="grid-torneios"></div>
@@ -297,6 +307,33 @@
     renderizarListaTorneios();
   }
 
+  const ICONE_LIXEIRA = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>';
+  const ICONE_CALENDARIO = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+  const ICONE_TROFEU = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>';
+
+  function mostrarListaVazia(lista, mensagem) {
+
+    lista.innerHTML = `
+      <div class="lista-vazia">
+        <span class="lista-vazia-icone">${ICONE_TROFEU}</span>
+        <p>${escapeHtml(mensagem)}</p>
+      </div>
+    `;
+  }
+
+  function filtrarTorneiosPorStatus(valor) {
+
+    document.getElementById('filtroStatusTorneios').value = valor;
+
+    document.querySelectorAll('#filtroSegmentado button').forEach(botao => {
+      const ativo = botao.dataset.valor === valor;
+      botao.classList.toggle('ativo', ativo);
+      botao.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+    });
+
+    renderizarListaTorneios();
+  }
+
   function renderizarListaTorneios() {
 
     const lista = document.getElementById('listaTorneios');
@@ -308,13 +345,21 @@
       ? todosTorneios.filter(t => (t.status || 'aberto') === filtroStatus)
       : todosTorneios;
 
+    const contador = document.getElementById('contadorTorneios');
+
+    if (contador) {
+      contador.textContent = todosTorneios.length === 1
+        ? '1 torneio cadastrado'
+        : `${todosTorneios.length} torneios cadastrados`;
+    }
+
     if (todosTorneios.length === 0) {
-      lista.innerHTML = '<p style="color:#666;">Nenhum torneio cadastrado ainda.</p>';
+      mostrarListaVazia(lista, 'Nenhum torneio cadastrado ainda.');
       return;
     }
 
     if (torneiosFiltrados.length === 0) {
-      lista.innerHTML = '<p style="color:#666;">Nenhum torneio encontrado com esse filtro.</p>';
+      mostrarListaVazia(lista, 'Nenhum torneio encontrado com esse filtro.');
       return;
     }
 
@@ -339,30 +384,51 @@
       });
 
       div.innerHTML = `
-        <span class="status-badge ${estaEncerrado ? 'encerrado' : 'aberto'}">${estaEncerrado ? 'Encerrado' : 'Aberto'}</span>
-        <div class="torneio-data">${dataFormatada}</div>
+        <div class="torneio-card-topo">
+          <span class="status-badge ${estaEncerrado ? 'encerrado' : 'aberto'}">${estaEncerrado ? 'Encerrado' : 'Aberto'}</span>
+          ${ehAtual ? '<span class="status-badge atual">Atual</span>' : ''}
+        </div>
         <h3>${escapeHtml(torneio.nome)}</h3>
+        <div class="torneio-data">${ICONE_CALENDARIO}<span>${dataFormatada}</span></div>
         <div class="torneio-info">
-          ${primeiroValor ? `${escapeHtml(primeiroValor.tipo)}: R$ ${Number(primeiroValor.valor_total).toFixed(2)}` : 'Sem valores configurados'}
+          ${primeiroValor
+            ? `<span>${escapeHtml(primeiroValor.tipo)}</span><strong>R$ ${Number(primeiroValor.valor_total).toFixed(2)}</strong>`
+            : '<span>Sem valores configurados</span>'}
         </div>
       `;
 
       const btnExcluir = document.createElement('button');
 
-      btnExcluir.className = 'btn-red btn-excluir-torneio' + (adminLiberado && estaEncerrado ? '' : ' disabled');
-      btnExcluir.textContent = '🗑️';
+      btnExcluir.type = 'button';
+      btnExcluir.className = 'btn-excluir-torneio' + (adminLiberado && estaEncerrado ? '' : ' disabled');
+      btnExcluir.innerHTML = ICONE_LIXEIRA;
       btnExcluir.title = estaEncerrado ? 'Excluir torneio' : 'Encerre o torneio antes de excluir';
+      btnExcluir.setAttribute('aria-label', btnExcluir.title);
       btnExcluir.onclick = () => excluirTorneio(torneio.id, torneio.nome);
 
-      div.appendChild(btnExcluir);
+      div.querySelector('.torneio-card-topo').appendChild(btnExcluir);
 
-      const btn = document.createElement('button');
+      if (ehAtual) {
 
-      btn.className = 'btn-dark' + (adminLiberado ? '' : ' disabled');
-      btn.textContent = 'Selecionar';
-      btn.onclick = () => selecionarTorneio(torneio.id);
+        const link = document.createElement('a');
 
-      div.appendChild(btn);
+        link.className = 'btn-torneio-acao btn-red';
+        link.href = 'diretor.html';
+        link.textContent = 'Abrir no Diretor';
+
+        div.appendChild(link);
+
+      } else {
+
+        const btn = document.createElement('button');
+
+        btn.type = 'button';
+        btn.className = 'btn-torneio-acao btn-dark' + (adminLiberado ? '' : ' disabled');
+        btn.textContent = 'Selecionar';
+        btn.onclick = () => selecionarTorneio(torneio.id);
+
+        div.appendChild(btn);
+      }
 
       lista.appendChild(div);
     });
