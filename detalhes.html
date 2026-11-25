@@ -8,6 +8,25 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
+    :root {
+      /* Mesma paleta do menu lateral e do Diretor */
+      --tv-fundo: #07080c;
+      --tv-cartao: #0f1117;
+      --tv-cartao-2: #151924;
+      --tv-linha-par: #1a1e29;
+      --tv-borda: #1f2330;
+      --tv-texto: #c9ccd4;
+      --tv-apagado: #8b91a0;
+      --tv-vermelho: #dc2626;
+      --tv-vermelho-escuro: #7f1d1d;
+      --tv-verde: #22c55e;
+      --tv-ambar: #f59e0b;
+      /* Tudo escala pelo menor lado da tela (vmin) ou pela altura/largura */
+      --tv-raio: min(1.6vh, 1.2vw);
+      --tv-gap: min(1.8vh, 1.4vw);
+      --tv-margem: min(2.4vh, 2vw);
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -20,121 +39,94 @@
     }
 
     body {
-      background: #000;
+      background: var(--tv-fundo);
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
       display: flex;
       flex-direction: column;
+      font-variant-numeric: tabular-nums;
     }
 
     .oculto {
       display: none !important;
     }
 
+    /* ---- Barra de cima: marca à esquerda, hora e tela cheia à direita ---- */
+
     .tv-topo {
       flex: 0 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1vh 2vw;
-      font-size: min(2.2vh, 2vw);
-      color: #ccc;
+      gap: 2vw;
+      /* altura mínima para caber o botão ☰ do menu (36px + 8px de margem) */
+      min-height: 52px;
+      padding: 1vh var(--tv-margem);
+      font-size: min(2.2vh, 1.8vw);
+      color: var(--tv-texto);
     }
+
+    .tv-marca {
+      display: flex;
+      align-items: center;
+      gap: min(1vh, 0.8vw);
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .tv-marca-logo {
+      width: 1.8em;
+      height: 1.8em;
+      border-radius: 0.45em;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--tv-vermelho), var(--tv-vermelho-escuro));
+      color: #fff;
+    }
+
+    .tv-topo-direita {
+      display: flex;
+      align-items: center;
+      gap: min(1.2vh, 1vw);
+    }
+
+    #tvRelogioParede {
+      font-weight: 700;
+      color: #fff;
+    }
+
+    #btnTelaCheiaTV {
+      display: grid;
+      place-items: center;
+      width: 2em;
+      height: 2em;
+      background: var(--tv-cartao-2);
+      color: var(--tv-texto);
+      border: 1px solid var(--tv-borda);
+      border-radius: 0.5em;
+      font-size: 1em;
+      cursor: pointer;
+    }
+
+    #btnTelaCheiaTV:hover {
+      color: #fff;
+    }
+
+    /* ---- Faixa com o nome do torneio ---- */
 
     .tv-titulo {
       flex: 0 0 auto;
-      background: linear-gradient(180deg, #dc2626, #7f1d1d);
+      margin: 0 var(--tv-margem);
+      border-radius: var(--tv-raio);
+      background: linear-gradient(90deg, var(--tv-vermelho-escuro), var(--tv-vermelho) 50%, var(--tv-vermelho-escuro));
       text-align: center;
-      padding: 0.8vh 1vw;
-      font-size: min(2.8vh, 2.2vw);
+      padding: min(1vh, 0.8vw) 2vw;
+      font-size: min(3.2vh, 2.4vw);
       font-weight: 800;
       letter-spacing: 0.02em;
-    }
-
-    .tv-cabecalho {
-      flex: 0 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.6vh 2.5vw 0.6vh;
-      font-size: min(3vh, 2.4vw);
-      font-weight: 700;
-    }
-
-    .tv-corpo {
-      flex: 1 1 auto;
-      min-height: 0;
-      display: flex;
-      gap: 1.4vw;
-      padding: 1vh 2vw;
-    }
-
-    .tv-relogio-caixa {
-      flex: 2;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-    }
-
-    .tv-contador-caixa {
-      width: 100%;
-      background: #1a1a1a;
-      border-radius: 10px;
-      padding: 2vh 2vw;
-      display: flex;
-      justify-content: center;
-    }
-
-    .tv-contador {
-      font-size: min(16vw, 30vh);
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-    }
-
-    .tv-blinds {
-      font-size: min(4.5vw, 7vh);
-      font-weight: 800;
-      margin-top: 4vh;
-      text-align: center;
-    }
-
-    .tv-painel {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .tv-linha {
-      flex: 0 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 2vh 1.6vw;
-      font-size: min(3.4vh, 2.4vw);
-      font-weight: 700;
-      background: #4a0e0e;
-      border-bottom: 1px solid #2a0808;
-    }
-
-    .tv-linha:nth-child(odd) {
-      background: #5a1212;
-    }
-
-    .tv-premios {
-      flex: 0 0 auto;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 4vw;
-      flex-wrap: wrap;
-      padding: 1.6vh 2vw;
-      font-size: min(6.75vh, 5.4vw);
-      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     #tvConteudo {
@@ -144,87 +136,213 @@
       flex-direction: column;
     }
 
+    /* ---- Nível / jogadores / status ---- */
+
+    .tv-cabecalho {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: min(1.4vh, 1.1vw) var(--tv-margem);
+      font-size: min(3.2vh, 2.4vw);
+      font-weight: 800;
+    }
+
+    .tv-cabecalho > :last-child {
+      justify-self: end;
+    }
+
+    .tv-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4em;
+      padding: 0.15em 0.7em;
+      border-radius: 999px;
+      background: var(--tv-cartao-2);
+      border: 1px solid var(--tv-borda);
+      color: var(--tv-texto);
+      font-size: 0.8em;
+      white-space: nowrap;
+    }
+
+    .tv-status::before {
+      content: '';
+      width: 0.55em;
+      height: 0.55em;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .tv-status[data-estado="rodando"] { color: var(--tv-verde); }
+    .tv-status[data-estado="pausado"] { color: var(--tv-ambar); }
+    .tv-status[data-estado="intervalo"] { color: #f87171; }
+    .tv-status[data-estado="encerrado"] { color: var(--tv-apagado); }
+
+    /* ---- Corpo: relógio + blinds à esquerda, tabela à direita.
+       A grade faz a tabela ter exatamente o mesmo topo e a mesma base
+       que o bloco da esquerda (sem descasamento). ---- */
+
+    .tv-corpo {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "relogio painel"
+        "blinds  painel";
+      gap: var(--tv-gap);
+      padding: 0 var(--tv-margem);
+    }
+
+    .tv-contador-caixa,
+    .tv-blinds-caixa,
+    .tv-painel {
+      background: var(--tv-cartao);
+      border: 1px solid var(--tv-borda);
+      border-radius: var(--tv-raio);
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .tv-contador-caixa {
+      grid-area: relogio;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .tv-contador {
+      font-size: min(15.5vw, 34vh);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      transition: color .3s ease;
+    }
+
+    .tv-contador.intervalo {
+      color: #f87171;
+    }
+
+    .tv-blinds-caixa {
+      grid-area: blinds;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: min(1.4vh, 1.1vw) 2vw min(1.8vh, 1.4vw);
+    }
+
+    .tv-rotulo {
+      font-size: min(2vh, 1.5vw);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--tv-apagado);
+    }
+
+    .tv-blinds {
+      font-size: min(8vh, 5.4vw);
+      font-weight: 800;
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    /* Tabela: as linhas dividem a altura igualmente e preenchem o cartão */
+    .tv-painel {
+      grid-area: painel;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tv-linha {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1vw;
+      padding: 0 min(2.4vh, 1.8vw);
+      font-size: min(3.4vh, 2.3vw);
+      font-weight: 700;
+      color: var(--tv-texto);
+      white-space: nowrap;
+    }
+
+    .tv-linha + .tv-linha {
+      border-top: 1px solid var(--tv-borda);
+    }
+
+    .tv-linha:nth-child(even) {
+      background: var(--tv-cartao-2);
+    }
+
+    .tv-linha > :last-child {
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .tv-linha-destaque {
+      background: linear-gradient(90deg, rgba(220, 38, 38, .22), rgba(220, 38, 38, .08)) !important;
+      color: #fff;
+    }
+
+    /* ---- Premiação ---- */
+
+    .tv-premios {
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: var(--tv-gap);
+      flex-wrap: wrap;
+      padding: var(--tv-gap) var(--tv-margem) var(--tv-margem);
+    }
+
+    .tv-premios:empty {
+      padding: 0 0 var(--tv-margem);
+    }
+
+    .tv-premio {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4em;
+      padding: 0.25em 0.8em;
+      background: var(--tv-cartao);
+      border: 1px solid var(--tv-borda);
+      border-radius: var(--tv-raio);
+      font-size: min(5.2vh, 3.6vw);
+      font-weight: 800;
+    }
+
+    .tv-premio-pos {
+      color: var(--tv-vermelho);
+      font-size: 0.75em;
+    }
+
+    .tv-premio:first-child .tv-premio-pos {
+      color: #fbbf24;
+    }
+
     .tv-vazio {
       flex: 1 1 auto;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      color: #999;
+      color: var(--tv-apagado);
       font-size: min(4vh, 3vw);
-    }
-
-    #btnMenuTV {
-      background: #1a1a1a;
-      color: #fff;
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 4px 10px;
-      font-size: min(2.4vh, 2vw);
-      cursor: pointer;
-    }
-
-    .menu-overlay-tv {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 3000;
-    }
-
-    .menu-overlay-tv.aberto {
-      display: block;
-    }
-
-    .menu-lateral-tv {
-      position: fixed;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      width: 260px;
-      background: #111;
-      border-right: 1px solid #333;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      overflow-y: auto;
-    }
-
-    .menu-item-tv {
-      display: block;
-      background: #1a1a1a;
-      color: #fff;
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 10px 14px;
-      text-align: left;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .menu-subitem-tv {
-      margin-left: 12px;
-    }
-
-    #btnTelaCheiaTV {
-      background: #1a1a1a;
-      color: #fff;
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 4px 10px;
-      font-size: min(2.4vh, 2vw);
-      cursor: pointer;
     }
 
     /* Tela cheia: esconde a barra de cima e o cursor parado */
     body.tela-cheia .tv-topo {
       display: none;
+    }
+
+    body.tela-cheia .tv-titulo {
+      margin-top: var(--tv-margem);
     }
 
     body.tela-cheia.cursor-oculto,
@@ -233,8 +351,14 @@
     }
 
     /* Tela em pé (celular, tablet ou TV na vertical): relógio em cima,
-       painel embaixo, tamanhos baseados na largura. */
+       blinds e tabela embaixo, tamanhos baseados na largura. */
     @media (orientation: portrait), (max-aspect-ratio: 1/1) {
+
+      :root {
+        --tv-raio: 2.4vw;
+        --tv-gap: 2.4vw;
+        --tv-margem: 3vw;
+      }
 
       html, body {
         overflow-y: auto;
@@ -250,50 +374,49 @@
         padding: 1.2vh 3vw;
       }
 
-      #btnMenuTV, #btnTelaCheiaTV {
-        font-size: 4vw;
-        padding: 0.6vw 2.4vw;
-      }
-
       .tv-titulo {
         font-size: 5vw;
-        padding: 1vh 2vw;
+        padding: 1.2vw 3vw;
       }
 
       .tv-cabecalho {
-        font-size: 4.4vw;
-        padding: 1.6vh 4vw 0.8vh;
+        font-size: 4.2vw;
+        padding: 2.4vw 3vw;
       }
 
       .tv-corpo {
-        flex-direction: column;
-        gap: 2vh;
-        padding: 1vh 3vw;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
+        grid-template-areas:
+          "relogio"
+          "blinds"
+          "painel";
       }
 
-      .tv-relogio-caixa,
-      .tv-painel {
-        flex: 0 0 auto;
+      .tv-contador-caixa {
+        padding: 3vw 0;
       }
 
       .tv-contador {
-        font-size: 24vw;
+        font-size: 25vw;
+      }
+
+      .tv-rotulo {
+        font-size: 3vw;
       }
 
       .tv-blinds {
         font-size: 9vw;
-        margin-top: 2vh;
       }
 
       .tv-linha {
+        flex: 0 0 auto;
         font-size: 4.2vw;
-        padding: 1.6vh 3vw;
+        padding: 2.6vw 3.4vw;
       }
 
-      .tv-premios {
-        font-size: 6vw;
-        gap: 3vw 6vw;
-        padding: 2vh 3vw 3vh;
+      .tv-premio {
+        font-size: 5.6vw;
       }
 
       .tv-vazio {
@@ -305,10 +428,12 @@
     /* Telas muito baixas e largas (celular deitado) */
     @media (orientation: landscape) and (max-height: 500px) {
 
-      .tv-topo { padding: 0.6vh 2vw; }
-      .tv-contador { font-size: min(14vw, 34vh); }
-      .tv-linha { padding: 1.2vh 1.6vw; font-size: min(4.2vh, 2.4vw); }
-      .tv-premios { font-size: min(7vh, 4.6vw); padding: 1vh 2vw; }
+      .tv-topo { padding: 0.6vh var(--tv-margem); font-size: min(3.4vh, 1.8vw); }
+      .tv-titulo { font-size: min(4.4vh, 2.4vw); }
+      .tv-cabecalho { font-size: min(4.4vh, 2.4vw); }
+      .tv-linha { font-size: min(4.4vh, 2.3vw); }
+      .tv-rotulo { font-size: min(3vh, 1.5vw); }
+      .tv-premio { font-size: min(6vh, 3.6vw); }
     }
   </style>
 </head>
@@ -317,12 +442,13 @@
 
 
   <div class="tv-topo">
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div class="tv-marca">
+      <span class="tv-marca-logo" aria-hidden="true">♠</span>
       <span>RPG Poker Club</span>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div class="tv-topo-direita">
       <span id="tvRelogioParede"></span>
-      <button id="btnTelaCheiaTV" onclick="alternarTelaCheiaTV()" title="Tela cheia (F)">⛶</button>
+      <button id="btnTelaCheiaTV" onclick="alternarTelaCheiaTV()" title="Tela cheia (F)" aria-label="Tela cheia">⛶</button>
     </div>
   </div>
 
@@ -333,14 +459,16 @@
     <div class="tv-cabecalho">
       <span>Nível <span id="tvNivel">-</span></span>
       <span id="tvEntradasTopo">0 Jogadores</span>
-      <span id="tvStatus">-</span>
+      <span class="tv-status" id="tvStatus">-</span>
     </div>
 
     <div class="tv-corpo">
-      <div class="tv-relogio-caixa">
-        <div class="tv-contador-caixa">
-          <div class="tv-contador" id="tvContador">00:00</div>
-        </div>
+      <div class="tv-contador-caixa">
+        <div class="tv-contador" id="tvContador">00:00</div>
+      </div>
+
+      <div class="tv-blinds-caixa">
+        <span class="tv-rotulo">Blinds / Ante</span>
         <div class="tv-blinds" id="tvBlindsAtuais">-</div>
       </div>
 
@@ -351,7 +479,7 @@
         <div class="tv-linha"><span>Tempo Decorrido</span><span id="tvTempoDecorrido">00:00</span></div>
         <div class="tv-linha"><span>Entradas</span><span id="tvEntradas">0</span></div>
         <div class="tv-linha"><span>Bounty</span><span id="tvBounty">N/D</span></div>
-        <div class="tv-linha"><span>Prêmio Total</span><span id="tvPremioTotal">R$ 0,00</span></div>
+        <div class="tv-linha tv-linha-destaque"><span>Prêmio Total</span><span id="tvPremioTotal">R$ 0,00</span></div>
       </div>
     </div>
 
@@ -645,6 +773,11 @@
     });
   }
 
+  function formatarMoeda(valor) {
+
+    return (Number(valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
   function calcularValoresPremiacaoArredondados(totalPrize, percentuais) {
 
     const unidade = Number(torneioAtual?.arredondamento_premiacao);
@@ -812,23 +945,29 @@
     const contadorEl = document.getElementById('tvContador');
 
     contadorEl.textContent = formatarTempoRelogio(restante);
-    contadorEl.style.color = emIntervalo ? '#ef4444' : '#fff';
+    contadorEl.classList.toggle('intervalo', emIntervalo);
 
     if (torneioAtual.status !== 'encerrado' && torneioAtual.relogio_rodando && restante <= 0 && !avancoNivelEmAndamento) {
       executarAvancoNivelClock();
     }
 
     let status = 'Pausado';
+    let estado = 'pausado';
 
     if (torneioAtual.status === 'encerrado') {
       status = 'Encerrado';
+      estado = 'encerrado';
     } else if (emIntervalo) {
       status = 'Intervalo';
+      estado = 'intervalo';
     } else if (torneioAtual.relogio_rodando) {
       status = 'Em Andamento';
+      estado = 'rodando';
     }
 
-    document.getElementById('tvStatus').textContent = status;
+    const statusEl = document.getElementById('tvStatus');
+    statusEl.textContent = status;
+    statusEl.dataset.estado = estado;
 
     if (niveis.length === 0) {
       document.getElementById('tvBlindsAtuais').textContent = 'Sem estrutura de blinds';
@@ -869,13 +1008,13 @@
     const bounty = valoresTorneio.find(v => v.tipo === 'Bounty (K.O.)');
 
     document.getElementById('tvBounty').textContent = (bounty && Number(bounty.valor_total) > 0)
-      ? `R$ ${Number(bounty.valor_total).toFixed(2)}`
+      ? formatarMoeda(Number(bounty.valor_total))
       : 'N/D';
 
     const totalPrize = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_prize || 0), 0)
       + Number(torneioAtual.ajuste_premiacao || 0);
 
-    document.getElementById('tvPremioTotal').textContent = `R$ ${totalPrize.toFixed(2)}`;
+    document.getElementById('tvPremioTotal').textContent = formatarMoeda(totalPrize);
 
     const estruturaPremiacao = estruturasPremiacao.find(e => e.id === torneioAtual.premiacao_estrutura_id);
     const premiosEl = document.getElementById('tvPremios');
@@ -889,10 +1028,15 @@
 
       valores.forEach((valor, index) => {
 
-        const span = document.createElement('span');
-        span.textContent = `${index + 1}º: ${formatarMoedaSemZeros(valor)}`;
+        const premio = document.createElement('span');
+        premio.className = 'tv-premio';
 
-        premiosEl.appendChild(span);
+        const posicao = document.createElement('span');
+        posicao.className = 'tv-premio-pos';
+        posicao.textContent = `${index + 1}º`;
+
+        premio.append(posicao, formatarMoedaSemZeros(valor));
+        premiosEl.appendChild(premio);
       });
     }
   }
