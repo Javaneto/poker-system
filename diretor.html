@@ -796,6 +796,7 @@
 
     <p style="color:#666;font-size:13px;">
       Marque quais tipos ficam disponíveis pra escolher em qualquer torneio. Os valores de cada um são definidos torneio por torneio.
+      Buy-in e Rebuy ficam sempre ativos.
     </p>
 
     <div id="listaTiposFixosGlobal" style="margin-bottom:16px;"></div>
@@ -1091,6 +1092,9 @@
   let todosValoresTorneios = [];
   let estruturasPremiacao = [];
   let estruturasBlinds = [];
+  // Sempre ativos: não aparecem na lista de Tipos de Registro e não podem ser desabilitados.
+  const TIPOS_REGISTRO_OBRIGATORIOS = ['buy-in', 'rebuy'];
+
   let tiposRegistroAtivos = [];
   let movimentacoesTorneio = [];
   let movimentacoes = [];
@@ -2185,6 +2189,7 @@
       .single();
 
     tiposRegistroAtivos = configuracaoDB?.tipos_registro_ativos || TIPOS_REGISTRO_FIXOS.map(t => t.chave);
+    tiposRegistroAtivos = [...new Set([...TIPOS_REGISTRO_OBRIGATORIOS, ...tiposRegistroAtivos])];
 
     // Só as movimentações em aberto (sessão não finalizada). O Supabase
     // devolve no máximo 1000 linhas por consulta; buscando a tabela inteira
@@ -3245,7 +3250,7 @@
     const container = document.getElementById('listaTiposFixosGlobal');
     container.innerHTML = '';
 
-    TIPOS_REGISTRO_FIXOS.forEach(t => {
+    TIPOS_REGISTRO_FIXOS.filter(t => !TIPOS_REGISTRO_OBRIGATORIOS.includes(t.chave)).forEach(t => {
 
       const label = document.createElement('label');
       label.style.display = 'flex';
@@ -3277,14 +3282,10 @@
 
     const checkboxes = Array.from(document.querySelectorAll('.tipo-global-ativo'));
 
-    const novasChaves = checkboxes
-      .filter(c => c.checked)
-      .map(c => c.dataset.chave);
-
-    if (novasChaves.length === 0) {
-      await mostrarAlerta('Deixe pelo menos um tipo ativo');
-      return;
-    }
+    const novasChaves = [
+      ...TIPOS_REGISTRO_OBRIGATORIOS,
+      ...checkboxes.filter(c => c.checked).map(c => c.dataset.chave)
+    ];
 
     const btn = document.getElementById('btnSalvarTiposFixosGlobal');
     btn.classList.add('disabled');

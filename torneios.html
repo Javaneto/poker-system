@@ -162,6 +162,9 @@
   let todosValoresTorneios = [];
   let estruturasPremiacao = [];
   let estruturasBlinds = [];
+  // Sempre ativos: não aparecem na lista de Tipos de Registro e não podem ser desabilitados.
+  const TIPOS_REGISTRO_OBRIGATORIOS = ['buy-in', 'rebuy'];
+
   let tiposRegistroAtivos = [];
 
   function escapeHtml(valor) {
@@ -265,6 +268,7 @@
 
     torneioAtualId = configuracaoDB?.torneio_atual_id || null;
     tiposRegistroAtivos = configuracaoDB?.tipos_registro_ativos || TIPOS_REGISTRO_FIXOS.map(t => t.chave);
+    tiposRegistroAtivos = [...new Set([...TIPOS_REGISTRO_OBRIGATORIOS, ...tiposRegistroAtivos])];
 
     const { data: torneiosDB } = await client
       .from('torneios')
