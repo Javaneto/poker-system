@@ -190,6 +190,7 @@ negativo = jogador deve ao clube):
 ## Fase 9 — Blinds, relógio e tela pública
 - [ ] Migration `blind_structures` (níveis em tabela própria `blind_levels`).
 - [ ] Editor de estrutura com sugestão automática e validação.
+- [ ] Clonar estrutura existente (RPC `clone_blind_structure`: copia níveis para nova estrutura "<nome> (cópia)" e abre no editor).
 - [ ] `domain/clock.ts`: restante, decorrido, próximo intervalo (testes com tempo fixo).
 - [ ] RPCs `clock_start`, `clock_pause`, `clock_advance` (idempotente com versão), `clock_break_start/end`, `clock_edit`.
 - [ ] Painel do diretor (relógio + ações + estatísticas: jogadores, entradas, média de fichas, prêmio, rake acumulado).
