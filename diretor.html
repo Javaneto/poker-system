@@ -782,6 +782,18 @@
       <p id="blindsResumoTexto" class="secao-config-resumo"></p>
     </div>
 
+    <div class="secao-config">
+      <div class="secao-config-topo">
+        <h3>Limites por Jogador</h3>
+
+        <button class="btn-icone" title="Editar" onclick="abrirModalLimitesTorneio()">
+          <span id="iconeEditarLimites"></span>
+        </button>
+      </div>
+
+      <p id="limitesResumoTexto" class="secao-config-resumo"></p>
+    </div>
+
     <div class="modal-acoes">
       <button class="btn-gray" onclick="fecharModalConfigTorneioAtual()">
         Cancelar
@@ -838,7 +850,7 @@
     <div id="linhasTiposEditar"></div>
 
     <p style="color:var(--apagado);font-size:12px;margin-top:-4px;">
-      Marque os tipos que valem para este torneio. Para ativar/desativar tipos globalmente, use "Configurações de Torneio".
+      Marque os tipos que valem para este torneio. Para ativar/desativar tipos globalmente, use "Estruturas de Torneio".
     </p>
 
     <div class="modal-acoes">
@@ -864,12 +876,6 @@
         Selecionar
       </button>
     </div>
-
-    <p style="color:var(--apagado);font-size:12px;margin-top:10px;margin-bottom:4px;">
-      Duração do Intervalo Manual (min)
-    </p>
-
-    <input type="number" id="inputIntervaloManualMinutos" min="1" placeholder="10">
 
     <div class="modal-acoes">
       <button class="btn-dark" style="flex:1;" onclick="fecharModalEditarBlindsTorneio()">
@@ -908,37 +914,60 @@
 </div>
 
 <div id="modalEstruturas" class="modal-overlay">
-  <div class="modal-box" style="max-width:420px;">
-    <h2>Configurações de Torneio</h2>
+  <div class="modal-box" style="max-width:880px;">
+    <h2 style="margin-bottom:4px;">Estruturas de Torneio</h2>
 
-    <div class="linha-desfazer">
-      <div class="linha-desfazer-info">
-        <strong>Tipos de Registro/Inscrição</strong>
-        <div id="previewTiposPagamento" style="color:var(--apagado);font-size:12px;margin-top:2px;"></div>
+    <p style="color:var(--apagado);font-size:13px;margin-top:0;">
+      O que você escolher aqui vem pré-selecionado ao criar novos torneios.
+      Dá para trocar na criação ou em "Configurar" no Diretor.
+    </p>
+
+    <div class="secao-config">
+      <div class="secao-config-topo">
+        <h3>Tipos de Registro/Inscrição</h3>
+
+        <button class="btn-icone" title="Editar" onclick="abrirModalTiposPagamento()">
+          <span class="icone-lapis"></span>
+        </button>
       </div>
-      <button class="btn-gray" onclick="abrirModalTiposPagamento()">
-        Editar
-      </button>
+
+      <p id="previewTiposPagamento" class="secao-config-resumo"></p>
     </div>
 
-    <div class="linha-desfazer">
-      <div class="linha-desfazer-info">
-        <strong>Estrutura de Premiação</strong>
-        <div id="previewEstruturasPremiacao" style="color:var(--apagado);font-size:12px;margin-top:2px;"></div>
+    <div class="secao-config">
+      <div class="secao-config-topo">
+        <h3>Estrutura de Premiação</h3>
+
+        <button class="btn-icone" title="Editar" onclick="abrirModalEditarPremiacaoTorneio('padrao')">
+          <span class="icone-lapis"></span>
+        </button>
       </div>
-      <button class="btn-gray" onclick="abrirModalEstruturasPremiacao()">
-        Editar
-      </button>
+
+      <p id="previewEstruturasPremiacao" class="secao-config-resumo"></p>
     </div>
 
-    <div class="linha-desfazer">
-      <div class="linha-desfazer-info">
-        <strong>Estrutura de Blinds</strong>
-        <div id="previewEstruturasBlinds" style="color:var(--apagado);font-size:12px;margin-top:2px;"></div>
+    <div class="secao-config">
+      <div class="secao-config-topo">
+        <h3>Estrutura de Blinds</h3>
+
+        <button class="btn-icone" title="Editar" onclick="abrirModalEditarBlindsTorneio('padrao')">
+          <span class="icone-lapis"></span>
+        </button>
       </div>
-      <button class="btn-gray" onclick="abrirModalEstruturasBlinds()">
-        Editar
-      </button>
+
+      <p id="previewEstruturasBlinds" class="secao-config-resumo"></p>
+    </div>
+
+    <div class="secao-config">
+      <div class="secao-config-topo">
+        <h3>Limites por Jogador</h3>
+
+        <button class="btn-icone" title="Editar" onclick="abrirModalLimitesTorneio('padrao')">
+          <span class="icone-lapis"></span>
+        </button>
+      </div>
+
+      <p id="previewLimites" class="secao-config-resumo"></p>
     </div>
 
     <div class="modal-acoes" style="margin-top:16px;">
@@ -988,6 +1017,51 @@
     <div class="modal-acoes">
       <button class="btn-gray" onclick="fecharModalEstruturasPremiacao()">
         Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalIntervalo" class="modal-overlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2>Iniciar Intervalo</h2>
+
+    <p style="color:var(--apagado);font-size:13px;margin-top:-4px;">
+      O nível atual retoma de onde parou quando o intervalo terminar.
+    </p>
+
+    <p style="color:var(--apagado);font-size:12px;margin-bottom:4px;">Duração do intervalo (min)</p>
+    <input type="number" id="inputIntervaloMinutos" min="1" step="1" inputmode="numeric" onkeydown="if (event.key === 'Enter') confirmarIntervaloManual()">
+
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="fecharModalIntervalo()">
+        Cancelar
+      </button>
+
+      <button class="btn-red" onclick="confirmarIntervaloManual()">
+        Iniciar Intervalo
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalLimitesTorneio" class="modal-overlay">
+  <div class="modal-box" style="max-width:420px;">
+    <h2>Limites por Jogador</h2>
+
+    <p style="color:var(--apagado);font-size:13px;margin-top:-4px;">
+      Deixe em branco para não limitar.
+    </p>
+
+    <p style="color:var(--apagado);font-size:12px;margin-bottom:4px;">Limite de Rebuy por jogador</p>
+    <input type="number" id="inputLimiteRebuy" min="0" step="1" inputmode="numeric" placeholder="Sem limite">
+
+    <p style="color:var(--apagado);font-size:12px;margin-bottom:4px;">Limite de Add-on por jogador</p>
+    <input type="number" id="inputLimiteAddon" min="0" step="1" inputmode="numeric" placeholder="Sem limite">
+
+    <div class="modal-acoes">
+      <button class="btn-dark" style="flex:1;" onclick="fecharModalLimitesTorneio()">
+        OK
       </button>
     </div>
   </div>
@@ -1211,6 +1285,8 @@
     document.getElementById('iconeEditarPremiacao').innerHTML = ICONES_SVG.pencil;
     document.getElementById('iconeEditarValores').innerHTML = ICONES_SVG.pencil;
     document.getElementById('iconeEditarBlinds').innerHTML = ICONES_SVG.pencil;
+    document.getElementById('iconeEditarLimites').innerHTML = ICONES_SVG.pencil;
+    document.querySelectorAll('.icone-lapis').forEach(el => { el.innerHTML = ICONES_SVG.pencil; });
   }
 
   const TIPOS_REGISTRO_FIXOS = [
@@ -1237,6 +1313,76 @@
   const TIPOS_REGISTRO_OBRIGATORIOS = ['buy-in', 'rebuy'];
 
   let tiposRegistroAtivos = [];
+
+  // Padrões de "Estruturas de Torneio" (configuracoes.padrao_torneio).
+  let padraoTorneio = {};
+
+  // As telas de Premiação, Blinds e Limites servem a dois lugares:
+  // 'torneio' = Configurar (torneio atual) · 'padrao' = Estruturas de Torneio.
+  let modoEdicaoEstruturas = 'torneio';
+
+  const AVISO_SQL_005 = 'Para salvar padrões e limites, rode antes o arquivo sql/005_padroes_e_limites.sql no Supabase.';
+
+  function erroColunaNova(erro) {
+    return /padrao_torneio|limite_rebuy|limite_addon/.test(erro?.message || '') || erro?.code === 'PGRST204' || erro?.code === '42703';
+  }
+
+  function lerLimiteInput(id) {
+    const valor = document.getElementById(id).value.trim();
+    return valor === '' ? null : Math.max(parseInt(valor, 10) || 0, 0);
+  }
+
+  function textoResumoPremiacao(estruturaId, arredondamento) {
+    const estrutura = estruturasPremiacao.find(e => e.id === Number(estruturaId));
+    const textoArredondamento = arredondamento > 0
+      ? ` · Arredondado a cada R$ ${arredondamento}`
+      : ' · Sem arredondamento';
+    return (estrutura ? estrutura.nome : 'Nenhuma estrutura selecionada.') + textoArredondamento;
+  }
+
+  function textoResumoBlinds(estruturaId) {
+    const estrutura = estruturasBlinds.find(e => e.id === Number(estruturaId));
+    return estrutura
+      ? `${estrutura.nome} (${(estrutura.niveis || []).length} níveis)`
+      : 'Nenhuma estrutura selecionada.';
+  }
+
+  function textoResumoLimites(limiteRebuy, limiteAddon) {
+    const texto = (v, nome) => v === null || v === undefined || v === ''
+      ? `${nome}: sem limite`
+      : `${nome}: até ${v} por jogador`;
+    return `${texto(limiteRebuy, 'Rebuy')} · ${texto(limiteAddon, 'Add-on')}`;
+  }
+
+  // Valor do campo de arredondamento (vazio = R$ 1; 0 desliga).
+  function lerArredondamentoInput() {
+    const valor = document.getElementById('inputArredondamentoPremiacao').value;
+    return valor === '' ? 1 : Math.max(parseInt(valor, 10) || 0, 0);
+  }
+
+  function modalPaiEdicaoEstruturas() {
+    return modoEdicaoEstruturas === 'padrao' ? 'modalEstruturas' : 'modalConfigTorneioAtual';
+  }
+
+  async function salvarPadraoTorneio(parcial) {
+
+    const novo = { ...padraoTorneio, ...parcial };
+
+    const { error } = await client
+      .from('configuracoes')
+      .update({ padrao_torneio: novo })
+      .eq('id', 1);
+
+    if (error) {
+      console.error(error);
+      await mostrarAlerta(erroColunaNova(error) ? AVISO_SQL_005 : 'Erro ao salvar o padrão');
+      return false;
+    }
+
+    padraoTorneio = novo;
+    return true;
+  }
+
   let movimentacoesTorneio = [];
   let movimentacoes = [];
   let pagamentoTipoSelecionado = null;
@@ -1762,9 +1908,34 @@
 
     if (relogioAcaoEmAndamento) return;
 
-    const minutos = Number(torneioAtual.intervalo_manual_minutos) || 10;
+    // Pergunta a duração na hora; vem preenchido com o último intervalo usado.
+    const input = document.getElementById('inputIntervaloMinutos');
+    input.value = Number(torneioAtual.intervalo_manual_minutos) || 10;
 
-    if (!await mostrarConfirm(`Iniciar um intervalo de ${minutos} minutos agora? O nível atual retoma de onde parou quando o intervalo terminar.`)) return;
+    document.getElementById('modalIntervalo').classList.add('aberto');
+    input.focus();
+    input.select();
+  }
+
+  function fecharModalIntervalo() {
+
+    document.getElementById('modalIntervalo').classList.remove('aberto');
+  }
+
+  async function confirmarIntervaloManual() {
+
+    if (!adminLiberado || !torneioAtual) return;
+
+    if (torneioAtual.status === 'encerrado' || torneioAtual.relogio_em_intervalo) return;
+
+    const minutos = parseInt(document.getElementById('inputIntervaloMinutos').value, 10);
+
+    if (!minutos || minutos < 1) {
+      await mostrarAlerta('Informe a duração do intervalo em minutos');
+      return;
+    }
+
+    fecharModalIntervalo();
 
     if (relogioAcaoEmAndamento) return;
 
@@ -1779,7 +1950,8 @@
       relogio_segundos_restantes: minutos * 60,
       relogio_iniciado_em: new Date().toISOString(),
       relogio_rodando: true,
-      tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado()
+      tempo_decorrido_segundos: calcularNovoTempoDecorridoAcumulado(),
+      intervalo_manual_minutos: minutos
     };
 
     torneioAtual = { ...torneioAtual, ...novosDados };
@@ -2302,6 +2474,7 @@
 
     tiposRegistroAtivos = configuracaoDB?.tipos_registro_ativos || TIPOS_REGISTRO_FIXOS.map(t => t.chave);
     tiposRegistroAtivos = [...new Set([...TIPOS_REGISTRO_OBRIGATORIOS, ...tiposRegistroAtivos])];
+    padraoTorneio = configuracaoDB?.padrao_torneio || {};
 
     // Só as movimentações em aberto (sessão não finalizada). O Supabase
     // devolve no máximo 1000 linhas por consulta; buscando a tabela inteira
@@ -2459,25 +2632,18 @@
       return;
     }
 
-    document.getElementById('selectEstruturaPremiacaoModal').value = torneioAtual.premiacao_estrutura_id || '';
+    modoEdicaoEstruturas = 'torneio';
 
-    const arredondamentoAtual = torneioAtual.arredondamento_premiacao ?? 1;
+    preencherCamposEstruturas({
+      premiacaoId: torneioAtual.premiacao_estrutura_id,
+      arredondamento: torneioAtual.arredondamento_premiacao ?? 1,
+      blindsId: torneioAtual.estrutura_blinds_id,
+      limiteRebuy: torneioAtual.limite_rebuy,
+      limiteAddon: torneioAtual.limite_addon
+    });
 
-    document.getElementById('inputArredondamentoPremiacao').value = arredondamentoAtual;
-
-    const estruturaAtual = estruturasPremiacao.find(e => e.id === torneioAtual.premiacao_estrutura_id);
-
-    document.getElementById('nomeEstruturaPremiacaoEscolhida').textContent = estruturaAtual
-      ? estruturaAtual.nome
-      : 'Nenhuma selecionada';
-
-    const textoArredondamento = arredondamentoAtual > 0
-      ? ` · Arredondado a cada R$ ${arredondamentoAtual}`
-      : ' · Sem arredondamento';
-
-    document.getElementById('premiacaoResumoTexto').textContent = (estruturaAtual
-      ? estruturaAtual.nome
-      : 'Nenhuma estrutura selecionada.') + textoArredondamento;
+    document.getElementById('premiacaoResumoTexto').textContent =
+      textoResumoPremiacao(torneioAtual.premiacao_estrutura_id, torneioAtual.arredondamento_premiacao ?? 1);
 
     const container = document.getElementById('linhasTiposEditar');
     container.innerHTML = '';
@@ -2485,7 +2651,7 @@
     const tiposDisponiveis = TIPOS_REGISTRO_FIXOS.filter(t => tiposRegistroAtivos.includes(t.chave));
 
     if (tiposDisponiveis.length === 0) {
-      container.innerHTML = '<p style="color:var(--apagado);">Nenhum tipo ativo globalmente. Ative em "Configurações de Torneio".</p>';
+      container.innerHTML = '<p style="color:var(--apagado);">Nenhum tipo ativo globalmente. Ative em "Estruturas de Torneio".</p>';
     } else {
       tiposDisponiveis.forEach(t => {
         const existente = valoresTorneio.find(v => v.tipo === t.nome);
@@ -2497,46 +2663,79 @@
       ? valoresTorneio.map(v => `${escapeHtml(v.tipo)}: ${formatarMoeda(Number(v.valor_total))}`).join('<br>')
       : 'Nenhum valor configurado ainda.';
 
-    const estruturaBlindsAtual = estruturasBlinds.find(e => e.id === torneioAtual.estrutura_blinds_id);
-
-    document.getElementById('selectEstruturaBlindsModal').value = torneioAtual.estrutura_blinds_id || '';
-
-    document.getElementById('nomeEstruturaBlindsEscolhida').textContent = estruturaBlindsAtual
-      ? `${estruturaBlindsAtual.nome} (${(estruturaBlindsAtual.niveis || []).length} níveis)`
-      : 'Nenhuma estrutura selecionada.';
-
-    document.getElementById('inputIntervaloManualMinutos').value = torneioAtual.intervalo_manual_minutos || 10;
-
-    document.getElementById('blindsResumoTexto').textContent = estruturaBlindsAtual
-      ? `${estruturaBlindsAtual.nome} (${(estruturaBlindsAtual.niveis || []).length} níveis) · Intervalo manual: ${torneioAtual.intervalo_manual_minutos || 10} min`
-      : `Nenhuma estrutura selecionada. · Intervalo manual: ${torneioAtual.intervalo_manual_minutos || 10} min`;
+    document.getElementById('blindsResumoTexto').textContent = textoResumoBlinds(torneioAtual.estrutura_blinds_id);
+    document.getElementById('limitesResumoTexto').textContent = textoResumoLimites(torneioAtual.limite_rebuy, torneioAtual.limite_addon);
 
     document.getElementById('modalConfigTorneioAtual').classList.add('aberto');
   }
 
-  function abrirModalEditarPremiacaoTorneio() {
+  // Preenche os campos das telas de Premiação, Blinds e Limites.
+  function preencherCamposEstruturas({ premiacaoId, arredondamento, blindsId, limiteRebuy, limiteAddon }) {
 
-    document.getElementById('modalConfigTorneioAtual').classList.remove('aberto');
+    const estruturaPremiacao = estruturasPremiacao.find(e => e.id === Number(premiacaoId));
+
+    document.getElementById('selectEstruturaPremiacaoModal').value = premiacaoId || '';
+    document.getElementById('nomeEstruturaPremiacaoEscolhida').textContent = estruturaPremiacao ? estruturaPremiacao.nome : 'Nenhuma selecionada';
+    document.getElementById('inputArredondamentoPremiacao').value = arredondamento;
+
+    document.getElementById('selectEstruturaBlindsModal').value = blindsId || '';
+    document.getElementById('nomeEstruturaBlindsEscolhida').textContent = textoResumoBlinds(blindsId);
+
+    document.getElementById('inputLimiteRebuy').value = limiteRebuy ?? '';
+    document.getElementById('inputLimiteAddon').value = limiteAddon ?? '';
+  }
+
+  function abrirModalEditarPremiacaoTorneio(modo) {
+
+    if (modo) modoEdicaoEstruturas = modo;
+
+    document.getElementById(modalPaiEdicaoEstruturas()).classList.remove('aberto');
     document.getElementById('modalEditarPremiacaoTorneio').classList.add('aberto');
   }
 
-  function fecharModalEditarPremiacaoTorneio() {
+  async function fecharModalEditarPremiacaoTorneio() {
 
-    const estruturaAtual = estruturasPremiacao.find(e => e.id === Number(document.getElementById('selectEstruturaPremiacaoModal').value));
+    const estruturaId = document.getElementById('selectEstruturaPremiacaoModal').value;
+    const arredondamento = lerArredondamentoInput();
 
-    const arredondamentoInput = parseInt(document.getElementById('inputArredondamentoPremiacao').value, 10);
-    const arredondamentoAtual = isNaN(arredondamentoInput) ? 1 : arredondamentoInput;
-
-    const textoArredondamento = arredondamentoAtual > 0
-      ? ` · Arredondado a cada R$ ${arredondamentoAtual}`
-      : ' · Sem arredondamento';
-
-    document.getElementById('premiacaoResumoTexto').textContent = (estruturaAtual
-      ? estruturaAtual.nome
-      : 'Nenhuma estrutura selecionada.') + textoArredondamento;
+    if (modoEdicaoEstruturas === 'padrao') {
+      const salvou = await salvarPadraoTorneio({
+        premiacao_estrutura_id: estruturaId ? Number(estruturaId) : null,
+        arredondamento_premiacao: arredondamento
+      });
+      if (!salvou) return;
+      atualizarPreviewsConfigTorneio();
+    } else {
+      document.getElementById('premiacaoResumoTexto').textContent = textoResumoPremiacao(estruturaId, arredondamento);
+    }
 
     document.getElementById('modalEditarPremiacaoTorneio').classList.remove('aberto');
-    document.getElementById('modalConfigTorneioAtual').classList.add('aberto');
+    document.getElementById(modalPaiEdicaoEstruturas()).classList.add('aberto');
+  }
+
+  function abrirModalLimitesTorneio(modo) {
+
+    if (modo) modoEdicaoEstruturas = modo;
+
+    document.getElementById(modalPaiEdicaoEstruturas()).classList.remove('aberto');
+    document.getElementById('modalLimitesTorneio').classList.add('aberto');
+  }
+
+  async function fecharModalLimitesTorneio() {
+
+    const limiteRebuy = lerLimiteInput('inputLimiteRebuy');
+    const limiteAddon = lerLimiteInput('inputLimiteAddon');
+
+    if (modoEdicaoEstruturas === 'padrao') {
+      const salvou = await salvarPadraoTorneio({ limite_rebuy: limiteRebuy, limite_addon: limiteAddon });
+      if (!salvou) return;
+      atualizarPreviewsConfigTorneio();
+    } else {
+      document.getElementById('limitesResumoTexto').textContent = textoResumoLimites(limiteRebuy, limiteAddon);
+    }
+
+    document.getElementById('modalLimitesTorneio').classList.remove('aberto');
+    document.getElementById(modalPaiEdicaoEstruturas()).classList.add('aberto');
   }
 
   function abrirModalEditarValoresTorneio() {
@@ -2557,23 +2756,28 @@
     document.getElementById('modalConfigTorneioAtual').classList.add('aberto');
   }
 
-  function abrirModalEditarBlindsTorneio() {
+  function abrirModalEditarBlindsTorneio(modo) {
 
-    document.getElementById('modalConfigTorneioAtual').classList.remove('aberto');
+    if (modo) modoEdicaoEstruturas = modo;
+
+    document.getElementById(modalPaiEdicaoEstruturas()).classList.remove('aberto');
     document.getElementById('modalEditarBlindsTorneio').classList.add('aberto');
   }
 
-  function fecharModalEditarBlindsTorneio() {
+  async function fecharModalEditarBlindsTorneio() {
 
-    const estruturaAtual = estruturasBlinds.find(e => e.id === Number(document.getElementById('selectEstruturaBlindsModal').value));
-    const intervaloAtual = parseInt(document.getElementById('inputIntervaloManualMinutos').value, 10) || 10;
+    const estruturaId = document.getElementById('selectEstruturaBlindsModal').value;
 
-    document.getElementById('blindsResumoTexto').textContent = estruturaAtual
-      ? `${estruturaAtual.nome} (${(estruturaAtual.niveis || []).length} níveis) · Intervalo manual: ${intervaloAtual} min`
-      : `Nenhuma estrutura selecionada. · Intervalo manual: ${intervaloAtual} min`;
+    if (modoEdicaoEstruturas === 'padrao') {
+      const salvou = await salvarPadraoTorneio({ estrutura_blinds_id: estruturaId ? Number(estruturaId) : null });
+      if (!salvou) return;
+      atualizarPreviewsConfigTorneio();
+    } else {
+      document.getElementById('blindsResumoTexto').textContent = textoResumoBlinds(estruturaId);
+    }
 
     document.getElementById('modalEditarBlindsTorneio').classList.remove('aberto');
-    document.getElementById('modalConfigTorneioAtual').classList.add('aberto');
+    document.getElementById(modalPaiEdicaoEstruturas()).classList.add('aberto');
   }
 
   function abrirModalAjustarPremiacao() {
@@ -2654,10 +2858,9 @@
     const selectBlinds = document.getElementById('selectEstruturaBlindsModal');
     const novaEstruturaBlindsId = selectBlinds.value ? Number(selectBlinds.value) : null;
 
-    const intervaloManual = parseInt(document.getElementById('inputIntervaloManualMinutos').value, 10) || 10;
-
-    const arredondamentoInput = document.getElementById('inputArredondamentoPremiacao').value;
-    const arredondamento = arredondamentoInput === '' ? 1 : Math.max(parseInt(arredondamentoInput, 10) || 0, 0);
+    const arredondamento = lerArredondamentoInput();
+    const limiteRebuy = lerLimiteInput('inputLimiteRebuy');
+    const limiteAddon = lerLimiteInput('inputLimiteAddon');
 
     const btn = document.getElementById('btnSalvarConfigTorneio');
     btn.classList.add('disabled');
@@ -2685,17 +2888,30 @@
       return;
     }
 
-    const { error: erroEstrutura } = await client
+    const dadosEstrutura = {
+      premiacao_estrutura_id: novaEstruturaId,
+      estrutura_blinds_id: novaEstruturaBlindsId,
+      arredondamento_premiacao: arredondamento
+    };
+
+    let { error: erroEstrutura } = await client
       .from('torneios')
-      .update({
-        premiacao_estrutura_id: novaEstruturaId,
-        estrutura_blinds_id: novaEstruturaBlindsId,
-        intervalo_manual_minutos: intervaloManual,
-        arredondamento_premiacao: arredondamento
-      })
+      .update({ ...dadosEstrutura, limite_rebuy: limiteRebuy, limite_addon: limiteAddon })
       .eq('id', torneioAtual.id);
 
+    // Banco ainda sem as colunas de limite: salva o resto e avisa.
+    let avisoLimites = false;
+
+    if (erroEstrutura && erroColunaNova(erroEstrutura)) {
+      ({ error: erroEstrutura } = await client.from('torneios').update(dadosEstrutura).eq('id', torneioAtual.id));
+      avisoLimites = limiteRebuy !== null || limiteAddon !== null;
+    }
+
     btn.classList.remove('disabled');
+
+    if (!erroEstrutura && avisoLimites) {
+      await mostrarAlerta('Configuração salva, mas os limites não. ' + AVISO_SQL_005);
+    }
 
     if (erroEstrutura) {
       await mostrarAlerta('Erro ao salvar estrutura de premiação');
@@ -3246,28 +3462,39 @@
 
   function atualizarPreviewsConfigTorneio() {
 
-    const previewTipos = document.getElementById('previewTiposPagamento');
-    const previewEstruturas = document.getElementById('previewEstruturasPremiacao');
-    const previewBlinds = document.getElementById('previewEstruturasBlinds');
-
     const tiposAtivos = TIPOS_REGISTRO_FIXOS.filter(t => tiposRegistroAtivos.includes(t.chave));
 
-    previewTipos.innerHTML = tiposAtivos.length > 0
-      ? tiposAtivos.map(t => escapeHtml(t.nome)).join('<br>')
+    document.getElementById('previewTiposPagamento').textContent = tiposAtivos.length > 0
+      ? tiposAtivos.map(t => t.nome).join(' · ')
       : 'Nenhum ativo';
 
-    previewEstruturas.innerHTML = estruturasPremiacao.length > 0
-      ? estruturasPremiacao.map(e => escapeHtml(e.nome)).join('<br>')
-      : 'Nenhuma cadastrada';
+    const p = padraoPreenchido();
 
-    previewBlinds.innerHTML = estruturasBlinds.length > 0
-      ? estruturasBlinds.map(e => escapeHtml(e.nome)).join('<br>')
-      : 'Nenhuma cadastrada';
+    document.getElementById('previewEstruturasPremiacao').textContent = textoResumoPremiacao(p.premiacaoId, p.arredondamento);
+    document.getElementById('previewEstruturasBlinds').textContent = textoResumoBlinds(p.blindsId);
+    document.getElementById('previewLimites').textContent = textoResumoLimites(p.limiteRebuy, p.limiteAddon);
+  }
+
+  // Padrão salvo, com os valores de antes (50-30-20, R$ 1) quando nada foi escolhido.
+  function padraoPreenchido() {
+
+    const padrao5030 = estruturasPremiacao.find(e => e.nome === '50% - 30% - 20%');
+
+    return {
+      premiacaoId: 'premiacao_estrutura_id' in padraoTorneio ? padraoTorneio.premiacao_estrutura_id : (padrao5030 ? padrao5030.id : null),
+      arredondamento: padraoTorneio.arredondamento_premiacao ?? 1,
+      blindsId: padraoTorneio.estrutura_blinds_id ?? null,
+      limiteRebuy: padraoTorneio.limite_rebuy ?? null,
+      limiteAddon: padraoTorneio.limite_addon ?? null
+    };
   }
 
   function abrirModalEstruturas() {
 
     if (!adminLiberado) return;
+
+    modoEdicaoEstruturas = 'padrao';
+    preencherCamposEstruturas(padraoPreenchido());
 
     atualizarPreviewsConfigTorneio();
 
@@ -3934,9 +4161,42 @@
 
   let pagamentoPendente = null;
 
+  // Limite de Rebuy / Add-on por jogador do torneio atual (vazio = sem limite).
+  // Devolve a mensagem de bloqueio, ou null se pode registrar.
+  function limiteAtingido(nomeJogador, tipo) {
+
+    const ehRebuy = NOMES_REBUY.includes(tipo);
+    const ehAddon = tipo === 'Add-on';
+
+    if (!ehRebuy && !ehAddon) return null;
+
+    const limite = ehRebuy ? torneioAtual.limite_rebuy : torneioAtual.limite_addon;
+
+    if (limite === null || limite === undefined) return null;
+
+    const feitos = movimentacoesTorneio.filter(m =>
+      m.jogador === nomeJogador && (ehRebuy ? NOMES_REBUY.includes(m.tipo_registro) : m.tipo_registro === 'Add-on')
+    ).length;
+
+    if (feitos < Number(limite)) return null;
+
+    const nome = ehRebuy ? 'rebuy' : 'add-on';
+
+    return Number(limite) === 0
+      ? `Este torneio não permite ${nome}.`
+      : `${nomeJogador} já fez ${feitos} ${nome}(s). O limite deste torneio é ${limite} por jogador.`;
+  }
+
   function abrirModalPagamento(jogador, valorTipo) {
 
     if (!adminLiberado || !torneioAtual) return;
+
+    const limite = limiteAtingido(jogador.nome, valorTipo.tipo);
+
+    if (limite) {
+      mostrarAlerta(limite);
+      return;
+    }
 
     pagamentoPendente = { jogador, valorTipo };
 
@@ -4156,6 +4416,8 @@
     document.getElementById('modalEditarPremiacaoTorneio').classList.remove('aberto');
     document.getElementById('modalEditarValoresTorneio').classList.remove('aberto');
     document.getElementById('modalEditarBlindsTorneio').classList.remove('aberto');
+    document.getElementById('modalLimitesTorneio').classList.remove('aberto');
+    fecharModalIntervalo();
     fecharModalAjustarPremiacao();
     fecharModalSelecionarJogador();
     fecharModalPagamento();

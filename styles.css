@@ -1640,3 +1640,42 @@ body.mnu-gaveta .mini-relogio {
 .mini-relogio.intervalo .mini-tempo {
   color: #f87171;
 }
+
+/* ---- Novo Torneio: passos do assistente ---- */
+
+.wizard-passos {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding-right: 44px; /* espaço do X de fechar */
+}
+
+.wizard-passos span {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: var(--superficie-3);
+  color: var(--apagado);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wizard-passos span.feito {
+  background: var(--tint-azul);
+  color: var(--tx-azul);
+}
+
+.wizard-passos span.ativo {
+  background: #2563eb;
+  color: white;
+}
+
+.wizard-rotulo {
+  color: var(--apagado);
+  font-size: 12px;
+  margin: 10px 0 4px;
+}
