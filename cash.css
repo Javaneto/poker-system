@@ -1,0 +1,219 @@
+/* =========================================================
+   Cash Game: lista de mesas (index.html) e mesa (cash-mesa.html).
+   Usa as variáveis de cor de styles.css (claro e escuro).
+   ========================================================= */
+
+.cg-ico { width: 18px; height: 18px; flex: 0 0 auto; }
+
+/* ---- Lista de mesas ---- */
+
+.cg-mesa-card {
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--superficie);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .12s ease;
+}
+
+.cg-mesa-card:hover {
+  border-color: var(--borda-forte);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.08);
+  transform: translateY(-2px);
+}
+
+.cg-mesa-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cg-mesa-topo h3 { margin: 0; font-size: 17px; overflow-wrap: anywhere; }
+
+.cg-mesa-linha {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--apagado); font-size: 13px; font-variant-numeric: tabular-nums;
+}
+
+.cg-mesa-numeros {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+  background: var(--superficie-2); border-radius: 10px; padding: 10px 12px;
+}
+
+.cg-mesa-numeros span { display: block; font-size: 11px; color: var(--apagado); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.cg-mesa-numeros strong { display: block; font-size: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.cg-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+}
+
+.cg-badge.ativo { background: var(--tint-verde); color: var(--tx-verde); }
+.cg-badge.encerrado { background: var(--superficie-3); color: var(--apagado); }
+.cg-badge.compra { background: var(--tint-ambar); color: var(--tx-ambar); }
+.cg-badge.devolucao { background: var(--tint-vermelho); color: var(--tx-vermelho); }
+.cg-badge.rake { background: var(--tint-azul); color: var(--tx-azul); }
+.cg-badge.caixinha { background: var(--tint-indigo); color: var(--tx-indigo); }
+.cg-badge.pago { background: var(--tint-verde); color: var(--tx-verde); }
+
+/* ---- Mesa: cabeçalho ---- */
+
+.cg-cabecalho {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 18px; flex-wrap: wrap;
+}
+
+.cg-cabecalho-titulo { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cg-cabecalho-titulo h1 { margin: 0; font-size: 24px; overflow-wrap: anywhere; }
+.cg-cabecalho-sub { color: var(--apagado); font-size: 13px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+.cg-voltar, .cg-icone-btn {
+  width: 42px; height: 42px; min-height: 42px; padding: 0; flex: 0 0 auto;
+  display: inline-grid; place-items: center; border-radius: 12px;
+  background: var(--superficie-3); color: var(--texto-2); box-shadow: none; text-decoration: none;
+}
+
+.cg-icone-btn.perigo { background: #dc2626; color: #fff; }
+.cg-acoes-topo { display: flex; gap: 8px; }
+
+/* ---- KPIs ---- */
+
+.cg-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+
+.cg-kpi {
+  background: var(--superficie); border: 1px solid var(--borda); border-radius: 14px; padding: 14px 16px;
+}
+
+.cg-kpi-rotulo {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--apagado); font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+}
+
+.cg-kpi-rotulo .cg-ico { width: 15px; height: 15px; }
+.cg-kpi-valor { font-size: 22px; font-weight: 800; margin-top: 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---- Abas da mesa ---- */
+
+.cg-abas { margin-bottom: 18px; }
+.cg-abas button { display: inline-flex; align-items: center; gap: 6px; }
+.cg-painel { display: none; }
+.cg-painel.ativo { display: block; }
+
+/* ---- Jogadores sentados ---- */
+
+.cg-titulo-secao { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.cg-titulo-secao h2 { margin: 0; }
+.cg-titulo-secao p { margin: 2px 0 0; color: var(--apagado); font-size: 13px; }
+
+.cg-grid-jogadores { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+
+.cg-jogador {
+  border: 1px solid var(--borda); border-radius: 14px; padding: 14px; background: var(--superficie-2);
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.cg-jogador-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cg-jogador-topo strong { font-size: 16px; overflow-wrap: anywhere; }
+
+.cg-tempo { display: inline-flex; align-items: center; gap: 6px; color: var(--apagado); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cg-tempo::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+
+.cg-jogador-valores { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(--apagado); }
+.cg-jogador-valores strong { color: var(--texto); font-variant-numeric: tabular-nums; }
+
+.cg-jogador-acoes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.cg-jogador-acoes button { min-height: 42px; padding: 8px 6px; }
+
+.cg-btn-contorno {
+  background: var(--superficie); color: var(--texto); border: 1px solid var(--borda-forte); box-shadow: none;
+}
+
+.cg-vazio {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 32px 16px; text-align: center; color: var(--apagado);
+}
+
+.cg-vazio svg { width: 44px; height: 44px; color: var(--apagado-2); }
+
+.cg-subtitulo { font-size: 13px; color: var(--apagado); font-weight: 700; margin: 22px 0 10px; }
+
+/* ---- Tabelas ---- */
+
+.cg-tabela { width: 100%; border-collapse: collapse; table-layout: auto; }
+.cg-tabela th, .cg-tabela td { text-align: left; padding: 11px 10px; border-bottom: 1px solid var(--borda); vertical-align: middle; }
+.cg-tabela th { font-size: 12px; color: var(--apagado); text-transform: uppercase; letter-spacing: .03em; }
+.cg-tabela .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cg-tabela .acoes { text-align: right; white-space: nowrap; }
+.cg-tabela .acoes button { min-height: 38px; padding: 6px 12px; }
+.cg-tabela-rolavel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.cg-obs { color: var(--apagado); font-size: 13px; font-style: italic; }
+.cg-duracao { display: block; color: var(--tx-ambar); font-size: 12px; font-weight: 700; }
+
+/* ---- Rake / Caixinha ---- */
+
+.cg-form-linha { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+.cg-form-linha > * { margin-bottom: 0; }
+.cg-form-linha .cg-campo { flex: 1 1 160px; }
+.cg-form-linha .cg-campo-largo { flex: 2 1 220px; }
+.cg-form-linha button { min-height: 44px; }
+.cg-total-linha { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 16px 0 6px; font-size: 14px; color: var(--apagado); }
+.cg-total-linha strong { font-size: 18px; color: var(--texto); font-variant-numeric: tabular-nums; }
+.cg-dica { color: var(--apagado); font-size: 13px; margin: 8px 0 0; }
+
+/* ---- Fechamento ---- */
+
+.cg-fechamento { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.cg-caixa { border: 1px solid var(--borda); border-radius: 12px; padding: 14px 16px; background: var(--superficie-2); }
+.cg-caixa h3 { font-size: 15px; margin: 0 0 10px; }
+.cg-linha-valor { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 14px; }
+.cg-linha-valor span { color: var(--texto-2); }
+.cg-linha-valor strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cg-linha-valor.total { border-top: 1px solid var(--borda-forte); margin-top: 6px; padding-top: 10px; font-size: 16px; }
+.cg-linha-valor.total span { color: var(--texto); font-weight: 700; }
+.cg-linha-valor.menor { font-size: 12px; color: var(--apagado); }
+.cg-conferencia { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+.cg-conferencia.ok { background: var(--tint-verde); color: var(--tx-verde); }
+.cg-conferencia.alerta { background: var(--tint-ambar); color: var(--tx-ambar); }
+.cg-status { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 12px; }
+.cg-status.andamento { color: var(--tx-ambar); }
+.cg-status.encerrado { color: var(--apagado); }
+.cg-btn-largo { width: 100%; min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* ---- Modais ---- */
+
+.cg-rotulo { display: block; font-size: 13px; font-weight: 700; color: var(--texto-2); margin: 4px 0 6px; }
+.cg-modal-sub { color: var(--apagado); font-size: 13px; margin: -6px 0 14px; }
+.cg-info-modal { color: var(--apagado); font-size: 14px; margin: 0 0 12px; }
+.cg-info-modal strong { color: var(--texto); }
+
+.cg-busca-lista {
+  border: 1px solid var(--borda-forte); border-radius: 12px; max-height: 280px; overflow-y: auto;
+  margin-bottom: 12px; background: var(--superficie);
+}
+
+.cg-busca-item {
+  display: block; width: 100%; text-align: left; min-height: 44px; padding: 10px 14px;
+  background: transparent; color: var(--texto); box-shadow: none; border-radius: 0; font-weight: 600;
+  border-bottom: 1px solid var(--borda);
+}
+
+.cg-busca-item:hover, .cg-busca-item.destacado { background: var(--tint-ambar); transform: none; box-shadow: none; }
+.cg-busca-item small { display: block; font-weight: 400; color: var(--apagado); font-size: 12px; }
+.cg-busca-vazio { padding: 12px 14px; color: var(--apagado); font-size: 14px; }
+
+.cg-busca-novo {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px;
+  background: transparent; color: var(--apagado); box-shadow: none; border-radius: 0;
+}
+
+.cg-busca-novo:hover { color: var(--texto); background: var(--hover); transform: none; box-shadow: none; }
+
+@media (max-width: 768px) {
+  .cg-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cg-kpi-valor { font-size: 19px; }
+  .cg-fechamento { grid-template-columns: minmax(0, 1fr); }
+  .cg-cabecalho-titulo h1 { font-size: 20px; }
+  .cg-abas { flex-wrap: nowrap; }
+  .cg-grid-jogadores { grid-template-columns: minmax(0, 1fr); }
+  .cg-modal input, .cg-modal textarea, .cg-form-linha input, .cg-form-linha textarea { font-size: 16px; }
+}

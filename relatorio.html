@@ -22,7 +22,7 @@
 
     .rel-kpis {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
       gap: 12px;
       margin-bottom: 18px;
     }
@@ -55,6 +55,15 @@
     .rel-em-breve h2 { color: var(--texto); margin-bottom: 6px; }
     .rel-em-breve p { max-width: 460px; margin: 0 auto; }
 
+    .rel-tabela-rolavel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .rel-tabela { width: 100%; border-collapse: collapse; table-layout: auto; }
+    .rel-tabela th, .rel-tabela td { text-align: left; padding: 11px 10px; border-bottom: 1px solid var(--borda); white-space: nowrap; }
+    .rel-tabela th { font-size: 12px; color: var(--apagado); text-transform: uppercase; letter-spacing: .03em; }
+    .rel-tabela .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .rel-tabela tfoot td { font-weight: 800; border-bottom: none; }
+    .rel-tabela a { color: #2563eb; font-weight: 600; text-decoration: none; }
+    .rel-tabela small { display: block; color: var(--apagado); font-size: 12px; }
+
     .rel-painel { display: none; }
     .rel-painel.ativo { display: block; }
 
@@ -76,7 +85,7 @@
   <div class="abas rel-abas" role="tablist">
     <button type="button" class="aba ativa" role="tab" data-aba="resumo" onclick="trocarAba('resumo')">Resumo</button>
     <button type="button" class="aba" role="tab" data-aba="historico" onclick="trocarAba('historico')">Histórico de Movimentações</button>
-    <button type="button" class="aba" role="tab" data-aba="cash" onclick="trocarAba('cash')">Cash Game<span class="rel-aba-em-breve">em breve</span></button>
+    <button type="button" class="aba" role="tab" data-aba="cash" onclick="trocarAba('cash')">Cash Game</button>
     <button type="button" class="aba" role="tab" data-aba="torneios" onclick="trocarAba('torneios')">Torneios<span class="rel-aba-em-breve">em breve</span></button>
   </div>
 
@@ -111,6 +120,11 @@
         <div class="rel-kpi-detalhe" id="kpiPagamentosQtd"></div>
       </div>
       <div class="rel-kpi">
+        <div class="rel-kpi-rotulo">Rake + Caixinha no Cash</div>
+        <div class="rel-kpi-valor" id="kpiRecolhido">-</div>
+        <div class="rel-kpi-detalhe" id="kpiRecolhidoDetalhe"></div>
+      </div>
+      <div class="rel-kpi">
         <div class="rel-kpi-rotulo">Sessões finalizadas</div>
         <div class="rel-kpi-valor" id="kpiSessoes">-</div>
       </div>
@@ -122,7 +136,7 @@
     </div>
 
     <p style="color:var(--apagado);font-size:14px;margin-top:0;">
-      Rake e valores por mesa de Cash Game e por torneio vão aparecer nas abas próprias assim que forem criados.
+      Rake e valores de cada mesa estão na aba Cash Game. O relatório por torneio vai aparecer na aba Torneios.
     </p>
   </section>
 
@@ -181,10 +195,29 @@
 
   <!-- Cash Game -->
   <section class="rel-painel" id="painel-cash">
-    <div class="card rel-em-breve">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3z"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/></svg>
-      <h2>Relatório de Cash Game</h2>
-      <p>Em breve: rake e valores movimentados em cada mesa de Cash Game.</p>
+    <div class="card">
+      <div class="topbar">
+        <h2>Mesas de Cash Game</h2>
+      </div>
+      <p style="color:var(--apagado);font-size:14px;margin-top:0;">Rake, caixinha e valores movimentados em cada mesa. Toque no nome para abrir a mesa.</p>
+
+      <div class="rel-tabela-rolavel">
+        <table class="rel-tabela">
+          <thead>
+            <tr>
+              <th>Mesa</th>
+              <th>Status</th>
+              <th class="num">Compras</th>
+              <th class="num">Devoluções</th>
+              <th class="num">Rake</th>
+              <th class="num">Caixinha</th>
+              <th class="num">Fichas na mesa</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaCashMesas"></tbody>
+          <tfoot id="rodapeCashMesas"></tfoot>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -229,6 +262,14 @@
   let limiteRelatorio = 10;
   let filtroRelatorioJogador = '';
   let periodoResumo = 'hoje';
+  let mesasCash = [];
+  let recolhimentosCash = [];
+  let cashAtivado = true;
+
+  // Soma em centavos para não acumular erro de arredondamento.
+  function somar(lista) {
+    return lista.reduce((total, item) => total + Math.round(Number(item.valor || 0) * 100), 0) / 100;
+  }
 
   function escapeHtml(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
@@ -300,7 +341,6 @@
 
     const tiposEntrada = ['Entrada', 'Registro', 'Rebuy', 'Add-on'];
 
-    const somar = lista => lista.reduce((total, m) => total + Number(m.valor || 0), 0);
     const qtd = (n, singular, plural) => `${n} ${n === 1 ? singular : plural}`;
 
     const cashEntradas = noPeriodo.filter(m => !m.torneio_id && tiposEntrada.includes(m.tipo));
@@ -324,8 +364,80 @@
     document.getElementById('kpiTorneioEntradasQtd').textContent = qtd(torneioEntradas.length, 'registro/rebuy/add-on', 'registros/rebuys/add-ons');
     document.getElementById('kpiPagamentos').textContent = formatarMoeda(somar(pagamentos));
     document.getElementById('kpiPagamentosQtd').textContent = qtd(pagamentos.length, 'pagamento', 'pagamentos');
+    const recolhidos = recolhimentosCash.filter(r => !inicio || new Date(r.criado_em) >= inicio);
+    const rakePeriodo = somar(recolhidos.filter(r => r.tipo === 'rake'));
+    const caixinhaPeriodo = somar(recolhidos.filter(r => r.tipo === 'caixinha'));
+    document.getElementById('kpiRecolhido').textContent = cashAtivado ? formatarMoeda(rakePeriodo + caixinhaPeriodo) : '-';
+    document.getElementById('kpiRecolhidoDetalhe').textContent = cashAtivado
+      ? `Rake ${formatarMoeda(rakePeriodo)} · Caixinha ${formatarMoeda(caixinhaPeriodo)}`
+      : 'Rode o sql/008 no Supabase';
+
     document.getElementById('kpiSessoes').textContent = sessoes.size;
     document.getElementById('kpiJogadores').textContent = jogadoresNoPeriodo.size;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cash Game: rake e valores por mesa
+  // ---------------------------------------------------------------------------
+
+  function renderizarCashMesas() {
+
+    const tabela = document.getElementById('tabelaCashMesas');
+    const rodape = document.getElementById('rodapeCashMesas');
+    const centavos = v => Math.round(Number(v || 0) * 100);
+
+    rodape.innerHTML = '';
+
+    if (!cashAtivado) {
+      tabela.innerHTML = '<tr><td colspan="7" style="color:var(--apagado);white-space:normal;">As mesas de Cash Game ainda não foram ativadas. Rode o arquivo <strong>sql/008_cash_mesas.sql</strong> no Supabase.</td></tr>';
+      return;
+    }
+
+    if (mesasCash.length === 0) {
+      tabela.innerHTML = '<tr><td colspan="7" style="color:var(--apagado);">Nenhuma mesa de Cash Game ainda.</td></tr>';
+      return;
+    }
+
+    const total = { compras: 0, devolucoes: 0, rake: 0, caixinha: 0, fichas: 0 };
+
+    tabela.innerHTML = mesasCash.map(mesa => {
+
+      const movsMesa = movimentacoes.filter(m => m.mesa_id === mesa.id);
+      const rec = recolhimentosCash.filter(r => r.mesa_id === mesa.id);
+      const v = {
+        compras: somar(movsMesa.filter(m => m.tipo === 'Entrada')),
+        devolucoes: somar(movsMesa.filter(m => m.tipo === 'Saída')),
+        rake: somar(rec.filter(r => r.tipo === 'rake')),
+        caixinha: somar(rec.filter(r => r.tipo === 'caixinha'))
+      };
+      v.fichas = (centavos(v.compras) - centavos(v.devolucoes) - centavos(v.rake) - centavos(v.caixinha)) / 100;
+      Object.keys(total).forEach(k => { total[k] = (centavos(total[k]) + centavos(v[k])) / 100; });
+
+      const encerrada = mesa.status === 'encerrado';
+
+      return `
+        <tr>
+          <td><a href="cash-mesa.html?id=${encodeURIComponent(mesa.id)}">${escapeHtml(mesa.nome)}</a><small>${formatarDataHora(mesa.iniciado_em)}</small></td>
+          <td>${encerrada ? 'Encerrada' : '<span class="positivo">Ativa</span>'}</td>
+          <td class="num">${formatarMoeda(v.compras)}</td>
+          <td class="num">${formatarMoeda(v.devolucoes)}</td>
+          <td class="num"><strong>${formatarMoeda(v.rake)}</strong></td>
+          <td class="num">${formatarMoeda(v.caixinha)}</td>
+          <td class="num">${formatarMoeda(v.fichas)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    rodape.innerHTML = `
+      <tr>
+        <td colspan="2">Total</td>
+        <td class="num">${formatarMoeda(total.compras)}</td>
+        <td class="num">${formatarMoeda(total.devolucoes)}</td>
+        <td class="num">${formatarMoeda(total.rake)}</td>
+        <td class="num">${formatarMoeda(total.caixinha)}</td>
+        <td class="num">${formatarMoeda(total.fichas)}</td>
+      </tr>
+    `;
   }
 
   // ---------------------------------------------------------------------------
@@ -623,8 +735,29 @@
     jogadores = (jogadoresDB || []).sort((a, b) => a.nome.localeCompare(b.nome));
     movimentacoes = movimentacoesDB || [];
 
+    const { data: mesasDB, error: erroMesas } = await client
+      .from('cash_mesas')
+      .select('*')
+      .order('iniciado_em', { ascending: false });
+
+    if (erroMesas) {
+      console.error(erroMesas);
+      cashAtivado = false;
+      mesasCash = [];
+      recolhimentosCash = [];
+    } else {
+      cashAtivado = true;
+      mesasCash = mesasDB || [];
+      recolhimentosCash = await buscarTodas(() => client
+        .from('cash_mesa_recolhimentos')
+        .select('*')
+        .order('criado_em', { ascending: true })
+        .order('id', { ascending: true }));
+    }
+
     renderizarResumo();
     renderizarHistorico();
+    renderizarCashMesas();
   }
 
   async function sair() {
@@ -660,7 +793,7 @@
 
     iniciarRealtimeRobusto({
       nome: 'relatorio-realtime',
-      tabelas: ['movimentacoes', 'jogadores'],
+      tabelas: ['movimentacoes', 'jogadores', 'cash_mesas', 'cash_mesa_recolhimentos'],
       aoMudar: () => carregarDados()
     });
   })();

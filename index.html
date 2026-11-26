@@ -11,123 +11,56 @@
   <script src="js/comum.js"></script>
 
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="cash.css">
 </head>
 <body>
 <script src="js/menu.js"></script>
 
 <div class="container">
 
-  <div class="topbar">
-    <div style="display:flex;align-items:center;gap:12px;">
-
-      <h1 style="margin:0;">Cash Game</h1>
+  <header class="pagina-cabecalho">
+    <div>
+      <span class="pagina-sobretitulo">Operação</span>
+      <h1>Cash Game</h1>
+      <p class="pagina-subtitulo">Controle de compras, devoluções, rake e caixinha por mesa</p>
     </div>
-  </div>
+
+    <button id="btnNovaMesa" class="btn-red btn-com-icone disabled" onclick="abrirModalNovaMesa()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Nova Mesa</span>
+    </button>
+  </header>
 
   <div class="card">
-    <h2>Registrar Movimentação</h2>
-
-    <div class="pesquisa-wrapper">
-      <input
-        enterkeyhint="done"
-        autocapitalize="words"
-        spellcheck="false"
-        type="text"
-        id="pesquisaJogador"
-        placeholder="Pesquisar jogador"
-        autocomplete="off"
-        oninput="filtrarJogadores()"
-      >
-
-      <div id="sugestoesJogadores"></div>
-    </div>
-
-    <select id="jogadorSelect" class="oculto"></select>
-
-    <div class="flex flex-lado-a-lado">
-      <div>
-        <input type="number" id="entrada" placeholder="Entrada" min="0">
-
-        <button id="btnEntrada" class="btn-blue disabled" onclick="adicionarEntrada()">
-          Adicionar Entrada
-        </button>
-      </div>
-
-      <div>
-        <input type="number" id="saida" placeholder="Saída" min="0">
-
-        <button id="btnSaida" class="btn-green disabled" onclick="adicionarSaida()">
-          Adicionar Saída
-        </button>
+    <div class="torneios-filtros">
+      <div id="filtroSegmentado" class="segmentado" role="group" aria-label="Filtrar mesas por status">
+        <button type="button" data-valor="ativo" class="ativo" aria-pressed="true" onclick="filtrarMesas('ativo')">Ativas</button>
+        <button type="button" data-valor="encerrado" aria-pressed="false" onclick="filtrarMesas('encerrado')">Encerradas</button>
+        <button type="button" data-valor="" aria-pressed="false" onclick="filtrarMesas('')">Todas</button>
       </div>
     </div>
+
+    <div id="listaMesas" class="grid-torneios">
+      <p style="color:var(--apagado);">Carregando...</p>
+    </div>
   </div>
 
 </div>
 
+<div id="modalNovaMesa" class="modal-overlay">
+  <div class="modal-box cg-modal" style="max-width:420px;">
+    <h2>Nova Mesa</h2>
+    <p class="cg-modal-sub">Abre uma mesa de Cash Game para registrar compras, devoluções, rake e caixinha.</p>
 
-<div id="modalCadastro" class="modal-overlay">
-  <div class="modal-box">
-    <h2>Cadastrar Jogador</h2>
+    <label class="cg-rotulo" for="novaMesaNome">Nome da mesa</label>
+    <input type="text" id="novaMesaNome" maxlength="60" autocomplete="off">
 
-    <input type="text" id="cadastroNome" placeholder="Nome">
-    <input type="text" id="cadastroTelefone" placeholder="Telefone">
-    <input type="text" id="cadastroCpf" placeholder="CPF">
+    <label class="cg-rotulo" for="novaMesaObs">Observação (opcional)</label>
+    <input type="text" id="novaMesaObs" maxlength="200" autocomplete="off" placeholder="Ex.: NL 1/2">
 
-    <div class="modal-acoes">
-      <button class="btn-gray" onclick="fecharModalCadastro()">
-        Cancelar
-      </button>
-
-      <button id="btnCadastrarJogador" class="btn-dark" onclick="cadastrarJogador()">
-        Cadastrar Jogador
-      </button>
-    </div>
-  </div>
-</div>
-
-<div id="modalConfirmacao" class="modal-overlay">
-  <div class="modal-box">
-    <h2>Confirmar Entrada</h2>
-
-    <p id="modalResumo" class="modal-resumo"></p>
-
-    <div class="modalidade-opcoes">
-      <button type="button" id="btnModalidadeCash" class="modalidade-btn ativo" onclick="selecionarModalidade('Não Pago')">
-        Não Pago
-      </button>
-
-      <button type="button" id="btnModalidadeTorneio" class="modalidade-btn" onclick="selecionarModalidade('Pago')">
-        Pago
-      </button>
-    </div>
-
-    <div class="modal-acoes">
-      <button class="btn-gray" onclick="fecharModalConfirmacao()">
-        Cancelar
-      </button>
-
-      <button id="btnConfirmarEntrada" class="btn-blue" onclick="confirmarEntradaComModalidade()">
-        Confirmar
-      </button>
-    </div>
-  </div>
-</div>
-
-<div id="modalConfirmacaoSaida" class="modal-overlay">
-  <div class="modal-box">
-    <h2>Confirmar Saída</h2>
-
-    <p id="modalResumoSaida" class="modal-resumo"></p>
-
-    <div class="modal-acoes">
-      <button class="btn-gray" onclick="fecharModalConfirmacaoSaida()">
-        Cancelar
-      </button>
-
-      <button id="btnConfirmarSaida" class="btn-green" onclick="confirmarSaidaComModalidade()">
-        Confirmar
-      </button>
+    <div class="modal-acoes" style="margin-top:8px;">
+      <button class="btn-gray" onclick="fecharModalNovaMesa()">Cancelar</button>
+      <button id="btnCriarMesa" class="btn-red" style="flex:1;" onclick="criarMesa()">Abrir mesa</button>
     </div>
   </div>
 </div>
@@ -135,678 +68,257 @@
 <div id="modalAlerta" class="modal-overlay">
   <div class="modal-box" style="max-width:380px;">
     <h2>Aviso</h2>
-
     <p id="alertaMensagem" class="modal-resumo"></p>
-
     <div class="modal-acoes">
-      <button class="btn-dark" style="flex:1;" onclick="confirmarAlerta()">
-        OK
-      </button>
-    </div>
-  </div>
-</div>
-
-<div id="modalConfirm" class="modal-overlay">
-  <div class="modal-box" style="max-width:380px;">
-    <h2>Confirmar</h2>
-
-    <p id="confirmMensagem" class="modal-resumo"></p>
-
-    <div class="modal-acoes">
-      <button class="btn-gray" onclick="responderConfirm(false)">
-        Cancelar
-      </button>
-
-      <button class="btn-dark" onclick="responderConfirm(true)">
-        Confirmar
-      </button>
+      <button class="btn-dark" style="flex:1;" onclick="confirmarAlerta()">OK</button>
     </div>
   </div>
 </div>
 
 <script>
-  console.log('Sistema iniciado');
-
   const SUPABASE_URL = 'https://rpohgkhkfzuorngtellg.supabase.co';
 
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwb2hna2hrZnp1b3JuZ3RlbGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDA1NzcsImV4cCI6MjA5NDAxNjU3N30.ub-kiIOB2pm6o7Z5iv1dPuTE4hKwhmz6PraRgTts-Js';
 
-  const client = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-  );
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  console.log('Supabase conectado');
+  const ICONE_RELOGIO = '<svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  const ICONE_PESSOAS = '<svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.8 0 5 2 5 5"/></svg>';
+  const ICONE_MESA = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3z"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/></svg>';
 
-  let jogadores = [];
-  let movimentacoes = [];
+  let mesas = [];
+  let assentos = [];
+  let movsMesas = [];
+  let filtroStatus = 'ativo';
   let adminLiberado = false;
-  let torneioAtualId = null;
-  let todosTorneios = [];
-  let todosValoresTorneios = [];
-
-  client.auth.onAuthStateChange((event, session) => {
-
-    adminLiberado = !!session;
-
-    console.log('Estado de autenticação ADM:', event, adminLiberado);
-
-    if (!adminLiberado) {
-      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-    }
-  });
-
-  async function exigirSessaoOuRedirecionar() {
-
-    const { data } = await client.auth.getSession();
-
-    if (!data.session) {
-      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-      return false;
-    }
-
-    adminLiberado = true;
-    liberarAcoes();
-
-    return true;
-  }
-
-  async function sair() {
-
-    await client.auth.signOut();
-
-    window.location.href = 'login.html';
-  }
-
-  function recarregarComDebounce() {
-    carregarDados();
-  }
-
-  // Realtime com reconexão automática, recarga ao voltar para a aba e
-  // conferência a cada 30 s (ver js/comum.js).
-  iniciarRealtimeRobusto({
-    nome: 'mesa-realtime',
-    tabelas: ['movimentacoes', 'jogadores', 'configuracoes', 'torneios', 'torneio_valores'],
-    aoMudar: () => carregarDados()
-  });
-
-
-
-
+  let tabelasFaltando = false;
 
   function escapeHtml(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
   }
 
   let _resolveAlerta = null;
-  let _resolveConfirm = null;
 
   function mostrarAlerta(mensagem) {
-
     return new Promise(resolve => {
-
       document.getElementById('alertaMensagem').textContent = mensagem;
       document.getElementById('modalAlerta').classList.add('aberto');
-
       _resolveAlerta = resolve;
     });
   }
 
   function confirmarAlerta() {
-
     document.getElementById('modalAlerta').classList.remove('aberto');
-
-    if (_resolveAlerta) {
-      const resolver = _resolveAlerta;
-      _resolveAlerta = null;
-      resolver();
-    }
+    if (_resolveAlerta) { const r = _resolveAlerta; _resolveAlerta = null; r(); }
   }
 
-  function mostrarConfirm(mensagem) {
+  // ---------- dados ----------
 
-    return new Promise(resolve => {
-
-      document.getElementById('confirmMensagem').textContent = mensagem;
-      document.getElementById('modalConfirm').classList.add('aberto');
-
-      _resolveConfirm = resolve;
-    });
-  }
-
-  function responderConfirm(valor) {
-
-    document.getElementById('modalConfirm').classList.remove('aberto');
-
-    if (_resolveConfirm) {
-      const resolver = _resolveConfirm;
-      _resolveConfirm = null;
-      resolver(valor);
-    }
-  }
-
-  // Uma carga por vez; se pedirem outra durante a carga, roda de novo no fim
-  // (a tela nunca fica com dados mais velhos que o último pedido).
   function carregarDados() {
-    return executarSerial('dados-mesa', carregarDadosAgora);
+    return executarSerial('dados-mesas', carregarDadosAgora);
   }
 
   async function carregarDadosAgora() {
 
-    console.log('Carregando dados do Supabase');
+    const { data: mesasDB, error } = await client
+      .from('cash_mesas')
+      .select('*')
+      .order('iniciado_em', { ascending: false });
 
-    const { data: jogadoresDB } = await client
-      .from('jogadores')
-      .select('*');
+    if (error) {
+      console.error(error);
+      tabelasFaltando = /cash_mesas/.test(error.message || '');
+      mesas = [];
+      renderizar(error);
+      return;
+    }
 
-    // Todas as movimentações, em páginas de 1000 (o Supabase limita cada
-    // consulta a 1000 linhas; antes o histórico antigo ficava incompleto).
-    const movimentacoesDB = await buscarTodas(() => client
+    tabelasFaltando = false;
+    mesas = mesasDB || [];
+
+    const { data: assentosDB } = await client.from('cash_mesa_jogadores').select('mesa_id,levantou_em');
+    assentos = assentosDB || [];
+
+    movsMesas = await buscarTodas(() => client
       .from('movimentacoes')
-      .select('*')
-      .order('id', { ascending: false }));
+      .select('id,mesa_id,tipo,valor')
+      .not('mesa_id', 'is', null)
+      .order('id', { ascending: true }));
 
-    const { data: configuracaoDB } = await client
-      .from('configuracoes')
-      .select('*')
-      .eq('id', 1)
+    renderizar();
+  }
+
+  // ---------- lista ----------
+
+  function filtrarMesas(valor) {
+
+    filtroStatus = valor;
+
+    document.querySelectorAll('#filtroSegmentado button').forEach(b => {
+      const ativo = b.dataset.valor === valor;
+      b.classList.toggle('ativo', ativo);
+      b.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+    });
+
+    renderizar();
+  }
+
+  function mostrarListaVazia(lista, mensagem) {
+    lista.innerHTML = `
+      <div class="lista-vazia">
+        <span class="lista-vazia-icone">${ICONE_MESA}</span>
+        <p>${mensagem}</p>
+      </div>
+    `;
+  }
+
+  function renderizar(erro) {
+
+    const lista = document.getElementById('listaMesas');
+
+    if (tabelasFaltando) {
+      mostrarListaVazia(lista, 'As mesas de Cash Game ainda não foram ativadas. Rode o arquivo <strong>sql/008_cash_mesas.sql</strong> no Supabase.');
+      return;
+    }
+
+    if (erro) {
+      mostrarListaVazia(lista, 'Não foi possível carregar as mesas. Tente atualizar a página.');
+      return;
+    }
+
+    const filtradas = filtroStatus ? mesas.filter(m => m.status === filtroStatus) : mesas;
+
+    if (mesas.length === 0) {
+      mostrarListaVazia(lista, 'Nenhuma mesa aberta ainda. Toque em <strong>Nova Mesa</strong> para começar.');
+      return;
+    }
+
+    if (filtradas.length === 0) {
+      mostrarListaVazia(lista, filtroStatus === 'ativo' ? 'Nenhuma mesa ativa agora.' : 'Nenhuma mesa encontrada com esse filtro.');
+      return;
+    }
+
+    lista.innerHTML = filtradas.map(mesa => {
+
+      const encerrada = mesa.status === 'encerrado';
+      const sentados = assentos.filter(a => a.mesa_id === mesa.id && !a.levantou_em).length;
+      const movs = movsMesas.filter(m => m.mesa_id === mesa.id);
+      const compras = movs.filter(m => m.tipo === 'Entrada').reduce((s, m) => s + Number(m.valor || 0), 0);
+      const devolucoes = movs.filter(m => m.tipo === 'Saída').reduce((s, m) => s + Number(m.valor || 0), 0);
+
+      return `
+        <a class="cg-mesa-card" href="cash-mesa.html?id=${encodeURIComponent(mesa.id)}">
+          <div class="cg-mesa-topo">
+            <h3>${escapeHtml(mesa.nome)}</h3>
+            <span class="cg-badge ${encerrada ? 'encerrado' : 'ativo'}">${encerrada ? 'Encerrada' : 'Ativa'}</span>
+          </div>
+          <div class="cg-mesa-linha">${ICONE_RELOGIO}<span>${encerrada ? 'Encerrada' : 'Iniciada'}: ${formatarDataHora(encerrada ? mesa.encerrado_em : mesa.iniciado_em)}</span></div>
+          ${mesa.observacao ? `<div class="cg-mesa-linha">${escapeHtml(mesa.observacao)}</div>` : ''}
+          <div class="cg-mesa-numeros">
+            <div><span>Sentados</span><strong>${sentados}</strong></div>
+            <div><span>Compras</span><strong>${formatarMoeda(compras)}</strong></div>
+            <div><span>Devoluções</span><strong>${formatarMoeda(devolucoes)}</strong></div>
+          </div>
+          <div class="cg-mesa-linha">${ICONE_PESSOAS}<span>${encerrada ? 'Ver fechamento' : 'Abrir mesa'}</span></div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  // ---------- nova mesa ----------
+
+  function abrirModalNovaMesa() {
+
+    if (!adminLiberado) return;
+
+    if (tabelasFaltando) {
+      mostrarAlerta('Rode o arquivo sql/008_cash_mesas.sql no Supabase antes de abrir mesas.');
+      return;
+    }
+
+    const usados = new Set(mesas.map(m => m.nome.toLowerCase()));
+    let n = 1;
+    while (usados.has(`mesa ${n}`)) n++;
+
+    document.getElementById('novaMesaNome').value = `Mesa ${n}`;
+    document.getElementById('novaMesaObs').value = '';
+    document.getElementById('modalNovaMesa').classList.add('aberto');
+
+    setTimeout(() => document.getElementById('novaMesaNome').select(), 50);
+  }
+
+  function fecharModalNovaMesa() {
+    document.getElementById('modalNovaMesa').classList.remove('aberto');
+  }
+
+  async function criarMesa() {
+
+    const nome = document.getElementById('novaMesaNome').value.trim().replace(/\s+/g, ' ');
+    const observacao = document.getElementById('novaMesaObs').value.trim();
+
+    if (!nome) {
+      await mostrarAlerta('Informe o nome da mesa');
+      return;
+    }
+
+    const btn = document.getElementById('btnCriarMesa');
+    btn.classList.add('disabled');
+
+    const { data, error } = await client
+      .from('cash_mesas')
+      .insert([{ nome, observacao: observacao || null }])
+      .select()
       .single();
 
-    jogadores = jogadoresDB || [];
-    jogadores.sort((a, b) => a.nome.localeCompare(b.nome));
-    movimentacoes = movimentacoesDB || [];
-
-    torneioAtualId = configuracaoDB?.torneio_atual_id || null;
-
-    const { data: torneiosDB } = await client
-      .from('torneios')
-      .select('*')
-      .order('criado_em', { ascending: false });
-
-    todosTorneios = torneiosDB || [];
-
-    const { data: valoresDB } = await client
-      .from('torneio_valores')
-      .select('*')
-      .order('ordem', { ascending: true });
-
-    todosValoresTorneios = valoresDB || [];
-
-    console.log('Jogadores carregados:', jogadores.length);
-    console.log('Movimentações carregadas:', movimentacoes.length);
-
-    atualizarTela();
-  }
-
-  function atualizarTela() {
-
-    console.log('Atualizando tela');
-
-    const select = document.getElementById('jogadorSelect');
-
-    select.innerHTML = '<option value="">Selecione o jogador</option>';
-
-    jogadores.forEach((jogador, index) => {
-
-      select.innerHTML += `
-        <option value="${index}">${escapeHtml(jogador.nome)}</option>
-      `;
-    });
-
-  }
-
-  function abrirModalCadastro() {
-
-    if (!adminLiberado) return;
-
-    document.getElementById('cadastroNome').value = '';
-    document.getElementById('cadastroTelefone').value = '';
-    document.getElementById('cadastroCpf').value = '';
-
-    document.getElementById('modalCadastro').classList.add('aberto');
-  }
-
-  function fecharModalCadastro() {
-
-    document.getElementById('modalCadastro').classList.remove('aberto');
-  }
-
-  async function cadastrarJogador() {
-
-    console.log('Tentando cadastrar jogador');
-
-    if (!adminLiberado) {
-      await mostrarAlerta('Modo ADM necessário');
-      return;
-    }
-
-    const nome = document.getElementById('cadastroNome').value.trim();
-    const telefone = document.getElementById('cadastroTelefone').value.trim();
-    const cpf = document.getElementById('cadastroCpf').value.trim();
-
-    if (!nome) return;
-
-    const existe = jogadores.find(j =>
-      j.nome.toLowerCase() === nome.toLowerCase() ||
-      (cpf && j.cpf === cpf)
-    );
-
-    if (existe) {
-      console.log('Jogador duplicado detectado');
-      await mostrarAlerta('Jogador já cadastrado');
-      return;
-    }
-
-    const btn = document.getElementById('btnCadastrarJogador');
-    btn.classList.add('disabled');
-
-    const { error } = await client
-      .from('jogadores')
-      .insert([
-        {
-          nome,
-          telefone,
-          cpf
-        }
-      ]);
-
     btn.classList.remove('disabled');
 
     if (error) {
-      await mostrarAlerta('Erro ao cadastrar jogador');
       console.error(error);
+      await mostrarAlerta('Erro ao abrir a mesa. Tente de novo.');
       return;
     }
 
-    console.log('Jogador cadastrado:', nome);
-
-    jogadores.push({
-      nome,
-      telefone,
-      cpf
-    });
-
-    atualizarTela();
-
-    fecharModalCadastro();
+    location.href = `cash-mesa.html?id=${encodeURIComponent(data.id)}`;
   }
 
-  let sugestoesAtuais = [];
-  let indiceDestacado = 0;
-
-  function destacarSugestao(novoIndice) {
-
-    indiceDestacado = novoIndice;
-
-    const itens = document.querySelectorAll('#sugestoesJogadores .sugestao-item');
-
-    itens.forEach((item, i) => {
-      item.classList.toggle('sugestao-selecionada', i === indiceDestacado);
-    });
-
-    if (itens[indiceDestacado]) {
-      itens[indiceDestacado].scrollIntoView({ block: 'nearest' });
-    }
-  }
-
-  function selecionarJogadorPesquisa(jogador) {
-
-    console.log('Jogador selecionado:', jogador.nome);
-
-    document.getElementById('pesquisaJogador').value = jogador.nome;
-
-    const indexJogador = jogadores.findIndex(j => j.nome === jogador.nome);
-
-    document.getElementById('jogadorSelect').value = indexJogador;
-
-    document.getElementById('sugestoesJogadores').style.display = 'none';
-  }
-
-  function filtrarJogadores() {
-
-    const pesquisa = document.getElementById('pesquisaJogador').value.toLowerCase();
-
-    console.log('Pesquisando jogador:', pesquisa);
-
-    const sugestoes = document.getElementById('sugestoesJogadores');
-
-    sugestoes.innerHTML = '';
-    sugestoesAtuais = [];
-
-    if (!pesquisa) {
-      sugestoes.style.display = 'none';
-      return;
-    }
-
-    const filtrados = jogadores
-      .filter(j =>
-        j.ativo !== false &&
-        j.nome.toLowerCase().includes(pesquisa)
-      )
-      .sort((a, b) => {
-
-        const aNome = a.nome.toLowerCase();
-        const bNome = b.nome.toLowerCase();
-
-        const aStarts = aNome.startsWith(pesquisa);
-        const bStarts = bNome.startsWith(pesquisa);
-
-        if (aStarts && !bStarts) return -1;
-        if (!aStarts && bStarts) return 1;
-
-        return aNome.localeCompare(bNome);
-      });
-
-    console.log('Sugestões encontradas:', filtrados.length);
-
-    sugestoesAtuais = filtrados;
-
-    if (filtrados.length === 0) {
-      sugestoes.style.display = 'none';
-      return;
-    }
-
-    sugestoes.style.display = 'block';
-
-    filtrados.forEach((jogador) => {
-
-      const div = document.createElement('div');
-
-      div.className = 'sugestao-item';
-
-      div.innerHTML = `<strong>${escapeHtml(jogador.nome)}</strong>`;
-
-      div.onclick = () => {
-        selecionarJogadorPesquisa(jogador);
-      };
-
-      sugestoes.appendChild(div);
-    });
-
-    destacarSugestao(0);
-  }
-
-  document.getElementById('pesquisaJogador')
-    .addEventListener('keydown', function(e) {
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (sugestoesAtuais.length === 0) return;
-        destacarSugestao(Math.min(indiceDestacado + 1, sugestoesAtuais.length - 1));
-        return;
-      }
-
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (sugestoesAtuais.length === 0) return;
-        destacarSugestao(Math.max(indiceDestacado - 1, 0));
-        return;
-      }
-
-      if (e.key === 'Enter') {
-
-        e.preventDefault();
-
-        if (sugestoesAtuais[indiceDestacado]) {
-          selecionarJogadorPesquisa(sugestoesAtuais[indiceDestacado]);
-        }
-      }
+  document.getElementById('novaMesaNome').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); criarMesa(); }
   });
 
-  let entradaPendente = null;
-  let modalidadeSelecionada = 'Não Pago';
+  // ---------- início ----------
 
-  async function adicionarEntrada() {
+  async function sair() {
+    await client.auth.signOut();
+    window.location.href = 'login.html';
+  }
 
-    console.log('Adicionando entrada');
-
-    if (!adminLiberado) return;
-
-    const jogador = jogadores[
-      document.getElementById('jogadorSelect').value
-    ];
-
-    const valor = parseFloat(
-      document.getElementById('entrada').value
-    );
-
-    if (!jogador) {
-      await mostrarAlerta('Selecione um jogador antes de continuar');
-      return;
+  client.auth.onAuthStateChange((event, session) => {
+    if (!session && event === 'SIGNED_OUT') {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent('index.html');
     }
-
-    if (isNaN(valor) || valor <= 0) {
-      await mostrarAlerta('Informe um valor válido');
-      return;
-    }
-
-    entradaPendente = { jogador, valor };
-
-    abrirModalConfirmacao();
-  }
-
-  function abrirModalConfirmacao() {
-
-    selecionarModalidade('Não Pago');
-
-    document.getElementById('modalResumo').textContent =
-      `${entradaPendente.jogador.nome} — Entrada de ${formatarMoeda(entradaPendente.valor)}`;
-
-    document.getElementById('modalConfirmacao').classList.add('aberto');
-  }
-
-  function fecharModalConfirmacao() {
-
-    entradaPendente = null;
-
-    document.getElementById('modalConfirmacao').classList.remove('aberto');
-  }
-
-  function selecionarModalidade(modalidade) {
-
-    modalidadeSelecionada = modalidade;
-
-    document.getElementById('btnModalidadeCash').classList.toggle('ativo', modalidade === 'Não Pago');
-    document.getElementById('btnModalidadeTorneio').classList.toggle('ativo', modalidade === 'Pago');
-  }
-
-  async function confirmarEntradaComModalidade() {
-
-    if (!entradaPendente) return;
-
-    const { jogador, valor } = entradaPendente;
-    const pago = modalidadeSelecionada === 'Pago';
-
-    const btn = document.getElementById('btnConfirmarEntrada');
-    btn.classList.add('disabled');
-
-    const { error } = await client
-      .from('movimentacoes')
-      .insert([
-        {
-          jogador: jogador.nome,
-          tipo: 'Entrada',
-          valor,
-          modalidade: 'Cash',
-          pago,
-          data: new Date().toISOString(),
-          cpf: jogador.cpf,
-          telefone: jogador.telefone
-        }
-      ]);
-
-    btn.classList.remove('disabled');
-
-    if (error) {
-      await mostrarAlerta('Erro ao registrar entrada');
-      console.error(error);
-      return;
-    }
-
-    console.log('Entrada registrada:', valor, 'pago:', pago);
-
-    document.getElementById('entrada').value = '';
-    document.getElementById('pesquisaJogador').value = '';
-
-    fecharModalConfirmacao();
-
-    carregarDados();
-  }
-
-  let saidaPendente = null;
-  async function adicionarSaida() {
-
-    console.log('Adicionando saída');
-
-    if (!adminLiberado) return;
-
-    const jogador = jogadores[
-      document.getElementById('jogadorSelect').value
-    ];
-
-    const valor = parseFloat(
-      document.getElementById('saida').value
-    );
-
-    if (!jogador) {
-      await mostrarAlerta('Selecione um jogador antes de continuar');
-      return;
-    }
-
-    if (isNaN(valor) || valor <= 0) {
-      await mostrarAlerta('Informe um valor válido');
-      return;
-    }
-
-    saidaPendente = { jogador, valor };
-
-    abrirModalConfirmacaoSaida();
-  }
-
-  function abrirModalConfirmacaoSaida() {
-
-    document.getElementById('modalResumoSaida').textContent =
-      `${saidaPendente.jogador.nome} — Saída de ${formatarMoeda(saidaPendente.valor)}`;
-
-    document.getElementById('modalConfirmacaoSaida').classList.add('aberto');
-  }
-
-  function fecharModalConfirmacaoSaida() {
-
-    saidaPendente = null;
-
-    document.getElementById('modalConfirmacaoSaida').classList.remove('aberto');
-  }
-
-  async function confirmarSaidaComModalidade() {
-
-    if (!saidaPendente) return;
-
-    const { jogador, valor } = saidaPendente;
-    const modalidade = 'Cash';
-
-    const btn = document.getElementById('btnConfirmarSaida');
-    btn.classList.add('disabled');
-
-    const { error } = await client
-      .from('movimentacoes')
-      .insert([
-        {
-          jogador: jogador.nome,
-          tipo: 'Saída',
-          valor,
-          modalidade,
-          data: new Date().toISOString(),
-          cpf: jogador.cpf,
-          telefone: jogador.telefone
-        }
-      ]);
-
-    btn.classList.remove('disabled');
-
-    if (error) {
-      await mostrarAlerta('Erro ao registrar saída');
-      console.error(error);
-      return;
-    }
-
-    console.log('Saída registrada:', valor, modalidade);
-
-    document.getElementById('saida').value = '';
-    document.getElementById('pesquisaJogador').value = '';
-
-    fecharModalConfirmacaoSaida();
-
-    carregarDados();
-  }
-
-  document.addEventListener('keydown', function(e) {
-
-    if (e.key !== 'Escape') return;
-
-    if (document.getElementById('modalConfirm').classList.contains('aberto')) {
-      responderConfirm(false);
-      return;
-    }
-
-    if (document.getElementById('modalAlerta').classList.contains('aberto')) {
-      confirmarAlerta();
-      return;
-    }
-
-    fecharMenu();
-    fecharModalCadastro();
-    fecharModalConfirmacao();
-    fecharModalConfirmacaoSaida();
   });
-
-  function liberarAcoes() {
-
-    console.log('Liberando ações ADM');
-
-    document.getElementById('btnAdmin').textContent = 'Sair';
-
-    document.getElementById('btnAbrirCadastro')?.classList.remove('disabled');
-
-    document.getElementById('btnEntrada').classList.remove('disabled');
-    document.getElementById('btnSaida').classList.remove('disabled');
-  }
-
-
-
-
-
-
-  async function tratarHashInicial() {
-
-    const hash = window.location.hash.replace('#', '');
-
-    if (!hash) return;
-
-    history.replaceState(null, '', window.location.pathname);
-
-    const { data } = await client.auth.getSession();
-    adminLiberado = !!data.session;
-
-    if (hash === 'cadastro') {
-      abrirModalCadastro();
-    }
-  }
 
   (async function inicializar() {
 
-    const autenticado = await exigirSessaoOuRedirecionar();
+    const { data } = await client.auth.getSession();
 
-    if (!autenticado) return;
+    if (!data.session) {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent('index.html');
+      return;
+    }
+
+    adminLiberado = true;
+    document.getElementById('btnNovaMesa').classList.remove('disabled');
 
     await carregarDados();
-    await tratarHashInicial();
+
+    iniciarRealtimeRobusto({
+      nome: 'cash-mesas-realtime',
+      tabelas: ['cash_mesas', 'cash_mesa_jogadores', 'movimentacoes'],
+      aoMudar: () => carregarDados()
+    });
   })();
 </script>
 

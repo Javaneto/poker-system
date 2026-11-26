@@ -34,7 +34,7 @@
   // id/desabilitado: mantêm os ids que as páginas já usam para liberar por permissão.
   const ITENS = [
     { grupo: 'Operação' },
-    { rotulo: 'Cash Game', icone: 'cash', href: 'index.html' },
+    { rotulo: 'Cash Game', icone: 'cash', href: 'index.html', tambem: ['cash-mesa.html'] },
     { rotulo: 'Diretor', icone: 'diretor', href: 'diretor.html' },
     { rotulo: 'Em Aberto', icone: 'aberto', href: 'em-aberto.html' },
     { rotulo: 'Relatório', icone: 'relatorio', href: 'relatorio.html' },
@@ -126,7 +126,7 @@
 
   function montarItem(item) {
     const naPaginaDaAcao = item.acao && pagina === item.paginaAcao;
-    const ativo = !item.acao && item.href === pagina;
+    const ativo = !item.acao && (item.href === pagina || (item.tambem || []).includes(pagina));
     const classes = 'mnu-item' + (ativo ? ' ativo' : '') + (item.id && naPaginaDaAcao ? ' disabled' : '');
     const conteudo = icone(item.icone) + '<span class="mnu-rot">' + item.rotulo + '</span>';
     const atrib = (item.id && naPaginaDaAcao ? ' id="' + item.id + '"' : '') + ' class="' + classes + '" title="' + item.rotulo + '"' + (ativo ? ' aria-current="page"' : '');
