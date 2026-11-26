@@ -236,12 +236,6 @@
     </table>
 
     <div id="tabelaAbertasMobile" class="relatorio-mobile"></div>
-
-    <div style="display:flex;justify-content:flex-end;margin-top:12px;">
-      <button id="btnFecharTodos" class="btn-red disabled" onclick="fecharTodos()">
-        Fechamento de Todos
-      </button>
-    </div>
   </div>
 
 </div>
@@ -392,7 +386,6 @@
   let jogadores = [];
   let movimentacoes = [];   // só as em aberto (sessão não finalizada)
   let torneios = [];
-  let idsVisiveis = [];
   let adminLiberado = false;
 
   let jogadorAtual = null;  // { nome, ids }
@@ -534,8 +527,6 @@
     document.getElementById('kpiReceber').textContent = formatarMoeda(Math.abs(todas.filter(l => l.resultado < -0.005).reduce((s, l) => s + l.resultado, 0)));
     document.getElementById('kpiPagar').textContent = formatarMoeda(todas.filter(l => l.resultado > 0.005).reduce((s, l) => s + l.resultado, 0));
 
-    idsVisiveis = linhas.flatMap(l => l.movs.map(m => m.id));
-
     const tabela = document.getElementById('tabelaAbertas');
     const mobile = document.getElementById('tabelaAbertasMobile');
 
@@ -573,8 +564,6 @@
         `;
       }).join('');
     }
-
-    document.getElementById('btnFecharTodos').classList.toggle('disabled', !adminLiberado || idsVisiveis.length === 0);
 
     if (jogadorAtual && document.getElementById('modalJogador').classList.contains('aberto')) {
       renderizarJogador();
@@ -910,40 +899,6 @@
     fechamento = null;
     fecharModal('modalFechamento');
     fecharModalJogador();
-    await carregarDados();
-  }
-
-  async function fecharTodos() {
-
-    if (!adminLiberado) return;
-
-    await carregarDados();
-
-    const ids = [...idsVisiveis];
-
-    if (ids.length === 0) return;
-
-    const qtd = new Set(movimentacoes.filter(m => ids.includes(m.id)).map(m => m.jogador)).size;
-
-    if (!await mostrarConfirm(`Fazer o fechamento de ${qtd} jogador(es) da lista? Nada é recebido nem pago agora: o resultado de cada um vai para o saldo do jogador.`)) return;
-
-    const btn = document.getElementById('btnFecharTodos');
-    btn.classList.add('disabled');
-
-    const { error } = await client
-      .from('movimentacoes')
-      .update({ sessao_finalizada_em: new Date().toISOString() })
-      .in('id', ids)
-      .is('sessao_finalizada_em', null);
-
-    btn.classList.remove('disabled');
-
-    if (error) {
-      console.error(error);
-      await mostrarAlerta('Erro ao fazer o fechamento');
-      return;
-    }
-
     await carregarDados();
   }
 
