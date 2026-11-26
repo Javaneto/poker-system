@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RPG Poker Club</title>
+  <title>Cash Game — RPG Poker Club</title>
 
   <script src="js/tema.js"></script>
 
@@ -20,7 +20,7 @@
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:12px;">
 
-      <h1 style="margin:0;">RPG Poker Club</h1>
+      <h1 style="margin:0;">Cash Game</h1>
     </div>
   </div>
 
@@ -63,77 +63,8 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="topbar">
-      <h2>Histórico de Movimentações</h2>
-
-      <div style="display:flex;gap:8px;">
-        <button class="btn-gray" onclick="location.href='em-aberto.html'">Em Aberto</button>
-        <button id="btnDesfazer" class="btn-gray disabled" onclick="abrirCentralHistorico({ aoAlterar: carregarDados })">
-          Desfazer / Log
-        </button>
-      </div>
-    </div>
-
-    <div class="pesquisa-wrapper">
-      <input
-        enterkeyhint="done"
-        autocapitalize="words"
-        spellcheck="false"
-        type="text"
-        id="pesquisaJogadorRelatorio"
-        placeholder="Pesquisar jogador"
-        autocomplete="off"
-        oninput="filtrarJogadoresRelatorio()"
-      >
-
-      <div id="sugestoesJogadoresRelatorio"></div>
-    </div>
-
-    <table class="relatorio-desktop">
-      <thead>
-        <tr>
-          <th>Data/Hora</th>
-          <th>Jogador</th>
-          <th>Tipo</th>
-          <th>Pagamento</th>
-          <th>Resultado</th>
-        </tr>
-      </thead>
-
-      <tbody id="relatorioTabela"></tbody>
-    </table>
-
-    <div id="relatorio" class="relatorio-mobile"></div>
-
-    <div style="margin-top:12px;text-align:center;">
-      <button
-        id="btnVerMais"
-        class="btn-gray"
-        onclick="verMaisRelatorio()"
-        type="button"
-      >
-        Ver Mais
-      </button>
-    </div>
-  </div>
-
 </div>
 
-
-<div id="modalDetalheHistorico" class="modal-overlay">
-  <div class="modal-box" style="max-width:400px;">
-    <h2 id="detalheHistoricoTitulo">Detalhe</h2>
-
-    <div id="detalheHistoricoConteudo"></div>
-
-    <div class="modal-acoes" style="margin-top:16px;">
-      <button class="btn-gray" onclick="fecharModalDetalheHistorico()">
-        Fechar
-      </button>
-    </div>
-  </div>
-</div>
 
 <div id="modalCadastro" class="modal-overlay">
   <div class="modal-box">
@@ -250,11 +181,9 @@
   let jogadores = [];
   let movimentacoes = [];
   let adminLiberado = false;
-  let limiteRelatorio = 10;
   let torneioAtualId = null;
   let todosTorneios = [];
   let todosValoresTorneios = [];
-  let filtroRelatorioJogador = '';
 
   client.auth.onAuthStateChange((event, session) => {
 
@@ -314,153 +243,6 @@
       "'": '&#39;'
     }[c]));
   }
-
-  function calcularResultado(movs) {
-
-    let entrada = 0;
-    let entradaParaSaldo = 0;
-    let saida = 0;
-    let qtdEntradas = 0;
-    let temPagamento = false;
-
-    movs.forEach(mov => {
-
-      if (mov.tipo === 'Entrada' || mov.tipo === 'Registro' || mov.tipo === 'Rebuy' || mov.tipo === 'Add-on') {
-        entrada += Number(mov.valor);
-        qtdEntradas++;
-
-        if (!mov.pago) {
-          entradaParaSaldo += Number(mov.valor);
-        }
-      }
-
-      if (mov.tipo === 'Saída') {
-        saida += Number(mov.valor);
-      }
-
-      if (mov.tipo === 'Pagamento') {
-        entradaParaSaldo -= Number(mov.valor);
-        temPagamento = true;
-      }
-    });
-
-    return { entrada, entradaParaSaldo, saida, qtdEntradas, temPagamento, resultado: saida - entradaParaSaldo };
-  }
-
-  function abrirModalDetalheSessao(jogador, sessaoFinalizadaEm) {
-
-    const movsGrupo = movimentacoes
-      .filter(m => m.jogador === jogador && m.sessao_finalizada_em === sessaoFinalizadaEm)
-      .sort((a, b) => new Date(a.data) - new Date(b.data));
-
-    if (movsGrupo.length === 0) return;
-
-    const { entrada, saida, resultado } = calcularResultado(movsGrupo);
-
-    const dataFinal = new Date(sessaoFinalizadaEm).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    document.getElementById('detalheHistoricoTitulo').textContent = jogador;
-
-    const listaHtml = movsGrupo.map(m => {
-
-      const dataMov = new Date(m.data).toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      return `
-        <div class="linha-desfazer">
-          <div class="linha-desfazer-info">
-            <strong>${escapeHtml(m.tipo)} · ${escapeHtml(m.modalidade || '-')}</strong>
-            <span style="color:var(--apagado-2);">${dataMov}</span>
-          </div>
-          <div class="linha-desfazer-valor">
-            <strong>${formatarMoeda(Number(m.valor))}</strong>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    document.getElementById('detalheHistoricoConteudo').innerHTML = `
-      <p style="color:var(--apagado);margin-bottom:4px;">Sessão finalizada em</p>
-      <p style="margin-top:0;">${dataFinal}</p>
-
-      <p style="color:var(--apagado);margin-bottom:4px;">Resultado</p>
-      <p style="margin-top:0;font-size:22px;" class="${resultado >= 0 ? 'positivo' : 'negativo'}">
-        ${resultado >= 0 ? '+' : '-'} ${formatarMoeda(Math.abs(resultado))}
-      </p>
-
-      <p style="color:var(--apagado);margin-bottom:8px;">Entrou ${formatarMoeda(entrada)} · Saiu ${formatarMoeda(saida)}</p>
-      <div style="max-height:260px;overflow-y:auto;">${listaHtml}</div>
-    `;
-
-    document.getElementById('modalDetalheHistorico').classList.add('aberto');
-  }
-
-  function fecharModalDetalheHistorico() {
-
-    document.getElementById('modalDetalheHistorico').classList.remove('aberto');
-  }
-
-  function agruparParaHistorico(lista) {
-
-    const chavesProcessadas = new Set();
-    const itens = [];
-
-    lista.forEach(mov => {
-
-      if (!mov.sessao_finalizada_em) {
-        return;
-      }
-
-      const chave = `${mov.jogador}||${mov.sessao_finalizada_em}`;
-
-      if (chavesProcessadas.has(chave)) return;
-
-      chavesProcessadas.add(chave);
-
-      const movsGrupo = lista.filter(m =>
-        m.jogador === mov.jogador && m.sessao_finalizada_em === mov.sessao_finalizada_em
-      );
-
-      const { entrada, saida, resultado } = calcularResultado(movsGrupo);
-
-      itens.push({
-        tipo: 'grupo',
-        jogador: mov.jogador,
-        sessaoFinalizadaEm: mov.sessao_finalizada_em,
-        movs: movsGrupo,
-        entrada,
-        saida,
-        resultado
-      });
-    });
-
-    return itens;
-  }
-
-  function tratarCliqueHistorico(e) {
-
-    const el = e.target.closest('.jogador-clicavel');
-
-    if (!el) return;
-
-    if (el.dataset.jogador && el.dataset.sessao) {
-      abrirModalDetalheSessao(el.dataset.jogador, el.dataset.sessao);
-    }
-  }
-
-  document.getElementById('relatorio').addEventListener('click', tratarCliqueHistorico);
-  document.getElementById('relatorioTabela').addEventListener('click', tratarCliqueHistorico);
 
   let _resolveAlerta = null;
   let _resolveConfirm = null;
@@ -566,12 +348,7 @@
 
     console.log('Atualizando tela');
 
-    const relatorio = document.getElementById('relatorio');
-    const relatorioTabela = document.getElementById('relatorioTabela');
     const select = document.getElementById('jogadorSelect');
-
-    relatorio.innerHTML = '';
-    relatorioTabela.innerHTML = '';
 
     select.innerHTML = '<option value="">Selecione o jogador</option>';
 
@@ -579,75 +356,6 @@
 
       select.innerHTML += `
         <option value="${index}">${escapeHtml(jogador.nome)}</option>
-      `;
-    });
-
-    const movimentacoesFiltradas = filtroRelatorioJogador
-      ? movimentacoes.filter(mov =>
-          mov.jogador.toLowerCase().includes(filtroRelatorioJogador.toLowerCase())
-        )
-      : movimentacoes;
-
-    const itensHistorico = agruparParaHistorico(movimentacoesFiltradas);
-    const itensVisiveis = itensHistorico.slice(0, limiteRelatorio);
-
-    console.log('Renderizando itens do histórico:', itensVisiveis.length);
-
-    if (itensVisiveis.length === 0) {
-      relatorio.innerHTML = '<p style="color:var(--apagado);padding:8px 0;">Nenhuma sessão finalizada ainda.</p>';
-    }
-
-    itensVisiveis.forEach(item => {
-
-      const dataFormatada = new Date(item.sessaoFinalizadaEm).toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      const sinal = item.resultado >= 0 ? '+ ' : '- ';
-      const classeValor = item.resultado >= 0 ? 'positivo' : 'negativo';
-
-      let statusPagamento;
-      let classeStatus;
-
-      if (item.resultado < 0) {
-        statusPagamento = 'Pendente';
-        classeStatus = 'negativo';
-      } else if (item.resultado === 0) {
-        statusPagamento = 'Realizado';
-        classeStatus = '';
-      } else {
-        statusPagamento = 'Em Saldo';
-        classeStatus = 'positivo';
-      }
-
-      const statusTipo = item.resultado === 0 ? 'Finalizado' : 'Em Aberto';
-
-      relatorio.innerHTML += `
-        <div class="linha-desfazer">
-          <div class="linha-desfazer-info">
-            <strong class="jogador-clicavel" data-jogador="${escapeHtml(item.jogador)}" data-sessao="${item.sessaoFinalizadaEm}">${escapeHtml(item.jogador)}</strong>
-            ${statusTipo} · <span class="${classeStatus}">${statusPagamento}</span><br>
-            Entrou ${formatarMoeda(item.entrada)} · Saiu ${formatarMoeda(item.saida)}<br>
-            <span style="color:var(--apagado-2);">${dataFormatada}</span>
-          </div>
-          <div class="linha-desfazer-valor">
-            <strong class="${classeValor}">${sinal}${formatarMoeda(Math.abs(item.resultado))}</strong>
-          </div>
-        </div>
-      `;
-
-      relatorioTabela.innerHTML += `
-        <tr>
-          <td>${dataFormatada}</td>
-          <td class="jogador-clicavel" data-jogador="${escapeHtml(item.jogador)}" data-sessao="${item.sessaoFinalizadaEm}">${escapeHtml(item.jogador)}</td>
-          <td>${statusTipo}</td>
-          <td class="${classeStatus}">${statusPagamento}</td>
-          <td class="${classeValor}">${sinal}${formatarMoeda(Math.abs(item.resultado))}</td>
-        </tr>
       `;
     });
 
@@ -847,133 +555,6 @@
 
         if (sugestoesAtuais[indiceDestacado]) {
           selecionarJogadorPesquisa(sugestoesAtuais[indiceDestacado]);
-        }
-      }
-  });
-
-  let sugestoesRelatorioAtuais = [];
-  let indiceDestacadoRelatorio = 0;
-
-  function destacarSugestaoRelatorio(novoIndice) {
-
-    indiceDestacadoRelatorio = novoIndice;
-
-    const itens = document.querySelectorAll('#sugestoesJogadoresRelatorio .sugestao-item');
-
-    itens.forEach((item, i) => {
-      item.classList.toggle('sugestao-selecionada', i === indiceDestacadoRelatorio);
-    });
-
-    if (itens[indiceDestacadoRelatorio]) {
-      itens[indiceDestacadoRelatorio].scrollIntoView({ block: 'nearest' });
-    }
-  }
-
-  function selecionarJogadorRelatorio(jogador) {
-
-    console.log('Jogador selecionado no filtro do relatório:', jogador.nome);
-
-    document.getElementById('pesquisaJogadorRelatorio').value = jogador.nome;
-
-    filtroRelatorioJogador = jogador.nome;
-
-    document.getElementById('sugestoesJogadoresRelatorio').style.display = 'none';
-
-    atualizarTela();
-  }
-
-  function filtrarJogadoresRelatorio() {
-
-    const pesquisa = document.getElementById('pesquisaJogadorRelatorio').value;
-
-    console.log('Pesquisando jogador no relatório:', pesquisa);
-
-    filtroRelatorioJogador = pesquisa.trim();
-    limiteRelatorio = 10;
-
-    const sugestoes = document.getElementById('sugestoesJogadoresRelatorio');
-    const termo = pesquisa.toLowerCase();
-
-    sugestoes.innerHTML = '';
-    sugestoesRelatorioAtuais = [];
-
-    if (!termo) {
-      sugestoes.style.display = 'none';
-      atualizarTela();
-      return;
-    }
-
-    const filtrados = jogadores
-      .filter(j => j.nome.toLowerCase().includes(termo))
-      .sort((a, b) => {
-
-        const aNome = a.nome.toLowerCase();
-        const bNome = b.nome.toLowerCase();
-
-        const aStarts = aNome.startsWith(termo);
-        const bStarts = bNome.startsWith(termo);
-
-        if (aStarts && !bStarts) return -1;
-        if (!aStarts && bStarts) return 1;
-
-        return aNome.localeCompare(bNome);
-      });
-
-    console.log('Sugestões encontradas no relatório:', filtrados.length);
-
-    sugestoesRelatorioAtuais = filtrados;
-
-    if (filtrados.length === 0) {
-      sugestoes.style.display = 'none';
-      atualizarTela();
-      return;
-    }
-
-    sugestoes.style.display = 'block';
-
-    filtrados.forEach((jogador) => {
-
-      const div = document.createElement('div');
-
-      div.className = 'sugestao-item';
-
-      div.innerHTML = `<strong>${escapeHtml(jogador.nome)}</strong>`;
-
-      div.onclick = () => {
-        selecionarJogadorRelatorio(jogador);
-      };
-
-      sugestoes.appendChild(div);
-    });
-
-    destacarSugestaoRelatorio(0);
-
-    atualizarTela();
-  }
-
-  document.getElementById('pesquisaJogadorRelatorio')
-    .addEventListener('keydown', function(e) {
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (sugestoesRelatorioAtuais.length === 0) return;
-        destacarSugestaoRelatorio(Math.min(indiceDestacadoRelatorio + 1, sugestoesRelatorioAtuais.length - 1));
-        return;
-      }
-
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (sugestoesRelatorioAtuais.length === 0) return;
-        destacarSugestaoRelatorio(Math.max(indiceDestacadoRelatorio - 1, 0));
-        return;
-      }
-
-      if (e.key === 'Enter') {
-
-        e.preventDefault();
-
-        if (sugestoesRelatorioAtuais[indiceDestacadoRelatorio]) {
-          selecionarJogadorRelatorio(sugestoesRelatorioAtuais[indiceDestacadoRelatorio]);
         }
       }
   });
@@ -1180,7 +761,6 @@
     }
 
     fecharMenu();
-    fecharModalDetalheHistorico();
     fecharModalCadastro();
     fecharModalConfirmacao();
     fecharModalConfirmacaoSaida();
@@ -1192,8 +772,6 @@
 
     document.getElementById('btnAdmin').textContent = 'Sair';
 
-    document.getElementById('btnDesfazer').classList.remove('disabled');
-
     document.getElementById('btnAbrirCadastro')?.classList.remove('disabled');
 
     document.getElementById('btnEntrada').classList.remove('disabled');
@@ -1204,17 +782,6 @@
 
 
 
-
-  function verMaisRelatorio() {
-
-    console.log('Expandindo relatório');
-
-    limiteRelatorio = limiteRelatorio + 10;
-
-    console.log('Novo limite:', limiteRelatorio);
-
-    atualizarTela();
-  }
 
   async function tratarHashInicial() {
 
