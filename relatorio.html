@@ -258,7 +258,10 @@
       document.getElementById('painel-' + nome).classList.toggle('ativo', nome === aba);
     });
 
-    history.replaceState(null, '', aba === 'resumo' ? location.pathname : '#' + aba);
+    // Guarda a aba no endereço (#historico) para voltar nela ao recarregar.
+    try {
+      history.replaceState(null, '', aba === 'resumo' ? location.pathname : '#' + aba);
+    } catch (e) { /* navegador não deixou mudar o endereço: segue sem guardar */ }
   }
 
   // ---------------------------------------------------------------------------
