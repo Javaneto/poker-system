@@ -731,10 +731,12 @@
     const esperado = reais(centavos(t.rake) + centavos(t.caixinha));
     const diferenca = reais(centavos(saldoFinal) - centavos(esperado));
 
-    const pendentes = new Set(
-      movs.filter(m => !m.sessao_finalizada_em).map(m => m.jogador)
-    );
-    const pendentesComSaldo = saldos.filter(s => pendentes.has(s.nome) && Math.abs(s.saldo) >= 0.005).length;
+    // Acerto pendente: mesma conta do Em Aberto (considera compras já pagas),
+    // só com as movimentações desta mesa ainda não finalizadas.
+    const pendentesComSaldo = nomes.filter(nome => {
+      const abertas = movs.filter(m => m.jogador === nome && !m.sessao_finalizada_em);
+      return abertas.length > 0 && Math.abs(calcularResultadoMovimentacoes(abertas).resultado) >= 0.005;
+    }).length;
 
     let conferencia;
     if (naMesa.length > 0) {

@@ -133,14 +133,16 @@
   padding: 32px 16px; text-align: center; color: var(--apagado);
 }
 
-.cg-vazio svg { width: 44px; height: 44px; color: var(--apagado-2); }
+.cg-vazio > svg { width: 44px; height: 44px; color: var(--apagado-2); }
 
 .cg-subtitulo { font-size: 13px; color: var(--apagado); font-weight: 700; margin: 22px 0 10px; }
 
 /* ---- Tabelas ---- */
 
 .cg-tabela { width: 100%; border-collapse: collapse; table-layout: auto; }
-.cg-tabela th, .cg-tabela td { text-align: left; padding: 11px 10px; border-bottom: 1px solid var(--borda); vertical-align: middle; }
+.cg-tabela th, .cg-tabela td { text-align: left; padding: 11px 10px; border-bottom: 1px solid var(--borda); vertical-align: middle; word-break: normal; overflow-wrap: normal; }
+.cg-tabela td:first-child { white-space: nowrap; }
+.cg-tabela td strong { white-space: nowrap; }
 .cg-tabela th { font-size: 12px; color: var(--apagado); text-transform: uppercase; letter-spacing: .03em; }
 .cg-tabela .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .cg-tabela .acoes { text-align: right; white-space: nowrap; }
