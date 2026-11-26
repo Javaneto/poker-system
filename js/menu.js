@@ -16,6 +16,7 @@
     cadastro: '<circle cx="10" cy="8" r="3.5"/><path d="M3 20c0-3.5 3-6 7-6 1.5 0 2.9.3 4 1M18 14v6M15 17h6"/>',
     config: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
     aberto: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M14 3l5 5h-5z"/><path d="M8 9h3M8 13h4"/><circle cx="17" cy="17" r="4.5"/><path d="M17 15v2.2l1.4 1"/>',
+    relatorio: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8 18v-2M12 18v-4.5M16 18v-7"/>',
     sair: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
     recolher: '<path d="M15 18l-6-6 6-6"/>',
     menu: '<path d="M3 6h18M3 12h18M3 18h18"/>',
@@ -33,9 +34,10 @@
   // id/desabilitado: mantêm os ids que as páginas já usam para liberar por permissão.
   const ITENS = [
     { grupo: 'Operação' },
-    { rotulo: 'Mesa Cash', icone: 'cash', href: 'index.html' },
+    { rotulo: 'Cash Game', icone: 'cash', href: 'index.html' },
     { rotulo: 'Diretor', icone: 'diretor', href: 'diretor.html' },
     { rotulo: 'Em Aberto', icone: 'aberto', href: 'em-aberto.html' },
+    { rotulo: 'Relatório', icone: 'relatorio', href: 'relatorio.html' },
     { rotulo: 'Tela da TV', icone: 'tv', href: 'detalhes.html' },
     { rotulo: 'Torneios', icone: 'torneios', href: 'torneios.html' },
     { grupo: 'Clube' },
