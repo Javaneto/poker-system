@@ -325,6 +325,7 @@ function montarClassificacaoRanking(ranking, vinculos, resultados, ajustes) {
 //
 // opcoes:
 //   torneioId  — se informado, a aba "Em aberto" começa filtrada no torneio
+//   mesaId     — idem para uma mesa de Cash Game ("Só este Cash")
 //   aoAlterar  — chamada depois de qualquer alteração (para recarregar a página)
 
 const centralHistorico = {
@@ -342,8 +343,10 @@ function abrirCentralHistorico(opcoes = {}) {
 
   garantirModalCentralHistorico();
 
-  document.getElementById('chFiltroTorneio').checked = !!opcoes.torneioId;
-  document.getElementById('chFiltroTorneioWrapper').classList.toggle('oculto', !opcoes.torneioId);
+  const temFiltro = !!(opcoes.torneioId || opcoes.mesaId);
+  document.getElementById('chFiltroTorneio').checked = temFiltro;
+  document.getElementById('chFiltroTorneioTexto').textContent = opcoes.mesaId ? 'Só este Cash' : 'Só este torneio';
+  document.getElementById('chFiltroTorneioWrapper').classList.toggle('oculto', !temFiltro);
   document.getElementById('chBusca').value = '';
 
   document.getElementById('modalCentralHistorico').classList.add('aberto');
@@ -380,7 +383,7 @@ function garantirModalCentralHistorico() {
           <input type="text" id="chBusca" placeholder="Filtrar por jogador, tipo, observação..." autocomplete="off" style="margin-bottom:0;">
         </div>
         <label id="chFiltroTorneioWrapper" class="ch-check">
-          <input type="checkbox" id="chFiltroTorneio"> Só este torneio
+          <input type="checkbox" id="chFiltroTorneio"> <span id="chFiltroTorneioTexto">Só este torneio</span>
         </label>
       </div>
 
@@ -414,7 +417,7 @@ function trocarAbaCentralHistorico(aba) {
 
   document.getElementById('chFiltroTorneioWrapper').classList.toggle(
     'oculto',
-    aba !== 'abertas' || !centralHistorico.opcoes.torneioId
+    aba !== 'abertas' || !(centralHistorico.opcoes.torneioId || centralHistorico.opcoes.mesaId)
   );
 
   renderizarAbaCentralHistorico();
@@ -469,12 +472,19 @@ function htmlDetalhesMov(mov) {
 
 async function renderizarAbertasCentral(conteudo) {
 
-  const somenteTorneio = document.getElementById('chFiltroTorneio').checked && centralHistorico.opcoes.torneioId;
+  const filtroMarcado = document.getElementById('chFiltroTorneio').checked;
+  const somenteTorneio = filtroMarcado && !centralHistorico.opcoes.mesaId && centralHistorico.opcoes.torneioId;
+  const somenteMesa = filtroMarcado && centralHistorico.opcoes.mesaId;
   const termo = textoBuscaCentral();
 
   let abertas = await buscarTodas(() =>
     client.from('movimentacoes').select('*').is('sessao_finalizada_em', null).order('id', { ascending: false })
   );
+
+  if (somenteMesa) {
+    const mesaId = String(centralHistorico.opcoes.mesaId);
+    abertas = abertas.filter(m => m.mesa_id != null && String(m.mesa_id) === mesaId);
+  }
 
   if (somenteTorneio) {
     // Pagamentos feitos no Diretor passam a levar torneio_id. Os antigos
@@ -660,8 +670,19 @@ async function renderizarLogCentral(conteudo) {
     ${itens.map(item => {
       const dados = item.dados_depois || item.dados_antes || {};
       const ehMov = item.tabela === 'movimentacoes';
-      const titulo = ehMov ? escapeHtml(dados.jogador || '-') : `Jogador: ${escapeHtml(dados.nome || '-')}`;
-      const detalhe = ehMov ? htmlDetalhesMov(dados) : '';
+      const ehRecolhimento = item.tabela === 'cash_mesa_recolhimentos';
+      const titulo = ehMov
+        ? escapeHtml(dados.jogador || '-')
+        : ehRecolhimento
+          ? (dados.tipo === 'rake' ? 'Rake' : 'Caixinha') + ' do Cash'
+          : item.tabela === 'cash_mesas'
+            ? `Mesa: ${escapeHtml(dados.nome || '-')}`
+            : `Jogador: ${escapeHtml(dados.nome || '-')}`;
+      const detalhe = ehMov
+        ? htmlDetalhesMov(dados)
+        : ehRecolhimento
+          ? [dados.dealer ? `Dealer: ${escapeHtml(dados.dealer)}` : '', dados.observacao ? `<em class="ch-obs">Obs: ${escapeHtml(dados.observacao)}</em>` : ''].filter(Boolean).join(' · ')
+          : '';
       const alteracao = descreverAlteracaoLog(item);
       const podeRestaurar = item.operacao === 'DELETE' && ehMov;
 
@@ -674,7 +695,7 @@ async function renderizarLogCentral(conteudo) {
             <span class="ch-data">${formatarDataHora(item.criado_em)}${item.usuario_email ? ' · ' + escapeHtml(item.usuario_email) : ''}</span>
           </div>
           <div class="linha-desfazer-valor">
-            ${ehMov ? `<strong>${formatarMoeda(dados.valor)}</strong>` : ''}
+            ${ehMov || ehRecolhimento ? `<strong>${formatarMoeda(dados.valor)}</strong>` : ''}
             ${podeRestaurar ? `<button class="btn-green" onclick="restaurarMovCentral(${item.id})">Restaurar</button>` : ''}
           </div>
         </div>
