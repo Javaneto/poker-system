@@ -791,8 +791,8 @@
     document.getElementById('fechRotulo').textContent = jogadorDeve ? 'Receber do jogador agora (R$)' : 'Pagar ao jogador agora (R$)';
     document.getElementById('btnFechTudo').textContent = `Tudo (${formatarMoeda(Math.abs(fechamento.total))})`;
     document.getElementById('fechDica').textContent = jogadorDeve
-      ? 'O jogador está devendo. Digite quanto ele paga agora. Vazio = tudo fica no saldo do jogador; valor parcial deixa o restante no saldo.'
-      : 'O clube deve ao jogador. Digite quanto o clube paga agora. Vazio = tudo fica no saldo do jogador; valor parcial deixa o restante no saldo.';
+      ? 'O jogador está devendo. Digite quanto ele paga agora. Vazio = tudo fica no saldo do jogador; valor parcial deixa o restante no saldo; valor maior vira crédito do jogador.'
+      : 'O clube deve ao jogador. Digite quanto o clube paga agora. Vazio = tudo fica no saldo do jogador; valor parcial deixa o restante no saldo; valor maior fica como dívida do jogador.';
 
     document.getElementById('fechValor').value = '';
     document.getElementById('fechConferi').checked = false;
@@ -831,10 +831,11 @@
     const verbo = jogadorDeve ? 'Receber agora' : 'Pagar agora';
     const previa = document.getElementById('fechPrevia');
 
+    previa.innerHTML = `${verbo}: <strong>${formatarMoeda(agora)}</strong>. Fica no saldo do jogador: <strong>${htmlValor(restante)}</strong>.`;
+
+    // Valor acima do saldo é permitido: a diferença vira crédito (ou dívida) do jogador.
     if (excedeu) {
-      previa.innerHTML = `<span class="negativo">O valor passa do saldo (${formatarMoeda(maximo)}).</span>`;
-    } else {
-      previa.innerHTML = `${verbo}: <strong>${formatarMoeda(agora)}</strong>. Fica no saldo do jogador: <strong>${htmlValor(restante)}</strong>.`;
+      previa.innerHTML += `<br><span style="color:var(--tx-ambar);font-size:13px;">O valor passa do saldo (${formatarMoeda(maximo)}): ${jogadorDeve ? 'o jogador fica com crédito' : 'o jogador fica devendo'} de ${formatarMoeda(Math.abs(restante))}.</span>`;
     }
 
     let texto;
@@ -849,7 +850,7 @@
 
     document.getElementById('fechTextoConferi').textContent = texto;
 
-    const pode = adminLiberado && !excedeu && document.getElementById('fechConferi').checked;
+    const pode = adminLiberado && document.getElementById('fechConferi').checked;
     document.getElementById('btnConfirmarFechamento').classList.toggle('disabled', !pode);
   }
 
@@ -865,7 +866,7 @@
     const zerado = Math.abs(total) < 0.005;
     const agora = zerado ? 0 : valorAgoraFechamento();
 
-    if (agora > Math.abs(total) + 0.004 || !document.getElementById('fechConferi').checked) return;
+    if (!document.getElementById('fechConferi').checked) return;
 
     btn.classList.add('disabled');
 
