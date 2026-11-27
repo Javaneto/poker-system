@@ -43,9 +43,9 @@ function hjGarantirModais() {
         <h2 id="hjTitulo">Em Aberto</h2>
 
         <div class="topbar" style="margin-bottom:14px;">
-          <div>
-            <p style="color:var(--apagado);margin:0 0 4px;">Resultado</p>
-            <p id="hjResultado" style="font-size:22px;margin:0;font-weight:800;">R$ 0,00</p>
+          <div class="hj-resultado-topo">
+            <span>Resultado</span>
+            <strong id="hjResultado">R$ 0,00</strong>
           </div>
 
           <button type="button" id="hjBtnLancar" class="btn-green" onclick="abrirLancamentoJogador()">Lançar</button>
@@ -58,18 +58,18 @@ function hjGarantirModais() {
             <div class="hj-coluna">
               <div class="hj-coluna-topo">
                 <h3>Cash</h3>
+                <div class="hj-coluna-sub" id="hjColCashSub"></div>
                 <strong id="hjColCashTotal"></strong>
               </div>
-              <div class="hj-coluna-sub" id="hjColCashSub"></div>
               <div id="hjColCash"></div>
             </div>
 
             <div class="hj-coluna">
               <div class="hj-coluna-topo">
                 <h3>Torneio</h3>
+                <div class="hj-coluna-sub" id="hjColTorneioSub"></div>
                 <strong id="hjColTorneioTotal"></strong>
               </div>
-              <div class="hj-coluna-sub" id="hjColTorneioSub"></div>
               <div id="hjColTorneio"></div>
             </div>
           </div>
@@ -304,6 +304,8 @@ function fecharHistoricoJogador() {
 
 // ---------- render ----------
 
+const HJ_ICONE_IMPRIMIR = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3.8c0-.4.4-.8.8-.8h8.4c.4 0 .8.4.8.8V9"/><rect x="3" y="9" width="18" height="8" rx="2.2"/><path d="M7 14h10v6.2c0 .4-.4.8-.8.8H7.8c-.4 0-.8-.4-.8-.8V14Z"/><path d="M10 17.5h4"/><circle cx="17.5" cy="11.8" r=".9" fill="currentColor" stroke="none"/></svg>`;
+
 function hjHtmlLinhaMov(mov, { comTorneio = false } = {}) {
 
   let titulo = escapeHtml(mov.tipo);
@@ -314,17 +316,17 @@ function hjHtmlLinhaMov(mov, { comTorneio = false } = {}) {
   const classeValor = hjEhCobranca(mov) ? ' class="negativo"' : '';
 
   return `
-    <div class="linha-desfazer">
-      <div class="linha-desfazer-info">
+    <div class="hj-mov">
+      <div class="hj-mov-info">
         <strong>${titulo}</strong>
-        ${comTorneio ? `<span style="color:var(--apagado);">${escapeHtml(hjNomeTorneio(mov.torneio_id))}</span>` : ''}
-        <span style="color:var(--apagado-2);">${hjDataCurta(mov.data)}</span>
-        ${mov.observacao ? `<span style="color:var(--apagado);font-style:italic;">Obs: ${escapeHtml(mov.observacao)}</span>` : ''}
+        ${comTorneio ? `<span>${escapeHtml(hjNomeTorneio(mov.torneio_id))}</span>` : ''}
       </div>
-      <div class="linha-desfazer-valor">
+      <span class="hj-mov-data">${hjDataCurta(mov.data)}</span>
+      <div class="hj-mov-valor">
         <strong${classeValor}>${formatarMoeda(valor)}</strong>
-        <button type="button" class="btn-dark" onclick="imprimirMovimentacaoJogador(${Number(mov.id)})">Imprimir</button>
+        <button type="button" class="hj-btn-imprimir" title="Imprimir" aria-label="Imprimir" onclick="imprimirMovimentacaoJogador(${Number(mov.id)})">${HJ_ICONE_IMPRIMIR}</button>
       </div>
+      ${mov.observacao ? `<span class="hj-mov-obs">Obs: ${escapeHtml(mov.observacao)}</span>` : ''}
     </div>
   `;
 }
