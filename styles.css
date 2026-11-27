@@ -1754,7 +1754,7 @@ body.mnu-gaveta .mini-relogio {
 
 .hj-mov {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr);
   align-items: center;
   column-gap: 10px;
   row-gap: 2px;
