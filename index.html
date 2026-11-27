@@ -217,11 +217,10 @@
           <div class="cg-mesa-linha">${ICONE_RELOGIO}<span>${encerrada ? 'Encerrada' : 'Iniciada'}: ${formatarDataHora(encerrada ? mesa.encerrado_em : mesa.iniciado_em)}</span></div>
           ${mesa.observacao ? `<div class="cg-mesa-linha">${escapeHtml(mesa.observacao)}</div>` : ''}
           <div class="cg-mesa-numeros">
-            <div><span>Sentados</span><strong>${sentados}</strong></div>
             <div><span>Compras</span><strong>${formatarMoeda(compras)}</strong></div>
             <div><span>Devoluções</span><strong>${formatarMoeda(devolucoes)}</strong></div>
           </div>
-          <div class="cg-mesa-linha">${ICONE_PESSOAS}<span>${encerrada ? 'Ver fechamento' : 'Abrir mesa'}</span></div>
+          <div class="cg-mesa-linha">${ICONE_PESSOAS}<span>${sentados} ${sentados === 1 ? 'sentado' : 'sentados'}</span><span class="cg-mesa-acao">${encerrada ? 'Ver fechamento' : 'Abrir mesa'} ›</span></div>
         </a>
       `;
     }).join('');
