@@ -1746,6 +1746,76 @@ body.mnu-gaveta .mini-relogio {
 #modalLancarJogador input,
 #modalLancarJogador textarea { font-size: 16px; }
 
+/* Fechamento */
+.hj-resumo {
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 4px 14px;
+  margin-bottom: 14px;
+}
+
+.hj-resumo-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--borda);
+  font-size: 15px;
+}
+
+.hj-resumo-linha:last-child { border-bottom: 0; }
+
+.hj-resumo-linha span { color: var(--apagado); }
+
+.hj-resumo-linha strong { white-space: nowrap; }
+
+.hj-resumo-linha.total { font-size: 17px; font-weight: 800; }
+
+.hj-resumo-linha.total span { color: var(--texto); }
+
+.hj-rotulo { display: block; font-weight: 700; margin-bottom: 6px; }
+
+.hj-campo-valor { display: flex; gap: 8px; }
+
+.hj-campo-valor input { flex: 1; margin-bottom: 0; font-size: 16px; }
+
+.hj-campo-valor button { white-space: nowrap; }
+
+#modalFechamento .hj-dica { margin: 6px 0 12px; }
+
+.hj-caixa {
+  border: 1px solid var(--borda);
+  background: var(--superficie-2, transparent);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.hj-caixa strong { white-space: nowrap; }
+
+.hj-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.hj-check input {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  flex: 0 0 20px;
+  margin: 1px 0 0;
+}
+
+#btnConfirmarFechamento.disabled { opacity: .45; }
+
 @media (max-width: 767px) {
   .hj-colunas { grid-template-columns: 1fr; }
+  .hj-campo-valor { flex-wrap: wrap; }
+  .hj-campo-valor input { flex: 1 1 100%; }
+  .hj-campo-valor button { flex: 1; }
 }
