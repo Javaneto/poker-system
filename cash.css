@@ -35,9 +35,11 @@
 }
 
 .cg-mesa-numeros {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 14px;
   background: var(--superficie-2); border-radius: 10px; padding: 10px 12px;
 }
+
+.cg-mesa-numeros > div { min-width: 0; }
 
 .cg-mesa-numeros span { display: block; font-size: 11px; color: var(--apagado); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
 .cg-mesa-numeros strong { display: block; font-size: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
