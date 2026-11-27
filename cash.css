@@ -146,7 +146,8 @@
 .cg-tabela th { font-size: 12px; color: var(--apagado); text-transform: uppercase; letter-spacing: .03em; }
 .cg-tabela .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .cg-tabela .acoes { text-align: right; white-space: nowrap; }
-.cg-tabela .acoes button { min-height: 38px; padding: 6px 12px; }
+.cg-tabela .acoes button { min-height: 40px; padding: 6px 12px; }
+.cg-tabela .acoes button + button { margin-left: 6px; }
 .cg-tabela-rolavel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .cg-obs { color: var(--apagado); font-size: 13px; font-style: italic; }
 .cg-duracao { display: block; color: var(--tx-ambar); font-size: 12px; font-weight: 700; }

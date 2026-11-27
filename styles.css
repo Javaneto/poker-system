@@ -1679,3 +1679,73 @@ body.mnu-gaveta .mini-relogio {
   font-size: 12px;
   margin: 10px 0 4px;
 }
+
+/* ---------------------------------------------------------------------------
+   Modal "Em Aberto" do jogador (js/historico-jogador.js)
+   --------------------------------------------------------------------------- */
+
+.hj-zero { color: var(--apagado-2); }
+
+.hj-colunas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hj-coluna {
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+.hj-coluna-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.hj-coluna-topo strong { white-space: nowrap; }
+
+.hj-coluna-topo h3,
+.hj-lancamentos h3 {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--apagado);
+}
+
+.hj-lancamentos h3 { margin-bottom: 4px; }
+
+.hj-coluna-sub {
+  font-size: 12px;
+  color: var(--apagado-2);
+  margin-bottom: 6px;
+}
+
+.hj-coluna .linha-desfazer { padding: 8px 0; }
+
+.hj-coluna .linha-desfazer-info { font-size: 13px; }
+
+.hj-coluna .linha-desfazer-info span,
+.hj-lancamentos .linha-desfazer-info span { display: block; }
+
+.hj-coluna .linha-desfazer-valor { flex-direction: column; align-items: flex-end; gap: 4px; }
+
+.hj-coluna .linha-desfazer-valor button { padding: 6px 10px; font-size: 12px; min-height: 32px; }
+
+.hj-vazio { color: var(--apagado-2); font-size: 13px; padding: 8px 0; margin: 0; }
+
+.hj-lancamentos { margin-top: 12px; }
+
+.hj-dica { color: var(--apagado); font-size: 13px; margin: 0 0 10px; }
+
+#modalLancarJogador input,
+#modalLancarJogador textarea { font-size: 16px; }
+
+@media (max-width: 767px) {
+  .hj-colunas { grid-template-columns: 1fr; }
+}

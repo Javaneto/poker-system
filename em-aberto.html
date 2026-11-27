@@ -9,6 +9,7 @@
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="js/comum.js"></script>
+  <script src="js/historico-jogador.js"></script>
 
   <link rel="stylesheet" href="styles.css">
 
@@ -46,67 +47,9 @@
 
     .ea-tabela th:first-child { width: 34%; }
 
-    .ea-resumo-linha strong, .ea-coluna-topo strong, .linha-desfazer-valor strong { white-space: nowrap; }
+    .ea-resumo-linha strong, .linha-desfazer-valor strong { white-space: nowrap; }
 
     .ea-zero { color: var(--apagado-2); }
-
-    /* Modal do jogador: colunas Cash e Torneio */
-    .ea-colunas {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .ea-coluna {
-      border: 1px solid var(--borda);
-      border-radius: 12px;
-      padding: 10px 12px;
-      min-width: 0;
-    }
-
-    .ea-coluna-topo {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-
-    .ea-coluna-topo h3 {
-      margin: 0;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--apagado);
-    }
-
-    .ea-coluna-sub {
-      font-size: 12px;
-      color: var(--apagado-2);
-      margin-bottom: 6px;
-    }
-
-    .ea-coluna .linha-desfazer { padding: 8px 0; }
-
-    .ea-coluna .linha-desfazer-info { font-size: 13px; }
-
-    .ea-coluna .linha-desfazer-info span, .ea-pagamentos .linha-desfazer-info span { display: block; }
-
-    .ea-coluna .linha-desfazer-valor { flex-direction: column; align-items: flex-end; gap: 4px; }
-
-    .ea-coluna .linha-desfazer-valor button { padding: 6px 10px; font-size: 12px; min-height: 32px; }
-
-    .ea-vazio { color: var(--apagado-2); font-size: 13px; padding: 8px 0; margin: 0; }
-
-    .ea-pagamentos { margin-top: 12px; }
-
-    .ea-pagamentos h3 {
-      margin: 0 0 4px;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--apagado);
-    }
 
     /* Fechamento */
     .ea-resumo {
@@ -177,7 +120,6 @@
       .ea-kpis { grid-template-columns: 1fr 1fr; }
       .ea-kpis .ea-kpi:first-child { grid-column: 1 / -1; }
       .ea-kpi-valor { font-size: 19px; }
-      .ea-colunas { grid-template-columns: 1fr; }
       .ea-campo-valor { flex-wrap: wrap; }
       .ea-campo-valor input { flex: 1 1 100%; }
       .ea-campo-valor button { flex: 1; }
@@ -227,7 +169,7 @@
           <th>Jogador</th>
           <th class="col-num">Cash</th>
           <th class="col-num">Torneio</th>
-          <th class="col-num">Pago</th>
+          <th class="col-num" title="Pagamentos (+) e dívidas (−) lançados">Lançado</th>
           <th class="col-num">Resultado</th>
         </tr>
       </thead>
@@ -238,72 +180,6 @@
     <div id="tabelaAbertasMobile" class="relatorio-mobile"></div>
   </div>
 
-</div>
-
-<!-- Movimentações do jogador -->
-<div id="modalJogador" class="modal-overlay">
-  <div class="modal-box" style="max-width:720px;">
-    <h2 id="jogadorNome">Histórico</h2>
-
-    <div class="topbar" style="margin-bottom:14px;">
-      <div>
-        <p style="color:var(--apagado);margin:0 0 4px;">Resultado</p>
-        <p id="jogadorResultado" style="font-size:22px;margin:0;font-weight:800;">R$ 0,00</p>
-      </div>
-
-      <button id="btnPagar" class="btn-green" onclick="abrirModalPagar()">Pagar</button>
-    </div>
-
-    <div style="max-height:52vh;overflow-y:auto;">
-      <div class="ea-colunas">
-        <div class="ea-coluna">
-          <div class="ea-coluna-topo">
-            <h3>Cash</h3>
-            <strong id="colCashTotal"></strong>
-          </div>
-          <div class="ea-coluna-sub" id="colCashSub"></div>
-          <div id="colCash"></div>
-        </div>
-
-        <div class="ea-coluna">
-          <div class="ea-coluna-topo">
-            <h3>Torneio</h3>
-            <strong id="colTorneioTotal"></strong>
-          </div>
-          <div class="ea-coluna-sub" id="colTorneioSub"></div>
-          <div id="colTorneio"></div>
-        </div>
-      </div>
-
-      <div id="blocoPagamentos" class="ea-pagamentos oculto">
-        <h3>Pagamentos</h3>
-        <div id="listaPagamentos"></div>
-      </div>
-    </div>
-
-    <div class="modal-acoes" style="margin-top:16px;justify-content:space-between;">
-      <button class="btn-gray" onclick="fecharModalJogador()">Fechar</button>
-      <button id="btnFechamento" class="btn-red" onclick="abrirFechamento()">Fechamento</button>
-    </div>
-  </div>
-</div>
-
-<!-- Pagamento avulso -->
-<div id="modalPagar" class="modal-overlay">
-  <div class="modal-box" style="max-width:380px;">
-    <h2>Registrar Pagamento</h2>
-
-    <p id="pagarResumo" class="modal-resumo"></p>
-
-    <input type="number" id="valorPagar" placeholder="Valor" min="0" step="0.01" inputmode="decimal">
-
-    <textarea id="observacaoPagar" placeholder="Observação (opcional)" rows="2" maxlength="300" style="width:100%;box-sizing:border-box;margin-bottom:12px;resize:vertical;font:inherit;"></textarea>
-
-    <div class="modal-acoes">
-      <button class="btn-gray" onclick="fecharModal('modalPagar')">Cancelar</button>
-      <button id="btnConfirmarPagar" class="btn-green" onclick="confirmarPagar()">Confirmar</button>
-    </div>
-  </div>
 </div>
 
 <!-- Fechamento -->
@@ -388,7 +264,6 @@
   let torneios = [];
   let adminLiberado = false;
 
-  let jogadorAtual = null;  // { nome, ids }
   let fechamento = null;    // { nome, ids, saldoAnterior, sessao, total }
 
   // ---------- utilitários ----------
@@ -411,10 +286,6 @@
     const v = centavos(valor);
     if (Math.abs(v) < 0.005) return formatarMoeda(0);
     return `${v > 0 ? '+' : '-'} ${formatarMoeda(Math.abs(v))}`;
-  }
-
-  function dataCurta(valor) {
-    return new Date(valor).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   }
 
   let resolverAlerta = null;
@@ -448,9 +319,8 @@
 
   // ---------- cálculo (mesma regra das outras páginas) ----------
 
-  const TIPOS_ENTRADA = ['Entrada', 'Registro', 'Rebuy', 'Add-on'];
-
-  // Pagamento com valor negativo = clube pagou o jogador (zera saldo positivo).
+  // Pagamento positivo = jogador pagou (saldo +). Negativo = clube pagou o
+  // jogador ou dívida lançada (modalidade 'Dívida'): saldo -.
   function ehPagamento(mov) { return mov.tipo === 'Pagamento'; }
 
   function separarMovs(movs) {
@@ -541,7 +411,7 @@
           <td class="jogador-clicavel" data-nome="${escapeHtml(l.nome)}">${escapeHtml(l.nome)}</td>
           <td class="col-num">${htmlValor(l.cash, { zeroComTraco: true })}</td>
           <td class="col-num">${htmlValor(l.torneio, { zeroComTraco: true })}</td>
-          <td class="col-num">${Math.abs(l.pago) < 0.005 ? '<span class="ea-zero">-</span>' : formatarMoeda(l.pago)}</td>
+          <td class="col-num">${htmlValor(l.pago, { zeroComTraco: true })}</td>
           <td class="col-num"><strong>${htmlValor(l.resultado)}</strong></td>
         </tr>
       `).join('');
@@ -550,7 +420,7 @@
         const partes = [];
         if (l.movs.some(m => !ehPagamento(m) && !m.torneio_id)) partes.push(`Cash ${textoValor(l.cash)}`);
         if (l.movs.some(m => !ehPagamento(m) && m.torneio_id)) partes.push(`Torneio ${textoValor(l.torneio)}`);
-        if (Math.abs(l.pago) >= 0.005) partes.push(`Pago ${formatarMoeda(l.pago)}`);
+        if (Math.abs(l.pago) >= 0.005) partes.push(`Lançado ${textoValor(l.pago)}`);
         return `
           <div class="linha-desfazer">
             <div class="linha-desfazer-info">
@@ -565,9 +435,7 @@
       }).join('');
     }
 
-    if (jogadorAtual && document.getElementById('modalJogador').classList.contains('aberto')) {
-      renderizarJogador();
-    }
+    recarregarHistoricoJogador();
   }
 
   function tratarCliqueJogador(e) {
@@ -578,95 +446,13 @@
   document.getElementById('tabelaAbertas').addEventListener('click', tratarCliqueJogador);
   document.getElementById('tabelaAbertasMobile').addEventListener('click', tratarCliqueJogador);
 
-  // ---------- modal do jogador ----------
+  // ---------- modal do jogador (js/historico-jogador.js) ----------
 
   function abrirModalJogador(nome) {
-    jogadorAtual = { nome };
-    document.getElementById('jogadorNome').textContent = `Histórico — ${nome}`;
-    renderizarJogador();
-    document.getElementById('modalJogador').classList.add('aberto');
-  }
-
-  function fecharModalJogador() {
-    jogadorAtual = null;
-    fecharModal('modalJogador');
-  }
-
-  function movsDoJogadorAtual() {
-    return movimentacoes
-      .filter(m => m.jogador === jogadorAtual.nome)
-      .sort((a, b) => new Date(b.data) - new Date(a.data));
-  }
-
-  function htmlLinhaMov(mov, { comTorneio = false } = {}) {
-
-    let titulo = escapeHtml(mov.tipo);
-    if (ehPagamento(mov)) titulo = Number(mov.valor) < 0 ? 'Pago ao jogador' : 'Pagamento do jogador';
-    else if (mov.pago && TIPOS_ENTRADA.includes(mov.tipo)) titulo += ' · pago';
-
-    const valor = ehPagamento(mov) ? Math.abs(Number(mov.valor)) : Number(mov.valor);
-
-    return `
-      <div class="linha-desfazer">
-        <div class="linha-desfazer-info">
-          <strong>${titulo}</strong>
-          ${comTorneio ? `<span style="color:var(--apagado);">${escapeHtml(nomeTorneio(mov.torneio_id))}</span>` : ''}
-          <span style="color:var(--apagado-2);">${dataCurta(mov.data)}</span>
-          ${mov.observacao ? `<span style="color:var(--apagado);font-style:italic;">Obs: ${escapeHtml(mov.observacao)}</span>` : ''}
-        </div>
-        <div class="linha-desfazer-valor">
-          <strong>${formatarMoeda(valor)}</strong>
-          <button class="btn-dark" onclick="imprimirMovimentacaoPorId(${mov.id})">Imprimir</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderizarColuna(movs, prefixo, comTorneio) {
-
-    const calc = calcularResultadoMovimentacoes(movs);
-
-    document.getElementById(`col${prefixo}Total`).innerHTML = movs.length ? htmlValor(calc.resultado) : '';
-    document.getElementById(`col${prefixo}Sub`).textContent = movs.length ? `Entrou ${formatarMoeda(calc.entrada)} · Saiu ${formatarMoeda(calc.saida)}` : '';
-    document.getElementById(`col${prefixo}`).innerHTML = movs.length
-      ? movs.map(m => htmlLinhaMov(m, { comTorneio })).join('')
-      : '<p class="ea-vazio">Nada em aberto.</p>';
-  }
-
-  function renderizarJogador() {
-
-    if (!jogadorAtual) return;
-
-    const movs = movsDoJogadorAtual();
-    jogadorAtual.ids = movs.map(m => m.id);
-
-    const total = calcularResultadoMovimentacoes(movs).resultado;
-    const el = document.getElementById('jogadorResultado');
-    el.textContent = textoValor(total);
-    el.className = total >= 0 ? 'positivo' : 'negativo';
-
-    const { cash, torneio, pagamentos } = separarMovs(movs);
-
-    renderizarColuna(cash, 'Cash', false);
-    renderizarColuna(torneio, 'Torneio', true);
-
-    document.getElementById('blocoPagamentos').classList.toggle('oculto', pagamentos.length === 0);
-    document.getElementById('listaPagamentos').innerHTML = pagamentos.map(m => htmlLinhaMov(m)).join('');
-
-    document.getElementById('btnPagar').classList.toggle('disabled', !adminLiberado);
-    document.getElementById('btnFechamento').classList.toggle('disabled', !adminLiberado || movs.length === 0);
-  }
-
-  // ---------- pagamento avulso ----------
-
-  function abrirModalPagar() {
-
-    if (!adminLiberado || !jogadorAtual) return;
-
-    document.getElementById('pagarResumo').textContent = `Jogador: ${jogadorAtual.nome}`;
-    document.getElementById('valorPagar').value = '';
-    document.getElementById('observacaoPagar').value = '';
-    document.getElementById('modalPagar').classList.add('aberto');
+    abrirHistoricoJogador(nome, {
+      aoMudar: () => carregarDados(),
+      aoFechamento: (nomeJogador, movs) => abrirFechamento(nomeJogador, movs)
+    });
   }
 
   async function inserirPagamento(nome, valor, observacao) {
@@ -690,42 +476,11 @@
       .single();
   }
 
-  async function confirmarPagar() {
-
-    if (!adminLiberado || !jogadorAtual) return;
-
-    const valor = centavos(parseFloat(document.getElementById('valorPagar').value));
-
-    if (!(valor > 0)) {
-      await mostrarAlerta('Informe um valor válido');
-      return;
-    }
-
-    const btn = document.getElementById('btnConfirmarPagar');
-    btn.classList.add('disabled');
-
-    const { error } = await inserirPagamento(jogadorAtual.nome, valor, document.getElementById('observacaoPagar').value.trim());
-
-    btn.classList.remove('disabled');
-
-    if (error) {
-      console.error(error);
-      await mostrarAlerta('Erro ao registrar pagamento');
-      return;
-    }
-
-    fecharModal('modalPagar');
-    await carregarDados();
-  }
-
   // ---------- fechamento ----------
 
-  async function abrirFechamento() {
+  async function abrirFechamento(nome, movs) {
 
-    if (!adminLiberado || !jogadorAtual) return;
-
-    const nome = jogadorAtual.nome;
-    const movs = movsDoJogadorAtual();
+    if (!adminLiberado || !nome || !movs) return;
 
     if (movs.length === 0) return;
 
@@ -898,57 +653,8 @@
 
     fechamento = null;
     fecharModal('modalFechamento');
-    fecharModalJogador();
+    fecharHistoricoJogador();
     await carregarDados();
-  }
-
-  // ---------- impressão ----------
-
-  function imprimirMovimentacaoPorId(id) {
-
-    const mov = movimentacoes.find(m => m.id === id);
-
-    if (!mov) return;
-
-    const janela = window.open('', '', 'width=420,height=700');
-
-    if (!janela) {
-      mostrarAlerta('O navegador bloqueou a janela de impressão.');
-      return;
-    }
-
-    janela.document.write(`
-      <html>
-      <head>
-        <style>
-          @page { size: 79mm auto; margin: 2mm; }
-          html, body { width: 75mm; margin: 0; padding: 0; font-family: monospace; font-size: 15px; font-weight: 600; line-height: 1.2; overflow: hidden; }
-          h2, p { margin: 0; padding: 0; }
-        </style>
-      </head>
-      <body>
-        <h2 style="text-align:center;margin:0 0 4px 0;font-size:22px;">RPG Poker Club</h2>
-        <p style="text-align:center;margin:0 0 10px 0;font-size:14px;">Termo de Movimentação</p>
-        <br>
-        <p>Eu, ${escapeHtml(mov.jogador)}, declaro movimentação no valor de:</p>
-        <h2 style="text-align:center;">${formatarMoeda(Math.abs(Number(mov.valor)))}</h2>
-        <br>
-        <p>Tipo: ${escapeHtml(ehPagamento(mov) && Number(mov.valor) < 0 ? 'Pago ao jogador' : mov.tipo)}</p>
-        <p>Modalidade: ${escapeHtml(mov.torneio_id ? 'Torneio' : (mov.modalidade || '-'))}</p>
-        <p>CPF: ${escapeHtml(mov.cpf || '-')}</p>
-        <p>Telefone: ${escapeHtml(mov.telefone || '-')}</p>
-        <br><br><br>
-        ____________________________
-        <br>
-        Assinatura
-        <br><br>
-        ${escapeHtml(formatarDataHora(mov.data))}
-      </body>
-      </html>
-    `);
-
-    janela.document.close();
-    janela.print();
   }
 
   // ---------- teclado / início ----------
@@ -957,10 +663,7 @@
     if (e.key !== 'Escape') return;
     if (document.getElementById('modalConfirm').classList.contains('aberto')) return responderConfirm(false);
     if (document.getElementById('modalAlerta').classList.contains('aberto')) return responderAlerta();
-    for (const id of ['modalFechamento', 'modalPagar']) {
-      if (document.getElementById(id).classList.contains('aberto')) return fecharModal(id);
-    }
-    if (document.getElementById('modalJogador').classList.contains('aberto')) fecharModalJogador();
+    if (document.getElementById('modalFechamento').classList.contains('aberto')) fecharModal('modalFechamento');
   });
 
   async function sair() {
