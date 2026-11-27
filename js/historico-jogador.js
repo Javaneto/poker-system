@@ -1,7 +1,7 @@
 /*
  * Modal "Em Aberto" do jogador: histórico das movimentações em aberto
- * (cash e torneio, de todas as sessões ainda não fechadas) e botão Lançar
- * (Pagamento ou Dívida).
+ * (cash e torneio, de todas as sessões ainda não fechadas), botão Lançar
+ * (Pagamento ou Cobrança) e Fechamento.
  *
  * Usado na página Em Aberto e no Cash Game (mesa).
  *
@@ -12,10 +12,16 @@
  * Lançamentos gravados em movimentacoes com tipo 'Pagamento' (assim o
  * cálculo de saldo de todas as telas continua o mesmo):
  *   Pagamento → valor positivo, modalidade 'Cash' (jogador pagou: saldo +)
- *   Dívida    → valor negativo, modalidade 'Dívida' (jogador deve: saldo -)
+ *   Cobrança  → valor negativo, modalidade 'Cobrança' (jogador deve: saldo -)
+ *   (lançamentos antigos com modalidade 'Dívida' também contam como Cobrança)
  */
 
 const HJ_TIPOS_ENTRADA = ['Entrada', 'Registro', 'Rebuy', 'Add-on'];
+const HJ_MODALIDADES_COBRANCA = ['Cobrança', 'Dívida'];
+
+function hjEhCobranca(mov) {
+  return HJ_MODALIDADES_COBRANCA.includes(mov.modalidade);
+}
 
 const historicoJogador = {
   nome: null,
@@ -23,7 +29,8 @@ const historicoJogador = {
   torneios: [],
   opcoes: {},
   tipoLancamento: 'Pagamento',
-  carregando: 0
+  carregando: 0,
+  fechamento: null   // { nome, ids, saldoAnterior, sessao, total }
 };
 
 function hjGarantirModais() {
@@ -68,14 +75,14 @@ function hjGarantirModais() {
           </div>
 
           <div id="hjBlocoLancamentos" class="hj-lancamentos oculto">
-            <h3>Pagamentos e dívidas</h3>
+            <h3>Pagamentos e cobranças</h3>
             <div id="hjListaLancamentos"></div>
           </div>
         </div>
 
         <div class="modal-acoes" style="margin-top:16px;justify-content:space-between;">
           <button type="button" class="btn-gray" onclick="fecharHistoricoJogador()">Fechar</button>
-          <button type="button" id="hjBtnFechamento" class="btn-red oculto" onclick="hjAbrirFechamento()">Fechamento</button>
+          <button type="button" id="hjBtnFechamento" class="btn-red" onclick="hjAbrirFechamento()">Fechamento</button>
         </div>
       </div>
     </div>
@@ -88,7 +95,7 @@ function hjGarantirModais() {
 
         <div class="modalidade-opcoes" style="margin-bottom:14px;">
           <button type="button" id="hjBtnTipoPagamento" class="modalidade-btn ativo" onclick="selecionarTipoLancamento('Pagamento')">Pagamento (+)</button>
-          <button type="button" id="hjBtnTipoDivida" class="modalidade-btn" onclick="selecionarTipoLancamento('Dívida')">Dívida (−)</button>
+          <button type="button" id="hjBtnTipoCobranca" class="modalidade-btn" onclick="selecionarTipoLancamento('Cobrança')">Cobrança (−)</button>
         </div>
 
         <p id="hjLancarDica" class="hj-dica"></p>
@@ -100,6 +107,56 @@ function hjGarantirModais() {
         <div class="modal-acoes">
           <button type="button" class="btn-gray" onclick="hjFecharModal('modalLancarJogador')">Cancelar</button>
           <button type="button" id="hjBtnConfirmarLancar" class="btn-green" style="flex:1;" onclick="confirmarLancamentoJogador()">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modalFechamento" class="modal-overlay">
+      <div class="modal-box" style="max-width:480px;">
+        <h2 id="fechamentoTitulo">Fechamento</h2>
+
+        <div id="fechamentoCarregando" class="hj-dica">Carregando saldo do jogador...</div>
+
+        <div id="fechamentoConteudo" class="oculto">
+          <div class="hj-resumo">
+            <div class="hj-resumo-linha">
+              <span>Saldo anterior do jogador</span>
+              <strong id="fechSaldoAnterior"></strong>
+            </div>
+            <div class="hj-resumo-linha">
+              <span>Resultado desta sessão</span>
+              <strong id="fechSessao"></strong>
+            </div>
+            <div class="hj-resumo-linha total">
+              <span>Saldo total</span>
+              <strong id="fechTotal"></strong>
+            </div>
+          </div>
+
+          <div id="fechamentoZerado" class="hj-caixa oculto">Saldo zerado: nada a receber nem a pagar.</div>
+
+          <div id="fechamentoAcerto">
+            <label class="hj-rotulo" for="fechValor" id="fechRotulo">Receber agora (R$)</label>
+
+            <div class="hj-campo-valor">
+              <input type="number" id="fechValor" min="0" step="0.01" inputmode="decimal" placeholder="0,00" oninput="hjAtualizarFechamento()">
+              <button type="button" class="btn-gray" id="btnFechTudo" onclick="hjPreencherTudoFechamento()">Tudo</button>
+            </div>
+
+            <p class="hj-dica" id="fechDica"></p>
+
+            <div class="hj-caixa" id="fechPrevia"></div>
+          </div>
+
+          <label class="hj-caixa hj-check">
+            <input type="checkbox" id="fechConferi" onchange="hjAtualizarFechamento()">
+            <span id="fechTextoConferi"></span>
+          </label>
+        </div>
+
+        <div class="modal-acoes" style="margin-top:6px;">
+          <button type="button" class="btn-gray" onclick="hjFecharModal('modalFechamento')">Cancelar</button>
+          <button type="button" id="btnConfirmarFechamento" class="btn-green disabled" onclick="hjConfirmarFechamento()">Confirmar fechamento</button>
         </div>
       </div>
     </div>
@@ -146,7 +203,7 @@ function hjEhLancamento(mov) {
 
 // Nome mostrado para um lançamento do tipo Pagamento.
 function rotuloLancamento(mov) {
-  if (mov.modalidade === 'Dívida') return 'Dívida';
+  if (hjEhCobranca(mov)) return 'Cobrança';
   return Number(mov.valor) < 0 ? 'Pago ao jogador' : 'Pagamento do jogador';
 }
 
@@ -156,7 +213,7 @@ function hjNomeTorneio(id) {
 
 // ---------- abrir / carregar ----------
 
-// opcoes: { aoMudar: () => void, aoFechamento: (nome, movs) => void }
+// opcoes: { aoMudar: () => void }  (chamado depois de lançar ou fechar)
 async function abrirHistoricoJogador(nome, opcoes = {}) {
 
   hjGarantirModais();
@@ -166,7 +223,6 @@ async function abrirHistoricoJogador(nome, opcoes = {}) {
   historicoJogador.opcoes = opcoes;
 
   document.getElementById('hjTitulo').textContent = `Em Aberto — ${nome}`;
-  document.getElementById('hjBtnFechamento').classList.toggle('oculto', !opcoes.aoFechamento);
   document.getElementById('modalHistJogador').classList.add('aberto');
 
   await recarregarHistoricoJogador({ mostrarCarregando: true });
@@ -240,6 +296,8 @@ async function recarregarHistoricoJogador({ mostrarCarregando = false } = {}) {
 function fecharHistoricoJogador() {
   historicoJogador.nome = null;
   historicoJogador.movs = [];
+  historicoJogador.fechamento = null;
+  hjFecharModal('modalFechamento');
   hjFecharModal('modalLancarJogador');
   hjFecharModal('modalHistJogador');
 }
@@ -253,7 +311,7 @@ function hjHtmlLinhaMov(mov, { comTorneio = false } = {}) {
   else if (mov.pago && HJ_TIPOS_ENTRADA.includes(mov.tipo)) titulo += ' · pago';
 
   const valor = hjEhLancamento(mov) ? Math.abs(Number(mov.valor)) : Number(mov.valor);
-  const classeValor = mov.modalidade === 'Dívida' ? ' class="negativo"' : '';
+  const classeValor = hjEhCobranca(mov) ? ' class="negativo"' : '';
 
   return `
     <div class="linha-desfazer">
@@ -307,13 +365,8 @@ function renderizarHistoricoJogador() {
   document.getElementById('hjBtnFechamento').classList.toggle('disabled', movs.length === 0);
 }
 
-function hjAbrirFechamento() {
-  if (!historicoJogador.nome || !historicoJogador.opcoes.aoFechamento) return;
-  if (document.getElementById('hjBtnFechamento').classList.contains('disabled')) return;
-  historicoJogador.opcoes.aoFechamento(historicoJogador.nome, historicoJogador.movs);
-}
 
-// ---------- lançar (pagamento / dívida) ----------
+// ---------- lançar (pagamento / cobrança) ----------
 
 function abrirLancamentoJogador() {
 
@@ -334,10 +387,10 @@ function selecionarTipoLancamento(tipo) {
 
   const pagamento = tipo === 'Pagamento';
   document.getElementById('hjBtnTipoPagamento').classList.toggle('ativo', pagamento);
-  document.getElementById('hjBtnTipoDivida').classList.toggle('ativo', !pagamento);
+  document.getElementById('hjBtnTipoCobranca').classList.toggle('ativo', !pagamento);
   document.getElementById('hjLancarDica').textContent = pagamento
     ? 'O jogador pagou ao clube: o valor soma (+) no saldo dele.'
-    : 'O jogador ficou devendo ao clube: o valor desconta (−) do saldo dele.';
+    : 'Cobrança ao jogador: o valor desconta (−) do saldo dele.';
 }
 
 async function confirmarLancamentoJogador() {
@@ -349,7 +402,7 @@ async function confirmarLancamentoJogador() {
 
   const valor = hjValorCentavos(parseFloat(document.getElementById('hjLancarValor').value));
   const observacao = document.getElementById('hjLancarObs').value.trim();
-  const divida = historicoJogador.tipoLancamento === 'Dívida';
+  const cobranca = historicoJogador.tipoLancamento === 'Cobrança';
 
   if (!(valor > 0)) {
     await mostrarAlerta('Informe um valor válido.');
@@ -384,8 +437,8 @@ async function confirmarLancamentoJogador() {
     .insert([{
       jogador: nome,
       tipo: 'Pagamento',
-      valor: divida ? -valor : valor,
-      modalidade: divida ? 'Dívida' : 'Cash',
+      valor: cobranca ? -valor : valor,
+      modalidade: cobranca ? 'Cobrança' : 'Cash',
       pago: false,
       data: new Date().toISOString(),
       cpf,
@@ -397,13 +450,220 @@ async function confirmarLancamentoJogador() {
 
   if (error) {
     console.error(error);
-    await mostrarAlerta(divida ? 'Erro ao lançar a dívida.' : 'Erro ao lançar o pagamento.');
+    await mostrarAlerta(cobranca ? 'Erro ao lançar a cobrança.' : 'Erro ao lançar o pagamento.');
     return;
   }
 
   hjFecharModal('modalLancarJogador');
   await recarregarHistoricoJogador();
   if (historicoJogador.opcoes.aoMudar) historicoJogador.opcoes.aoMudar();
+}
+
+// ---------- fechamento ----------
+
+async function hjInserirPagamento(nome, valor, observacao) {
+
+  const { data: jogador } = await client
+    .from('jogadores')
+    .select('cpf,telefone')
+    .eq('nome', nome)
+    .limit(1)
+    .maybeSingle();
+
+  return client
+    .from('movimentacoes')
+    .insert([{
+      jogador: nome,
+      tipo: 'Pagamento',
+      valor,
+      modalidade: 'Cash',
+      pago: false,
+      data: new Date().toISOString(),
+      cpf: jogador?.cpf || null,
+      telefone: jogador?.telefone || null,
+      ...(observacao ? { observacao } : {})
+    }])
+    .select()
+    .single();
+}
+
+async function hjAbrirFechamento() {
+
+  const nome = historicoJogador.nome;
+  const movs = historicoJogador.movs;
+
+  if (!nome || !movs.length) return;
+  if (document.getElementById('hjBtnFechamento').classList.contains('disabled')) return;
+
+  document.getElementById('fechamentoTitulo').textContent = `Fechamento — ${nome}`;
+  document.getElementById('fechamentoCarregando').classList.remove('oculto');
+  document.getElementById('fechamentoConteudo').classList.add('oculto');
+  document.getElementById('btnConfirmarFechamento').classList.add('disabled');
+  document.getElementById('modalFechamento').classList.add('aberto');
+
+  // Saldo anterior = sessões já fechadas do jogador (mesmo número da tela Jogadores).
+  let anteriores;
+
+  try {
+    anteriores = await buscarTodas(() => client
+      .from('movimentacoes')
+      .select('id,tipo,valor,pago')
+      .eq('jogador', nome)
+      .not('sessao_finalizada_em', 'is', null)
+      .order('id', { ascending: true }));
+  } catch (e) {
+    anteriores = null;
+    console.error(e);
+  }
+
+  if (!anteriores) {
+    hjFecharModal('modalFechamento');
+    await mostrarAlerta('Não foi possível carregar o saldo do jogador. Tente novamente.');
+    return;
+  }
+
+  const saldoAnterior = hjValorCentavos(calcularResultadoMovimentacoes(anteriores).resultado);
+  const sessao = hjValorCentavos(calcularResultadoMovimentacoes(movs).resultado);
+
+  const f = historicoJogador.fechamento = {
+    nome,
+    ids: movs.map(m => m.id),
+    saldoAnterior,
+    sessao,
+    total: hjValorCentavos(saldoAnterior + sessao)
+  };
+
+  document.getElementById('fechSaldoAnterior').innerHTML = hjHtmlValor(saldoAnterior);
+  document.getElementById('fechSessao').innerHTML = hjHtmlValor(sessao);
+  document.getElementById('fechTotal').innerHTML = hjHtmlValor(f.total);
+
+  const zerado = Math.abs(f.total) < 0.005;
+  const jogadorDeve = f.total < 0;
+
+  document.getElementById('fechamentoZerado').classList.toggle('oculto', !zerado);
+  document.getElementById('fechamentoAcerto').classList.toggle('oculto', zerado);
+
+  document.getElementById('fechRotulo').textContent = jogadorDeve ? 'Receber do jogador agora (R$)' : 'Pagar ao jogador agora (R$)';
+  document.getElementById('btnFechTudo').textContent = `Tudo (${formatarMoeda(Math.abs(f.total))})`;
+  document.getElementById('fechDica').textContent = jogadorDeve
+    ? 'O jogador está devendo. Digite quanto ele paga agora. Vazio = tudo fica no saldo do jogador; valor parcial deixa o restante no saldo; valor maior vira crédito do jogador.'
+    : 'O clube deve ao jogador. Digite quanto o clube paga agora. Vazio = tudo fica no saldo do jogador; valor parcial deixa o restante no saldo; valor maior fica como dívida do jogador.';
+
+  document.getElementById('fechValor').value = '';
+  document.getElementById('fechConferi').checked = false;
+
+  document.getElementById('fechamentoCarregando').classList.add('oculto');
+  document.getElementById('fechamentoConteudo').classList.remove('oculto');
+
+  hjAtualizarFechamento();
+}
+
+function hjPreencherTudoFechamento() {
+  const f = historicoJogador.fechamento;
+  if (!f) return;
+  document.getElementById('fechValor').value = Math.abs(f.total).toFixed(2);
+  hjAtualizarFechamento();
+}
+
+function hjValorAgoraFechamento() {
+  const v = hjValorCentavos(parseFloat(document.getElementById('fechValor').value));
+  return isNaN(v) || v < 0 ? 0 : v;
+}
+
+function hjAtualizarFechamento() {
+
+  const f = historicoJogador.fechamento;
+  if (!f) return;
+
+  const total = f.total;
+  const zerado = Math.abs(total) < 0.005;
+  const jogadorDeve = total < 0;
+  const maximo = Math.abs(total);
+  const agora = hjValorAgoraFechamento();
+  const excedeu = agora > maximo + 0.004;
+
+  // Saldo que fica para o jogador depois do fechamento.
+  const restante = zerado ? 0 : hjValorCentavos(jogadorDeve ? total + agora : total - agora);
+
+  const verbo = jogadorDeve ? 'Receber agora' : 'Pagar agora';
+  const previa = document.getElementById('fechPrevia');
+
+  previa.innerHTML = `${verbo}: <strong>${formatarMoeda(agora)}</strong>. Fica no saldo do jogador: <strong>${hjHtmlValor(restante)}</strong>.`;
+
+  // Valor acima do saldo é permitido: a diferença vira crédito (ou dívida) do jogador.
+  if (excedeu) {
+    previa.innerHTML += `<br><span style="color:var(--tx-ambar);font-size:13px;">O valor passa do saldo (${formatarMoeda(maximo)}): ${jogadorDeve ? 'o jogador fica com crédito' : 'o jogador fica devendo'} de ${formatarMoeda(Math.abs(restante))}.</span>`;
+  }
+
+  let texto;
+
+  if (zerado) {
+    texto = 'Conferi todos os lançamentos. Confirmo este fechamento.';
+  } else if (agora > 0) {
+    texto = `Conferi todos os lançamentos e o ${jogadorDeve ? 'recebimento' : 'pagamento ao jogador'} de ${formatarMoeda(agora)}, ficando ${hjTextoValor(restante)} no saldo do jogador. Confirmo este fechamento.`;
+  } else {
+    texto = `Conferi todos os lançamentos. Nada ${jogadorDeve ? 'recebido' : 'pago'} agora: ${hjTextoValor(restante)} fica no saldo do jogador. Confirmo este fechamento.`;
+  }
+
+  document.getElementById('fechTextoConferi').textContent = texto;
+  document.getElementById('btnConfirmarFechamento').classList.toggle('disabled', !document.getElementById('fechConferi').checked);
+}
+
+async function hjConfirmarFechamento() {
+
+  const f = historicoJogador.fechamento;
+  const btn = document.getElementById('btnConfirmarFechamento');
+
+  if (!f || btn.classList.contains('disabled')) return;
+  if (!document.getElementById('fechConferi').checked) return;
+
+  const total = f.total;
+  const zerado = Math.abs(total) < 0.005;
+  const agora = zerado ? 0 : hjValorAgoraFechamento();
+  const aoMudar = historicoJogador.opcoes.aoMudar;
+
+  btn.classList.add('disabled');
+
+  const ids = [...f.ids];
+
+  if (agora > 0) {
+
+    // Jogador devendo: pagamento positivo (abate a dívida).
+    // Clube devendo: pagamento negativo (abate o crédito do jogador).
+    const jogadorDeve = total < 0;
+    const { data, error } = await hjInserirPagamento(
+      f.nome,
+      jogadorDeve ? agora : -agora,
+      jogadorDeve ? 'Recebido no fechamento' : 'Pago ao jogador no fechamento'
+    );
+
+    if (error || !data) {
+      console.error(error);
+      btn.classList.remove('disabled');
+      await mostrarAlerta('Erro ao registrar o ' + (jogadorDeve ? 'recebimento' : 'pagamento') + '. Nada foi fechado; tente novamente.');
+      return;
+    }
+
+    ids.push(data.id);
+  }
+
+  const { error } = await client
+    .from('movimentacoes')
+    .update({ sessao_finalizada_em: new Date().toISOString() })
+    .in('id', ids)
+    .is('sessao_finalizada_em', null);
+
+  if (error) {
+    console.error(error);
+    btn.classList.remove('disabled');
+    await mostrarAlerta('Erro ao fechar a sessão. ' + (agora > 0 ? 'O valor recebido/pago já foi lançado e aparece na lista; ' : '') + 'tente o fechamento de novo.');
+    await recarregarHistoricoJogador();
+    if (aoMudar) aoMudar();
+    return;
+  }
+
+  fecharHistoricoJogador();
+  if (aoMudar) aoMudar();
 }
 
 // ---------- impressão ----------
@@ -461,17 +721,20 @@ function imprimirMovimentacaoJogador(id) {
 // ---------- Esc ----------
 
 // Fase de captura: roda antes do Esc da página. Só fecha os nossos modais
-// quando nenhum modal da página (aviso, confirmar, fechamento) está por cima.
+// quando nenhum modal da página (aviso, confirmar) está por cima.
 document.addEventListener('keydown', e => {
 
   if (e.key !== 'Escape' || !document.getElementById('modalHistJogador')) return;
 
-  const nossos = ['modalHistJogador', 'modalLancarJogador'];
+  const nossos = ['modalHistJogador', 'modalLancarJogador', 'modalFechamento'];
   const outrosAbertos = [...document.querySelectorAll('.modal-overlay.aberto')].some(el => !nossos.includes(el.id));
 
   if (outrosAbertos) return;
 
-  if (document.getElementById('modalLancarJogador').classList.contains('aberto')) {
+  if (document.getElementById('modalFechamento').classList.contains('aberto')) {
+    hjFecharModal('modalFechamento');
+    e.stopImmediatePropagation();
+  } else if (document.getElementById('modalLancarJogador').classList.contains('aberto')) {
     hjFecharModal('modalLancarJogador');
     e.stopImmediatePropagation();
   } else if (historicoJogadorAberto()) {

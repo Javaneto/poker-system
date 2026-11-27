@@ -830,7 +830,7 @@
     if (botao.dataset.acao === 'compra') abrirModalCompra('compra', jogador);
     if (botao.dataset.acao === 'voltar') abrirModalCompra('voltar', jogador);
     if (botao.dataset.acao === 'devolver') abrirModalDevolucao(jogador, true, false);
-    if (botao.dataset.acao === 'em-aberto') abrirHistoricoJogador(jogador);
+    if (botao.dataset.acao === 'em-aberto') abrirHistoricoJogador(jogador, { aoMudar: () => carregarDados() });
     if (botao.dataset.acao === 'desfazer-recolhimento') desfazerRecolhimento(botao.dataset.id);
   });
 
