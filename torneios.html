@@ -6,6 +6,7 @@
   <title>Torneios — RPG Poker Club</title>
 
   <script src="js/tema.js"></script>
+  <script src="js/paginacao.js"></script>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
@@ -378,6 +379,7 @@
   function filtrarTorneiosPorStatus(valor) {
 
     document.getElementById('filtroStatusTorneios').value = valor;
+    paginacaoTorneios?.voltarInicio();
 
     document.querySelectorAll('#filtroSegmentado button').forEach(botao => {
       const ativo = botao.dataset.valor === valor;
@@ -388,9 +390,14 @@
     renderizarListaTorneios();
   }
 
+  let paginacaoTorneios = null;
+
   function renderizarListaTorneios() {
 
     const lista = document.getElementById('listaTorneios');
+
+    if (!paginacaoTorneios) paginacaoTorneios = criarPaginacaoCards({ grid: lista, aoMudar: () => renderizarListaTorneios() });
+    paginacaoTorneios.esconder();
     const filtroStatus = document.getElementById('filtroStatusTorneios').value;
 
     lista.innerHTML = '';
@@ -417,7 +424,7 @@
       return;
     }
 
-    torneiosFiltrados.forEach(torneio => {
+    paginacaoTorneios.fatiar(torneiosFiltrados).forEach(torneio => {
 
       const valoresDoTorneio = todosValoresTorneios.filter(v => v.torneio_id === torneio.id);
       const primeiroValor = valoresDoTorneio[0];
