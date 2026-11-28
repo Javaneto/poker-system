@@ -254,7 +254,7 @@
 
     <div id="adicionarBusca">
       <label class="cg-rotulo" for="buscaJogadorMesa">Jogador</label>
-      <input type="text" id="buscaJogadorMesa" placeholder="Digite o nome..." autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done">
+      <input type="text" id="buscaJogadorMesa" placeholder="Nome, apelido, CPF ou telefone..." autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done">
       <div class="cg-busca-lista" id="listaBuscaJogador"></div>
     </div>
 
@@ -958,20 +958,21 @@
     const naMesa = new Set(sentados().map(a => a.jogador));
     const jaJogou = new Set(assentos.filter(a => a.levantou_em).map(a => a.jogador));
 
-    sugestoesBusca = jogadores
+    // Limpo até digitar: a lista só aparece depois da busca (nome, apelido, CPF ou telefone).
+    sugestoesBusca = !termo ? [] : jogadores
       .filter(j => j.ativo !== false && !naMesa.has(j.nome))
-      .filter(j => !termo || j.nome.toLowerCase().includes(termo) || (j.apelido || '').toLowerCase().includes(termo))
-      .sort((a, b) => {
-        const aComeca = a.nome.toLowerCase().startsWith(termo);
-        const bComeca = b.nome.toLowerCase().startsWith(termo);
-        if (aComeca !== bComeca) return aComeca ? -1 : 1;
-        return a.nome.localeCompare(b.nome);
-      })
+      .filter(j => jogadorCombinaBusca(j, termo))
+      .sort((a, b) => compararBuscaJogador(a, b, termo))
       .slice(0, 50);
 
     indiceBusca = 0;
 
     const lista = document.getElementById('listaBuscaJogador');
+
+    if (!termo) {
+      lista.innerHTML = '';
+      return;
+    }
 
     lista.innerHTML =
       (sugestoesBusca.length === 0
@@ -1009,7 +1010,7 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       if (sugestoesBusca[indiceBusca]) escolherJogadorBusca(sugestoesBusca[indiceBusca]);
-      else mostrarCadastroJogador();
+      else if (e.target.value.trim()) mostrarCadastroJogador();
     }
   });
 

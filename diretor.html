@@ -12,6 +12,7 @@
   <script src="js/torneio-extras.js"></script>
 
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="cash.css">
 
   <style>
     /* Cores do Diretor: apontam para a paleta do tema (styles.css) */
@@ -1067,21 +1068,19 @@
     <h2 id="modalSelecionarJogadorTitulo">Selecionar Jogador</h2>
 
     <div id="selecionarJogadorBusca">
-      <div class="pesquisa-wrapper">
-        <input
-          enterkeyhint="done"
-          autocapitalize="words"
-          spellcheck="false"
-          type="text"
-          id="pesquisaJogadorModal"
-          placeholder="Pesquisar jogador"
-          autocomplete="off"
-          oninput="filtrarJogadoresModal()"
-        >
-      </div>
+      <label class="cg-rotulo" for="pesquisaJogadorModal">Jogador</label>
+      <input
+        enterkeyhint="done"
+        autocapitalize="words"
+        spellcheck="false"
+        type="text"
+        id="pesquisaJogadorModal"
+        placeholder="Nome, apelido, CPF ou telefone..."
+        autocomplete="off"
+        oninput="filtrarJogadoresModal()"
+      >
 
-      <div id="listaJogadoresModal" style="max-height:280px;overflow-y:auto;"></div>
-      <div id="cadastroRapidoAtalho"></div>
+      <div id="listaJogadoresModal" class="cg-busca-lista"></div>
     </div>
 
     <div id="selecionarJogadorNovo" class="oculto">
@@ -2872,11 +2871,14 @@
     renderizarListaJogadoresModal(pesquisa);
   }
 
+  let sugestoesModal = [];
+  let indiceSugestaoModal = 0;
+
+  const ICONE_NOVO_JOGADOR_DIRETOR = '<svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M3 20c0-3.5 3-6 7-6 1.5 0 2.9.3 4 1M18 14v6M15 17h6"/></svg>';
+
   function renderizarListaJogadoresModal(pesquisa) {
 
     const lista = document.getElementById('listaJogadoresModal');
-
-    lista.innerHTML = '';
 
     const termo = pesquisa.trim().toLowerCase();
 
@@ -2892,73 +2894,76 @@
       ? new Set(movimentacoesTorneio.filter(m => NOMES_BUYIN.includes(m.tipo_registro)).map(m => m.jogador))
       : null;
 
-    // Registro: depois de pesquisar, oferece cadastrar o jogador ali mesmo (como no Cash Game).
-    document.getElementById('cadastroRapidoAtalho').innerHTML = ehRegistro && termo
-      ? `<button type="button" class="busca-novo" onclick="mostrarCadastroJogadorModal()">
-           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M3 20c0-3.5 3-6 7-6 1.5 0 2.9.3 4 1M18 14v6M15 17h6"/></svg>
-           <span>Cadastrar novo jogador</span>
-         </button>`
-      : '';
+    // Jogador pelo nome (lançamentos antigos podem ter nome sem cadastro).
+    const porNome = nome => jogadores.find(j => j.nome === nome) || { nome };
 
-    let nomesParaMostrar;
+    let candidatos;
 
     if (!termo) {
 
       if (ehRegistro) {
-
-        nomesParaMostrar = [];
-
+        candidatos = []; // limpo até digitar
       } else if (restringirARegistrados) {
-
-        nomesParaMostrar = Array.from(nomesRegistrados).sort();
-
+        candidatos = Array.from(nomesRegistrados).sort().map(porNome);
       } else {
-
-        const movimentacoesAbertas = movimentacoes.filter(
-          mov => !mov.pago && !mov.sessao_finalizada_em
-        );
-
-        nomesParaMostrar = Array.from(new Set(movimentacoesAbertas.map(mov => mov.jogador))).sort();
+        const abertas = movimentacoes.filter(mov => !mov.pago && !mov.sessao_finalizada_em);
+        candidatos = Array.from(new Set(abertas.map(mov => mov.jogador))).sort().map(porNome);
       }
 
     } else {
 
-      nomesParaMostrar = jogadores
+      candidatos = jogadores
         .filter(j => j.ativo !== false)
-        .map(j => j.nome)
-        .filter(nome => nome.toLowerCase().includes(termo))
-        .sort((a, b) => a.localeCompare(b));
+        .filter(j => jogadorCombinaBusca(j, termo))
+        .sort((a, b) => compararBuscaJogador(a, b, termo));
 
       if (restringirARegistrados) {
-        nomesParaMostrar = nomesParaMostrar.filter(nome => nomesRegistrados.has(nome));
+        candidatos = candidatos.filter(j => nomesRegistrados.has(j.nome));
       }
     }
 
-    if (nomesParaMostrar.length === 0) {
-      lista.innerHTML = `<p style="color:var(--apagado);padding:8px 0;">${
-        ehRegistro
-          ? (termo ? 'Nenhum jogador encontrado.' : 'Pesquise o nome do jogador para registrar.')
+    sugestoesModal = candidatos.slice(0, 50);
+    indiceSugestaoModal = 0;
+
+    let html = '';
+
+    if (sugestoesModal.length) {
+      html = sugestoesModal.map((j, i) => `
+        <button type="button" class="cg-busca-item${i === 0 ? ' destacado' : ''}" data-indice="${i}">
+          ${escapeHtml(j.nome)}
+          ${j.apelido ? `<small>${escapeHtml(j.apelido)}</small>` : ''}
+        </button>
+      `).join('');
+    } else if (termo || !ehRegistro) {
+      html = `<div class="cg-busca-vazio">${
+        termo
+          ? 'Nenhum jogador encontrado.'
           : restringirARegistrados
             ? 'Nenhum jogador registrado neste torneio ainda.'
-            : (termo ? 'Nenhum jogador encontrado.' : 'Nenhum jogador em aberto no momento. Pesquise para encontrar um jogador.')
-      }</p>`;
-      return;
+            : 'Nenhum jogador em aberto no momento. Pesquise para encontrar um jogador.'
+      }</div>`;
     }
 
-    nomesParaMostrar.forEach(nome => {
+    // Registro: depois de digitar, oferece cadastrar o jogador ali mesmo (como no Cash Game).
+    if (ehRegistro && termo) {
+      html += `<button type="button" class="cg-busca-novo" onclick="mostrarCadastroJogadorModal()">${ICONE_NOVO_JOGADOR_DIRETOR}<span>Cadastrar novo jogador</span></button>`;
+    }
 
-      const div = document.createElement('div');
+    lista.innerHTML = html;
+  }
 
-      div.className = 'sugestao-item';
-      div.innerHTML = `<strong>${escapeHtml(nome)}</strong>`;
-
-      div.onclick = () => {
-        selecionarJogadorModal(nome);
-      };
-
-      lista.appendChild(div);
+  function destacarSugestaoModal(novo) {
+    indiceSugestaoModal = novo;
+    document.querySelectorAll('#listaJogadoresModal .cg-busca-item').forEach((el, i) => {
+      el.classList.toggle('destacado', i === indiceSugestaoModal);
+      if (i === indiceSugestaoModal) el.scrollIntoView({ block: 'nearest' });
     });
   }
+
+  document.getElementById('listaJogadoresModal').addEventListener('click', e => {
+    const item = e.target.closest('.cg-busca-item');
+    if (item) selecionarJogadorModal(sugestoesModal[Number(item.dataset.indice)].nome);
+  });
 
   function selecionarJogadorModal(nomeJogador) {
 
@@ -3050,14 +3055,24 @@
   document.getElementById('pesquisaJogadorModal')
     .addEventListener('keydown', function(e) {
 
+      if (e.key === 'ArrowDown' && sugestoesModal.length) {
+        e.preventDefault();
+        destacarSugestaoModal(Math.min(indiceSugestaoModal + 1, sugestoesModal.length - 1));
+      }
+
+      if (e.key === 'ArrowUp' && sugestoesModal.length) {
+        e.preventDefault();
+        destacarSugestaoModal(Math.max(indiceSugestaoModal - 1, 0));
+      }
+
       if (e.key === 'Enter') {
 
         e.preventDefault();
 
-        const primeiro = document.querySelector('#listaJogadoresModal .sugestao-item');
+        const escolhido = sugestoesModal[indiceSugestaoModal];
 
-        if (primeiro) {
-          primeiro.click();
+        if (escolhido) {
+          selecionarJogadorModal(escolhido.nome);
         } else if (pagamentoTipoSelecionado === 'REGISTRO' && this.value.trim()) {
           mostrarCadastroJogadorModal();
         }

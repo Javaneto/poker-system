@@ -196,6 +196,27 @@ function formatarMoeda(valor) {
   return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+// Busca de jogador usada no Cash Game e no Diretor: nome, apelido, CPF ou
+// telefone (CPF/telefone comparam só os dígitos, a partir de 3 dígitos).
+function jogadorCombinaBusca(jogador, termo) {
+  const t = String(termo || '').trim().toLowerCase();
+  if (!t) return true;
+  if (String(jogador.nome || '').toLowerCase().includes(t)) return true;
+  if (String(jogador.apelido || '').toLowerCase().includes(t)) return true;
+  const digitos = t.replace(/\D/g, '');
+  if (digitos.length < 3) return false;
+  return String(jogador.cpf || '').replace(/\D/g, '').includes(digitos)
+    || String(jogador.telefone || '').replace(/\D/g, '').includes(digitos);
+}
+
+// Ordem da busca: quem começa com o termo (nome ou apelido) vem primeiro.
+function compararBuscaJogador(a, b, termo) {
+  const t = String(termo || '').trim().toLowerCase();
+  const comeca = j => String(j.nome || '').toLowerCase().startsWith(t) || String(j.apelido || '').toLowerCase().startsWith(t);
+  if (t && comeca(a) !== comeca(b)) return comeca(a) ? -1 : 1;
+  return String(a.nome).localeCompare(String(b.nome));
+}
+
 // Mesmo cálculo de resultado usado nas páginas de cash game e diretor.
 function calcularResultadoMovimentacoes(movs) {
 
