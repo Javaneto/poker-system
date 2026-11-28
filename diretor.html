@@ -1276,7 +1276,7 @@
   <div class="modal-box" style="max-width:380px;">
     <h2>Aviso</h2>
 
-    <p id="alertaMensagem" class="modal-resumo"></p>
+    <p id="alertaMensagem" class="modal-resumo" style="white-space:pre-line;overflow-wrap:anywhere;"></p>
 
     <div class="modal-acoes">
       <button class="btn-dark" style="flex:1;" onclick="confirmarAlerta()">
@@ -2734,7 +2734,7 @@
     btn.classList.remove('disabled');
 
     if (error) {
-      await mostrarAlerta('Erro ao encerrar torneio. Nada foi alterado; tente novamente.');
+      await mostrarAlerta('Erro ao encerrar torneio. Nada foi alterado; tente novamente.' + apDetalheErro(error));
       console.error(error);
       return;
     }
