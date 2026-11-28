@@ -1256,19 +1256,19 @@ tbody tr:hover {
   box-shadow: 0 1px 3px rgba(16,24,40,0.12);
 }
 
-/* Busca + interruptor na mesma linha */
+/* Busca logo abaixo das abas; o interruptor fica embaixo da busca */
 .ch-filtros {
   display: flex;
-  gap: 10px;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
   padding: 12px 20px;
   border-bottom: 1px solid var(--borda);
-  flex-wrap: wrap;
 }
 
 .ch-busca {
   position: relative;
-  flex: 1 1 240px;
+  flex: 0 0 auto;
   min-width: 0;
   display: block;
   margin: 0;
@@ -1308,6 +1308,7 @@ tbody tr:hover {
   font-size: 14px;
   white-space: nowrap;
   flex: 0 0 auto;
+  align-self: flex-start;
 }
 
 .ch-switch:hover { transform: none; box-shadow: none; opacity: 1; }
@@ -1653,8 +1654,6 @@ tbody tr:hover {
   .ch-abas { margin: 0 16px; }
   .ch-filtros { padding: 12px 16px; }
   .ch-conteudo { padding: 12px 16px 20px; }
-
-  .ch-switch { flex: 1 1 100%; }
 
   .ch-item {
     flex-direction: column;
