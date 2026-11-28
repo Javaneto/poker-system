@@ -614,9 +614,10 @@ a.btn-gray {
     padding: 0 8px;
   }
 
+  /* Celular: 2 colunas (8 cards por página, 4 linhas) */
   .grid-torneios {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   /* Uma coluna: o título não precisa reservar duas linhas */
@@ -2008,3 +2009,13 @@ body.mnu-gaveta .mini-relogio {
 /* Valores do torneio: coluna de fichas cabe sem rolagem lateral */
 .linha-tipo-pagamento input { min-width: 0; }
 .linha-tipo-pagamento .tipo-nome-fixo { min-width: 64px; white-space: nowrap; }
+
+/* ---- Paginação das listas de cards (js/paginacao.js) ---- */
+.paginacao-cards {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin-top: 16px; flex-wrap: wrap;
+}
+.paginacao-cards.oculto { display: none; }
+.paginacao-btn { min-height: 40px; padding: 0 14px; }
+.paginacao-btn[disabled] { opacity: .45; pointer-events: none; }
+.paginacao-info { font-size: 14px; color: var(--apagado); font-variant-numeric: tabular-nums; }

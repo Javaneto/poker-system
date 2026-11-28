@@ -9,6 +9,7 @@
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="js/comum.js"></script>
+  <script src="js/paginacao.js"></script>
 
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="cash.css">
@@ -162,6 +163,7 @@
   function filtrarMesas(valor) {
 
     filtroStatus = valor;
+    paginacaoMesas?.voltarInicio();
 
     document.querySelectorAll('#filtroSegmentado button').forEach(b => {
       const ativo = b.dataset.valor === valor;
@@ -181,9 +183,14 @@
     `;
   }
 
+  let paginacaoMesas = null;
+
   function renderizar(erro) {
 
     const lista = document.getElementById('listaMesas');
+
+    if (!paginacaoMesas) paginacaoMesas = criarPaginacaoCards({ grid: lista, aoMudar: () => renderizar() });
+    paginacaoMesas.esconder();
 
     if (tabelasFaltando) {
       mostrarListaVazia(lista, 'As mesas de Cash Game ainda não foram ativadas. Rode o arquivo <strong>sql/008_cash_mesas.sql</strong> no Supabase.');
@@ -207,7 +214,7 @@
       return;
     }
 
-    lista.innerHTML = filtradas.map(mesa => {
+    lista.innerHTML = paginacaoMesas.fatiar(filtradas).map(mesa => {
 
       const encerrada = mesa.status === 'encerrado';
       const sentados = assentos.filter(a => a.mesa_id === mesa.id && !a.levantou_em).length;
