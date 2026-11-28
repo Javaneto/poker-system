@@ -35,6 +35,12 @@ async function apAvisarSqlPendente() {
   await mostrarAlerta('O banco ainda não foi atualizado para esta função. Rode o arquivo sql/011_ajuste_premiacao.sql no Supabase (SQL Editor) e tente de novo.');
 }
 
+// Detalhe técnico do erro no aviso: ajuda a descobrir o motivo pelo print.
+function apDetalheErro(error) {
+  const msg = String(error?.message || error?.details || '').trim();
+  return msg ? `\n\nDetalhe: ${msg}` : '';
+}
+
 // ---------- dados ----------
 
 async function carregarAjustesPremiacao() {
@@ -310,7 +316,7 @@ async function salvarPremiacaoManual() {
     btn.classList.remove('disabled');
     if (apErroSqlPendente(error)) return apAvisarSqlPendente();
     console.error(error);
-    await mostrarAlerta('Erro ao salvar a premiação. Tente novamente.');
+    await mostrarAlerta('Erro ao salvar a premiação. Tente novamente.' + apDetalheErro(error));
     return;
   }
 
@@ -332,7 +338,7 @@ async function restaurarPremiacaoAutomatica() {
   if (error) {
     if (apErroSqlPendente(error)) return apAvisarSqlPendente();
     console.error(error);
-    await mostrarAlerta('Erro ao voltar para a estrutura. Tente novamente.');
+    await mostrarAlerta('Erro ao voltar para a estrutura. Tente novamente.' + apDetalheErro(error));
     return;
   }
 
@@ -449,7 +455,7 @@ async function confirmarAjusteValorPremio() {
   if (error) {
     if (apErroSqlPendente(error)) return apAvisarSqlPendente();
     console.error(error);
-    await mostrarAlerta('Erro ao ajustar o prêmio. Tente novamente.');
+    await mostrarAlerta('Erro ao ajustar o prêmio. Tente novamente.' + apDetalheErro(error));
     return;
   }
 
@@ -488,7 +494,7 @@ async function desfazerAjustePremiacao(id) {
   if (error) {
     if (apErroSqlPendente(error)) return apAvisarSqlPendente();
     console.error(error);
-    await mostrarAlerta('Erro ao desfazer o ajuste. Tente novamente.');
+    await mostrarAlerta('Erro ao desfazer o ajuste. Tente novamente.' + apDetalheErro(error));
     return;
   }
 
