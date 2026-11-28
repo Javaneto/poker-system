@@ -1060,21 +1060,8 @@
           return;
         }
 
-        // Com o sql/013 o próprio banco atualiza o nome em todas as tabelas
-        // (gatilho propagar_renome_jogador); isto fica como garantia para as
-        // movimentações caso o banco ainda não tenha o gatilho.
-        if (nomeAntigo !== nome) {
-
-          const { error: erroMovs } = await client
-            .from('movimentacoes')
-            .update({ jogador: nome })
-            .eq('jogador', nomeAntigo);
-
-          if (erroMovs) {
-            await mostrarAlerta('O cadastro foi salvo, mas houve erro ao atualizar o nome nas movimentações. Tente renomear de novo.');
-            console.error(erroMovs);
-          }
-        }
+        // O nome em todo o histórico é atualizado pelo próprio banco
+        // (gatilho propagar_renome_jogador, sql/013 e sql/015).
       }
 
       fecharModal('modalForm');
@@ -1118,7 +1105,11 @@
     const { error } = await client.from('jogadores').delete().eq('id', jogadorDetalhe.id);
 
     if (error) {
-      await mostrarAlerta('Erro ao excluir jogador');
+      // 23503: o banco (sql/015) impede excluir quem tem histórico em qualquer
+      // tabela (classificação de torneio, ranking, mesa de cash).
+      await mostrarAlerta(error.code === '23503'
+        ? `${jogadorDetalhe.nome} aparece no histórico (classificação de torneio, ranking ou mesa de cash) e não pode ser excluído. Use "Inativar": ele some das buscas mas o histórico continua.`
+        : 'Erro ao excluir jogador');
       console.error(error);
       return;
     }
