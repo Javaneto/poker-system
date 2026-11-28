@@ -10,6 +10,7 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="cash.css">
 </head>
 <body>
 <script src="js/menu.js"></script>
@@ -184,6 +185,7 @@
   let torneioAtualId = null;
   let todosTorneios = [];
   let todosValoresTorneios = [];
+  let movsTorneios = []; // torneio_id, jogador, valor_prize (premiação e jogadores do card)
   let estruturasPremiacao = [];
   let estruturasBlinds = [];
 
@@ -314,6 +316,20 @@
 
     todosValoresTorneios = todosValoresDB || [];
 
+    // Movimentações de torneio, em páginas de 1000 (limite do Supabase).
+    movsTorneios = [];
+    for (let inicio = 0; ; inicio += 1000) {
+      const { data, error } = await client
+        .from('movimentacoes')
+        .select('id,torneio_id,jogador,valor_prize')
+        .not('torneio_id', 'is', null)
+        .order('id', { ascending: true })
+        .range(inicio, inicio + 999);
+      if (error) { console.error(error); break; }
+      movsTorneios.push(...(data || []));
+      if (!data || data.length < 1000) break;
+    }
+
     const { data: estruturasDB } = await client
       .from('premiacao_estruturas')
       .select('*')
@@ -333,6 +349,13 @@
 
   const ICONE_LIXEIRA = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>';
   const ICONE_CALENDARIO = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+  const ICONE_RELOGIO_TORNEIO = '<svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  const ICONE_PESSOAS_TORNEIO = '<svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.8 0 5 2 5 5"/></svg>';
+
+  function formatarMoedaTorneio(valor) {
+    return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
   const ICONE_TROFEU = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>';
 
   function mostrarListaVazia(lista, mensagem) {
@@ -395,9 +418,10 @@
       const ehAtual = torneioAtualId === torneio.id;
       const estaEncerrado = torneio.status === 'encerrado';
 
-      const div = document.createElement('div');
-
-      div.className = 'torneio-card' + (ehAtual ? ' atual' : '');
+      // Mesmo cálculo do Diretor: soma do prêmio das entradas + ajuste manual.
+      const movs = movsTorneios.filter(m => m.torneio_id === torneio.id);
+      const premiacao = movs.reduce((s, m) => s + Number(m.valor_prize || 0), 0) + Number(torneio.ajuste_premiacao || 0);
+      const qtdJogadores = new Set(movs.map(m => m.jogador)).size;
 
       const dataFormatada = new Date(torneio.criado_em).toLocaleString('pt-BR', {
         day: '2-digit',
@@ -407,51 +431,64 @@
         minute: '2-digit'
       });
 
+      // Card no mesmo formato da lista de mesas do Cash Game.
+      const div = document.createElement('div');
+
+      div.className = 'cg-mesa-card torneio-card-cg' + (ehAtual ? ' atual' : '');
+
       div.innerHTML = `
-        <div class="torneio-card-topo">
-          <span class="status-badge ${estaEncerrado ? 'encerrado' : 'aberto'}">${estaEncerrado ? 'Encerrado' : 'Aberto'}</span>
-          ${ehAtual ? '<span class="status-badge atual">Atual</span>' : ''}
+        <div class="cg-mesa-topo">
+          <h3>${escapeHtml(torneio.nome)}</h3>
         </div>
-        <h3>${escapeHtml(torneio.nome)}</h3>
-        <div class="torneio-data">${ICONE_CALENDARIO}<span>${dataFormatada}</span></div>
-        <div class="torneio-info">
-          ${primeiroValor
-            ? `<span>${escapeHtml(primeiroValor.tipo)}</span><strong>R$ ${Number(primeiroValor.valor_total).toFixed(2)}</strong>`
-            : '<span>Sem valores configurados</span>'}
+        <div class="cg-mesa-linha">${ICONE_RELOGIO_TORNEIO}<span class="torneio-card-data">${dataFormatada}</span>
+          ${ehAtual && !estaEncerrado
+            ? '<span class="cg-badge torneio-atual" title="Torneio atual (aberto)">Atual</span>'
+            : `<span class="cg-badge ${estaEncerrado ? 'encerrado' : 'ativo'}">${estaEncerrado ? 'Encerrado' : 'Aberto'}</span>`}
         </div>
+        <div class="cg-mesa-numeros">
+          <div><span>${primeiroValor ? escapeHtml(primeiroValor.tipo) : 'Buy-in'}</span><strong>${primeiroValor ? formatarMoedaTorneio(primeiroValor.valor_total) : '-'}</strong></div>
+          <div><span>Premiação</span><strong>${formatarMoedaTorneio(premiacao)}</strong></div>
+        </div>
+        <div class="cg-mesa-linha torneio-card-rodape">${ICONE_PESSOAS_TORNEIO}<span>${qtdJogadores} ${qtdJogadores === 1 ? 'jogador' : 'jogadores'}</span></div>
       `;
 
-      const btnExcluir = document.createElement('button');
+      const rodape = div.querySelector('.torneio-card-rodape');
 
-      btnExcluir.type = 'button';
-      btnExcluir.className = 'btn-excluir-torneio' + (adminLiberado && estaEncerrado ? '' : ' disabled');
-      btnExcluir.innerHTML = ICONE_LIXEIRA;
-      btnExcluir.title = estaEncerrado ? 'Excluir torneio' : 'Encerre o torneio antes de excluir';
-      btnExcluir.setAttribute('aria-label', btnExcluir.title);
-      btnExcluir.onclick = () => excluirTorneio(torneio.id, torneio.nome);
+      // Excluir só aparece em torneio encerrado (antes era um botão sempre desabilitado).
+      if (estaEncerrado) {
 
-      div.querySelector('.torneio-card-topo').appendChild(btnExcluir);
+        const btnExcluir = document.createElement('button');
+
+        btnExcluir.type = 'button';
+        btnExcluir.className = 'torneio-card-excluir' + (adminLiberado ? '' : ' disabled');
+        btnExcluir.innerHTML = ICONE_LIXEIRA;
+        btnExcluir.title = 'Excluir torneio';
+        btnExcluir.setAttribute('aria-label', btnExcluir.title);
+        btnExcluir.onclick = () => excluirTorneio(torneio.id, torneio.nome);
+
+        rodape.appendChild(btnExcluir);
+      }
 
       if (ehAtual) {
 
         const link = document.createElement('a');
 
-        link.className = 'btn-torneio-acao btn-red';
+        link.className = 'cg-mesa-acao torneio-card-acao';
         link.href = 'diretor.html';
-        link.textContent = 'Abrir no Diretor';
+        link.textContent = 'Abrir no Diretor ›';
 
-        div.appendChild(link);
+        rodape.appendChild(link);
 
       } else {
 
         const btn = document.createElement('button');
 
         btn.type = 'button';
-        btn.className = 'btn-torneio-acao btn-dark' + (adminLiberado ? '' : ' disabled');
-        btn.textContent = 'Selecionar';
+        btn.className = 'cg-mesa-acao torneio-card-acao' + (adminLiberado ? '' : ' disabled');
+        btn.textContent = 'Selecionar ›';
         btn.onclick = () => selecionarTorneio(torneio.id);
 
-        div.appendChild(btn);
+        rodape.appendChild(btn);
       }
 
       lista.appendChild(div);
