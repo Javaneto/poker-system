@@ -681,12 +681,22 @@
 
     jogadores = (jogadoresDB || []).sort((a, b) => a.nome.localeCompare(b.nome));
 
-    movimentacoes = await buscarTodas(() => client
-      .from('movimentacoes')
-      .select('id,jogador,tipo,tipo_registro,modalidade,valor,pago,data,sessao_finalizada_em,torneio_id,observacao')
-      .order('id', { ascending: false }));
+    // Resumos prontos do banco (sql/016): uma linha por jogador em vez de
+    // baixar todas as movimentações a cada mudança. Sem o sql/016, faz a
+    // conta aqui como antes.
+    const { data: resumosDB, error: erroResumos } = await client.from('jogadores_resumo').select('*');
 
-    montarResumos();
+    if (!erroResumos) {
+      movimentacoes = [];
+      montarResumosDoBanco(resumosDB || []);
+    } else {
+      movimentacoes = await buscarTodas(() => client
+        .from('movimentacoes')
+        .select('id,jogador,tipo,tipo_registro,modalidade,valor,pago,data,sessao_finalizada_em,torneio_id,observacao')
+        .order('id', { ascending: false }));
+      montarResumos();
+    }
+
     renderizar();
 
     if (jogadorDetalhe && document.getElementById('modalDetalhe').classList.contains('aberto')) {
@@ -694,6 +704,44 @@
       if (atualizado) abrirDetalhe(atualizado.id);
       else fecharModal('modalDetalhe');
     }
+  }
+
+  function situacaoJogador(j, qtdAbertas, saldoGeral) {
+    if (j.ativo === false) return 'inativo';
+    if (qtdAbertas > 0) return 'jogo';
+    if (saldoGeral < -0.005) return 'deve';
+    if (saldoGeral > 0.005) return 'credito';
+    return 'ok';
+  }
+
+  function montarResumosDoBanco(linhas) {
+
+    const porId = new Map(linhas.map(l => [String(l.jogador_id), l]));
+
+    resumoPorNome = new Map();
+
+    jogadores.forEach(j => {
+      const l = porId.get(String(j.id)) || {};
+      const qtdAbertas = Number(l.qtd_abertas || 0);
+      const saldoGeral = Number(l.saldo_geral || 0);
+      const sessoesCash = Number(l.sessoes_cash || 0);
+      const torneios = Number(l.torneios || 0);
+
+      resumoPorNome.set(j.nome, {
+        movs: null, // carregadas só ao abrir o jogador
+        qtdMovs: Number(l.qtd_movs || 0),
+        qtdAbertas,
+        saldoGeral,
+        saldoAberto: Number(l.saldo_aberto || 0),
+        totalEntrou: Number(l.total_entrou || 0),
+        totalSaiu: Number(l.total_saiu || 0),
+        sessoesCash,
+        torneios,
+        jogos: sessoesCash + torneios + (qtdAbertas > 0 ? 1 : 0),
+        ultima: l.ultima || null,
+        situacao: situacaoJogador(j, qtdAbertas, saldoGeral)
+      });
+    });
   }
 
   function montarResumos() {
@@ -728,7 +776,8 @@
 
       resumoPorNome.set(j.nome, {
         movs,
-        abertas,
+        qtdMovs: movs.length,
+        qtdAbertas: abertas.length,
         saldoGeral: geral.resultado,
         saldoAberto: emAberto.resultado,
         totalEntrou: geral.entrada,
@@ -794,7 +843,7 @@
 
     document.getElementById('kpiAtivos').textContent = ativos.length;
     document.getElementById('kpiTotal').textContent = `${jogadores.length} cadastrados`;
-    document.getElementById('kpiEmJogo').textContent = resumos.filter(r => r && r.abertas.length > 0).length;
+    document.getElementById('kpiEmJogo').textContent = resumos.filter(r => r && r.qtdAbertas > 0).length;
     document.getElementById('kpiDevendo').textContent = formatarMoeda(Math.abs(devendo.reduce((s, r) => s + r.saldoGeral, 0)));
     document.getElementById('kpiDevendoQtd').textContent = `${devendo.length} jogador(es)`;
     document.getElementById('kpiCredito').textContent = formatarMoeda(credito.reduce((s, r) => s + r.saldoGeral, 0));
@@ -808,7 +857,7 @@
 
       if (filtroStatus === 'ativo' && j.ativo === false) return false;
       if (filtroStatus === 'inativo' && j.ativo !== false) return false;
-      if (filtroSituacao === 'jogo' && r.abertas.length === 0) return false;
+      if (filtroSituacao === 'jogo' && r.qtdAbertas === 0) return false;
       if (filtroSituacao === 'deve' && !(r.saldoGeral < -0.005)) return false;
       if (filtroSituacao === 'credito' && !(r.saldoGeral > 0.005)) return false;
 
@@ -929,16 +978,50 @@
 
     document.getElementById('detalheNumeros').innerHTML = `
       <div class="item"><span>Saldo geral</span><strong>${htmlSaldo(res.saldoGeral)}</strong></div>
-      <div class="item"><span>Em aberto agora</span><strong>${res.abertas.length ? htmlSaldo(res.saldoAberto) : '-'}</strong></div>
+      <div class="item"><span>Em aberto agora</span><strong>${res.qtdAbertas ? htmlSaldo(res.saldoAberto) : '-'}</strong></div>
       <div class="item"><span>Sessões de cash</span><strong>${res.sessoesCash}</strong></div>
       <div class="item"><span>Torneios</span><strong>${res.torneios}</strong></div>
       <div class="item"><span>Total que entrou</span><strong>${formatarMoeda(res.totalEntrou)}</strong></div>
       <div class="item"><span>Total que saiu</span><strong>${formatarMoeda(res.totalSaiu)}</strong></div>
     `;
 
-    const ultimas = res.movs.slice().sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 50);
+    document.getElementById('btnAtivarDetalhe').textContent = j.ativo === false ? 'Reativar' : 'Inativar';
 
-    document.getElementById('detalheMovs').innerHTML = ultimas.length
+    ['btnEditarDetalhe', 'btnAtivarDetalhe', 'btnExcluirDetalhe'].forEach(id =>
+      document.getElementById(id).classList.toggle('disabled', !adminLiberado)
+    );
+
+    document.getElementById('modalDetalhe').classList.add('aberto');
+
+    renderizarMovsDetalhe(j, res);
+  }
+
+  // Últimas 50 movimentações do jogador: buscadas só ao abrir o detalhe.
+  async function renderizarMovsDetalhe(j, res) {
+
+    const alvo = document.getElementById('detalheMovs');
+    let ultimas;
+
+    if (res.movs) {
+      ultimas = res.movs.slice().sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 50);
+    } else {
+      alvo.innerHTML = '<p style="color:var(--apagado);">Carregando...</p>';
+      const { data, error } = await client
+        .from('movimentacoes')
+        .select('id,tipo,tipo_registro,modalidade,valor,data,sessao_finalizada_em,observacao')
+        .eq('jogador_id', j.id)
+        .order('data', { ascending: false })
+        .limit(50);
+      if (jogadorDetalhe?.id !== j.id) return;
+      if (error) {
+        console.error(error);
+        alvo.innerHTML = '<p style="color:var(--apagado);">Não foi possível carregar as movimentações.</p>';
+        return;
+      }
+      ultimas = data || [];
+    }
+
+    alvo.innerHTML = ultimas.length
       ? ultimas.map(m => `
           <div class="linha-desfazer">
             <div class="linha-desfazer-info">
@@ -951,14 +1034,6 @@
           </div>
         `).join('')
       : '<p style="color:var(--apagado);">Nenhuma movimentação.</p>';
-
-    document.getElementById('btnAtivarDetalhe').textContent = j.ativo === false ? 'Reativar' : 'Inativar';
-
-    ['btnEditarDetalhe', 'btnAtivarDetalhe', 'btnExcluirDetalhe'].forEach(id =>
-      document.getElementById(id).classList.toggle('disabled', !adminLiberado)
-    );
-
-    document.getElementById('modalDetalhe').classList.add('aberto');
   }
 
   // ---------- novo / editar ----------
@@ -1048,7 +1123,7 @@
         const nomeAntigo = jogadorEditando.nome;
 
         if (nomeAntigo !== nome) {
-          const qtd = (resumoPorNome.get(nomeAntigo)?.movs || []).length;
+          const qtd = (resumoPorNome.get(nomeAntigo)?.qtdMovs || 0);
           if (!await mostrarConfirm(`Renomear "${nomeAntigo}" para "${nome}"? O nome será atualizado em todo o histórico: ${qtd} movimentação(ões), classificações de torneios, ranking e mesas de cash.`)) return;
         }
 
@@ -1095,8 +1170,8 @@
 
     const res = resumoPorNome.get(jogadorDetalhe.nome);
 
-    if (res.movs.length > 0) {
-      await mostrarAlerta(`${jogadorDetalhe.nome} tem ${res.movs.length} movimentação(ões) e não pode ser excluído, para não perder o histórico. Use "Inativar": ele some das buscas mas o histórico continua.`);
+    if (res.qtdMovs > 0) {
+      await mostrarAlerta(`${jogadorDetalhe.nome} tem ${res.qtdMovs} movimentação(ões) e não pode ser excluído, para não perder o histórico. Use "Inativar": ele some das buscas mas o histórico continua.`);
       return;
     }
 

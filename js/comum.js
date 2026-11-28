@@ -91,16 +91,22 @@ function iniciarRealtimeRobusto({ nome, tabelas, aoMudar, intervaloSeguranca = 3
   let tentativaReconexao = null;
   let debounce = null;
   let mudouEscondida = false;
+  let tabelasMudadas = new Set();
 
-  function avisarMudanca() {
+  // aoMudar(tabelas): tabelas = Set com o que mudou (aviso do Realtime);
+  // sem argumento = recarregar tudo (conexão, volta à aba, garantia).
+  function avisarMudanca(evento) {
     if (document.visibilityState !== 'visible') {
       mudouEscondida = true;
       return;
     }
+    if (evento?.table) tabelasMudadas.add(evento.table);
     clearTimeout(debounce);
     debounce = setTimeout(() => {
       console.log('Recarregando dados via Realtime');
-      aoMudar();
+      const tabelas = tabelasMudadas;
+      tabelasMudadas = new Set();
+      aoMudar(tabelas.size ? tabelas : undefined);
     }, 250);
   }
 

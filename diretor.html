@@ -2239,12 +2239,26 @@
   iniciarRealtimeRobusto({
     nome: 'torneio-realtime',
     tabelas: ['movimentacoes', 'jogadores', 'configuracoes', 'torneios', 'torneio_valores', 'estruturas_blinds', 'premiacao_estruturas', 'torneio_resultados'],
-    aoMudar: () => carregarDados()
+    aoMudar: tabelas => tabelas ? carregarDadosParcial(tabelas) : carregarDados()
   });
+
+  // Recarga parcial (economia de tráfego): num aviso do Realtime só são
+  // buscadas de novo as tabelas que quase nunca mudam (jogadores, valores,
+  // estruturas) se foram elas que mudaram. Qualquer outro pedido de carga
+  // (depois de salvar algo nesta tela, ao conectar, ao voltar à aba) é
+  // completo.
+  let cargaCompletaPedida = true;
+  let tabelasMudadasRealtime = null;
 
   // Uma carga por vez; se pedirem outra durante a carga, roda de novo no fim
   // (a tela nunca fica com dados mais velhos que o último pedido).
   function carregarDados() {
+    cargaCompletaPedida = true;
+    return executarSerial('dados-torneio', carregarDadosAgora);
+  }
+
+  function carregarDadosParcial(tabelas) {
+    tabelasMudadasRealtime = new Set([...(tabelasMudadasRealtime || []), ...tabelas]);
     return executarSerial('dados-torneio', carregarDadosAgora);
   }
 
@@ -2252,12 +2266,20 @@
 
     console.log('Carregando dados do Supabase');
 
-    const { data: jogadoresDB } = await client
-      .from('jogadores')
-      .select('*');
+    const tabelasDestaCarga = tabelasMudadasRealtime;
+    const completa = cargaCompletaPedida || !tabelasDestaCarga;
+    const mudou = tabela => completa || tabelasDestaCarga.has(tabela);
+    cargaCompletaPedida = false;
+    tabelasMudadasRealtime = null;
 
-    jogadores = jogadoresDB || [];
-    jogadores.sort((a, b) => a.nome.localeCompare(b.nome));
+    if (mudou('jogadores')) {
+      const { data: jogadoresDB } = await client
+        .from('jogadores')
+        .select('*');
+
+      jogadores = jogadoresDB || [];
+      jogadores.sort((a, b) => a.nome.localeCompare(b.nome));
+    }
 
     const { data: configuracaoDB } = await client
       .from('configuracoes')
@@ -2288,21 +2310,23 @@
 
     todosTorneios = torneiosDB || [];
 
-    const { data: todosValoresDB } = await client
-      .from('torneio_valores')
-      .select('*')
-      .order('ordem', { ascending: true });
+    if (mudou('torneio_valores')) {
+      const { data: todosValoresDB } = await client
+        .from('torneio_valores')
+        .select('*')
+        .order('ordem', { ascending: true });
 
-    todosValoresTorneios = todosValoresDB || [];
+      todosValoresTorneios = todosValoresDB || [];
+    }
 
-    const { data: estruturasDB } = await client
+    const { data: estruturasDB } = !mudou('premiacao_estruturas') ? { data: estruturasPremiacao } : await client
       .from('premiacao_estruturas')
       .select('*')
       .order('id', { ascending: true });
 
     estruturasPremiacao = estruturasDB || [];
 
-    const { data: estruturasBlindsDB } = await client
+    const { data: estruturasBlindsDB } = !mudou('estruturas_blinds') ? { data: estruturasBlinds } : await client
       .from('estruturas_blinds')
       .select('*')
       .order('id', { ascending: true });

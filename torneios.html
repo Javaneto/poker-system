@@ -186,7 +186,8 @@
   let torneioAtualId = null;
   let todosTorneios = [];
   let todosValoresTorneios = [];
-  let movsTorneios = []; // torneio_id, jogador, valor_prize (premiação e jogadores do card)
+  let movsTorneios = []; // torneio_id, jogador, valor_prize (só sem o sql/016)
+  let totaisTorneios = null; // sql/016: premiação e jogadores prontos por torneio
   let estruturasPremiacao = [];
   let estruturasBlinds = [];
 
@@ -317,9 +318,14 @@
 
     todosValoresTorneios = todosValoresDB || [];
 
-    // Movimentações de torneio, em páginas de 1000 (limite do Supabase).
+    // Totais prontos do banco (sql/016): uma linha por torneio. Sem o
+    // sql/016, soma as movimentações aqui como antes.
+    totaisTorneios = null;
     movsTorneios = [];
-    for (let inicio = 0; ; inicio += 1000) {
+    const { data: totaisDB, error: erroTotais } = await client.from('torneios_totais').select('*');
+    if (!erroTotais) totaisTorneios = new Map((totaisDB || []).map(t => [String(t.torneio_id), t]));
+
+    for (let inicio = 0; !totaisTorneios; inicio += 1000) {
       const { data, error } = await client
         .from('movimentacoes')
         .select('id,torneio_id,jogador,valor_prize')
@@ -420,9 +426,16 @@
       const estaEncerrado = torneio.status === 'encerrado';
 
       // Mesmo cálculo do Diretor: soma do prêmio das entradas + ajuste manual.
-      const movs = movsTorneios.filter(m => m.torneio_id === torneio.id);
-      const premiacao = movs.reduce((s, m) => s + Number(m.valor_prize || 0), 0) + Number(torneio.ajuste_premiacao || 0);
-      const qtdJogadores = new Set(movs.map(m => m.jogador)).size;
+      let premiacao, qtdJogadores;
+      if (totaisTorneios) {
+        const tot = totaisTorneios.get(String(torneio.id));
+        premiacao = Number(tot?.premio_entradas || 0) + Number(torneio.ajuste_premiacao || 0);
+        qtdJogadores = Number(tot?.jogadores || 0);
+      } else {
+        const movs = movsTorneios.filter(m => m.torneio_id === torneio.id);
+        premiacao = movs.reduce((s, m) => s + Number(m.valor_prize || 0), 0) + Number(torneio.ajuste_premiacao || 0);
+        qtdJogadores = new Set(movs.map(m => m.jogador)).size;
+      }
 
       const dataFormatada = new Date(torneio.criado_em).toLocaleString('pt-BR', {
         day: '2-digit',
