@@ -98,8 +98,27 @@
 
 /* ---- Abas da mesa ---- */
 
-.cg-abas { margin-bottom: 18px; }
-.cg-abas button { display: inline-flex; align-items: center; gap: 6px; }
+.cg-abas-barra { display: flex; justify-content: center; margin-bottom: 18px; }
+
+.cg-abas {
+  display: inline-flex; gap: 4px; padding: 4px; max-width: 100%;
+  background: var(--superficie); border: 1px solid var(--borda); border-radius: 14px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+
+.cg-abas::-webkit-scrollbar { display: none; }
+
+.cg-aba {
+  display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto;
+  min-height: 40px; padding: 7px 14px; border-radius: 10px;
+  background: transparent; color: var(--apagado); box-shadow: none;
+  font-size: 14px; font-weight: 600; white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+
+.cg-aba .cg-ico { width: 17px; height: 17px; }
+.cg-aba:hover { background: var(--hover); color: var(--texto); transform: none; box-shadow: none; }
+.cg-aba.ativa { background: #2563eb; color: #fff; box-shadow: 0 4px 12px rgba(37,99,235,.28); }
 .cg-painel { display: none; }
 .cg-painel.ativo { display: block; }
 
@@ -167,6 +186,88 @@
 .cg-total-linha strong { font-size: 18px; color: var(--texto); font-variant-numeric: tabular-nums; }
 .cg-dica { color: var(--apagado); font-size: 13px; margin: 8px 0 0; }
 
+/* ---- Financeiro (rake, caixinha, jackpot) ---- */
+
+.cg-badge.jackpot { background: var(--tint-ambar); color: var(--tx-ambar); }
+
+.cg-fin-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.cg-fin-grid > .card { margin: 0; }
+
+.cg-fin-itens { display: flex; flex-direction: column; gap: 10px; }
+
+.cg-fin-item {
+  display: flex; align-items: center; gap: 12px;
+  border: 1px solid var(--borda); border-radius: 12px; padding: 10px 12px; background: var(--superficie-2);
+}
+
+.cg-fin-tag { width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 10px; }
+.cg-fin-tag.rake { background: var(--tint-azul); color: var(--tx-azul); }
+.cg-fin-tag.caixinha { background: var(--tint-indigo); color: var(--tx-indigo); }
+.cg-fin-tag.jackpot { background: var(--tint-ambar); color: var(--tx-ambar); }
+
+.cg-fin-nome { flex: 1; min-width: 0; }
+.cg-fin-nome strong { display: block; font-size: 15px; }
+.cg-fin-nome span { display: block; font-size: 12px; color: var(--apagado); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.cg-fin-valor { font-size: 16px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.cg-fin-inserir {
+  display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+  min-height: 40px; padding: 6px 12px; border-radius: 10px;
+  background: var(--superficie); color: var(--texto); border: 1px solid var(--borda-forte); box-shadow: none;
+  font-size: 13px; font-weight: 700;
+}
+
+.cg-fin-inserir .cg-ico { width: 15px; height: 15px; }
+.cg-fin-inserir:hover { background: var(--hover); transform: none; box-shadow: none; }
+
+.cg-fin-historico { margin-top: 14px; border-top: 1px solid var(--borda); padding-top: 10px; }
+.cg-fin-historico summary { cursor: pointer; color: var(--apagado); font-size: 14px; padding: 6px 0; }
+
+.cg-fin-lanc {
+  display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--borda);
+}
+
+.cg-fin-lanc:last-child { border-bottom: 0; }
+.cg-fin-lanc-info { flex: 1; min-width: 0; font-size: 12px; color: var(--apagado); }
+.cg-fin-lanc-info span { display: block; overflow-wrap: anywhere; }
+.cg-fin-lanc > strong { white-space: nowrap; font-size: 14px; font-variant-numeric: tabular-nums; }
+
+.cg-fin-desfazer {
+  width: 36px; height: 36px; min-height: 36px; padding: 0; flex: 0 0 auto;
+  display: inline-grid; place-items: center; border-radius: 10px;
+  background: transparent; color: #dc2626; box-shadow: none;
+}
+
+.cg-fin-desfazer .cg-ico { width: 17px; height: 17px; }
+.cg-fin-desfazer:hover { background: var(--tint-vermelho); transform: none; box-shadow: none; }
+
+.cg-fin-mov {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 10px 8px; border-bottom: 1px solid var(--borda); font-size: 15px;
+}
+
+.cg-fin-mov span { color: var(--texto-2); }
+.cg-fin-mov strong { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cg-fin-mov.destaque { border-radius: 8px; border-bottom: 0; font-weight: 700; }
+.cg-fin-mov.entrada { background: var(--tint-verde); }
+.cg-fin-mov.entrada span, .cg-fin-mov.entrada strong { color: var(--tx-verde); }
+.cg-fin-mov.saida { background: var(--tint-vermelho); margin-top: 4px; }
+.cg-fin-mov.saida span, .cg-fin-mov.saida strong { color: var(--tx-vermelho); }
+.cg-fin-mov.devolucao strong { color: #dc2626; }
+.cg-fin-mov.rake strong { color: var(--tx-azul); }
+.cg-fin-mov.caixinha strong { color: var(--tx-indigo); }
+.cg-fin-mov.jackpot strong { color: var(--tx-ambar); }
+
+.cg-fin-fichas {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  margin-top: 12px; padding: 14px; border-radius: 12px; background: var(--superficie-2); border: 1px solid var(--borda);
+}
+
+.cg-fin-fichas div strong { display: block; font-size: 16px; }
+.cg-fin-fichas div span { display: block; font-size: 12px; color: var(--apagado); }
+.cg-fin-fichas > strong { font-size: 20px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
 /* ---- Fechamento ---- */
 
 .cg-fechamento { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -221,6 +322,12 @@
   .cg-fechamento { grid-template-columns: minmax(0, 1fr); }
   .cg-cabecalho-titulo h1 { font-size: 20px; }
   .cg-abas { flex-wrap: nowrap; }
+  .cg-abas-barra { display: block; }
+  .cg-abas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+  .cg-aba { flex-direction: column; justify-content: center; gap: 3px; padding: 6px 2px; min-height: 52px; font-size: 12px; }
+  .cg-fin-grid { grid-template-columns: minmax(0, 1fr); }
+  .cg-fin-nome span { display: none; }
+  .cg-fin-mov { font-size: 14px; }
   .cg-grid-jogadores { grid-template-columns: minmax(0, 1fr); }
   .cg-modal input, .cg-modal textarea, .cg-form-linha input, .cg-form-linha textarea { font-size: 16px; }
 }

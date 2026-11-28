@@ -674,7 +674,7 @@ async function renderizarLogCentral(conteudo) {
       const titulo = ehMov
         ? escapeHtml(dados.jogador || '-')
         : ehRecolhimento
-          ? (dados.tipo === 'rake' ? 'Rake' : 'Caixinha') + ' do Cash'
+          ? ({ rake: 'Rake', caixinha: 'Caixinha', jackpot: 'Jackpot' }[dados.tipo] || 'Retirada') + ' do Cash'
           : item.tabela === 'cash_mesas'
             ? `Mesa: ${escapeHtml(dados.nome || '-')}`
             : `Jogador: ${escapeHtml(dados.nome || '-')}`;
