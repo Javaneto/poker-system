@@ -11,6 +11,7 @@
   <script src="js/comum.js"></script>
 
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="cash.css">
 
   <style>
     .kpis {
@@ -543,7 +544,8 @@
     <div class="form-grid">
       <div class="largura-total">
         <label for="lancJogador">Jogador</label>
-        <select id="lancJogador"></select>
+        <input type="text" id="lancJogador" placeholder="Nome, apelido, CPF ou telefone..." autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done">
+        <div class="cg-busca-lista" id="lancListaJogadores"></div>
       </div>
       <div class="largura-total">
         <label for="lancValor">Valor (R$)</label>
@@ -1150,10 +1152,9 @@
     btn.textContent = debito ? 'Confirmar Débito' : 'Registrar Pagamento';
     btn.className = debito ? 'btn-red' : 'btn-green';
 
-    const ativos = jogadores.filter(j => j.ativo !== false);
-    document.getElementById('lancJogador').innerHTML =
-      '<option value="">Selecione um jogador</option>' +
-      ativos.map(j => `<option value="${escapeHtml(j.id)}">${escapeHtml(j.nome)}</option>`).join('');
+    document.getElementById('lancJogador').value = '';
+    lancJogadorSelecionado = null;
+    filtrarBuscaLancamento();
 
     document.getElementById('lancValor').value = '';
     document.getElementById('lancObs').value = '';
@@ -1162,6 +1163,74 @@
     setTimeout(() => document.getElementById('lancJogador').focus(), 50);
   }
 
+  // Busca padrão do sistema (igual Cash Game/Diretor): lista só ao digitar.
+  let lancJogadorSelecionado = null;
+  let lancSugestoes = [];
+  let lancIndice = 0;
+
+  function filtrarBuscaLancamento() {
+
+    const termo = document.getElementById('lancJogador').value.trim();
+    const lista = document.getElementById('lancListaJogadores');
+
+    // Já escolhido e o texto é o nome dele: esconde a lista.
+    if (!termo || (lancJogadorSelecionado && termo === lancJogadorSelecionado.nome)) {
+      lancSugestoes = [];
+      lista.innerHTML = '';
+      return;
+    }
+
+    lancSugestoes = jogadores
+      .filter(j => j.ativo !== false && jogadorCombinaBusca(j, termo))
+      .sort((a, b) => compararBuscaJogador(a, b, termo))
+      .slice(0, 50);
+    lancIndice = 0;
+
+    lista.innerHTML = lancSugestoes.length
+      ? lancSugestoes.map((j, i) => `
+          <button type="button" class="cg-busca-item${i === 0 ? ' destacado' : ''}" data-indice="${i}">
+            ${escapeHtml(j.nome)}
+            ${j.apelido ? `<small>${escapeHtml(j.apelido)}</small>` : ''}
+          </button>
+        `).join('')
+      : '<div class="cg-busca-vazio">Nenhum jogador encontrado.</div>';
+  }
+
+  function escolherJogadorLancamento(jogador) {
+    lancJogadorSelecionado = jogador;
+    document.getElementById('lancJogador').value = jogador.nome;
+    filtrarBuscaLancamento();
+    document.getElementById('lancValor').focus();
+  }
+
+  function destacarBuscaLancamento(novo) {
+    lancIndice = novo;
+    document.querySelectorAll('#lancListaJogadores .cg-busca-item').forEach((el, i) => {
+      el.classList.toggle('destacado', i === lancIndice);
+      if (i === lancIndice) el.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  document.getElementById('lancJogador').addEventListener('input', () => {
+    const texto = document.getElementById('lancJogador').value.trim();
+    if (lancJogadorSelecionado && texto !== lancJogadorSelecionado.nome) lancJogadorSelecionado = null;
+    filtrarBuscaLancamento();
+  });
+
+  document.getElementById('lancJogador').addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' && lancSugestoes.length) { e.preventDefault(); destacarBuscaLancamento(Math.min(lancIndice + 1, lancSugestoes.length - 1)); }
+    if (e.key === 'ArrowUp' && lancSugestoes.length) { e.preventDefault(); destacarBuscaLancamento(Math.max(lancIndice - 1, 0)); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (lancSugestoes[lancIndice]) escolherJogadorLancamento(lancSugestoes[lancIndice]);
+    }
+  });
+
+  document.getElementById('lancListaJogadores').addEventListener('click', e => {
+    const item = e.target.closest('.cg-busca-item');
+    if (item) escolherJogadorLancamento(lancSugestoes[Number(item.dataset.indice)]);
+  });
+
   async function confirmarLancamento() {
 
     const btn = document.getElementById('btnConfirmarLancamento');
@@ -1169,7 +1238,7 @@
     if (!adminLiberado || btn.classList.contains('disabled')) return;
 
     const debito = tipoLancamento === 'debito';
-    const jogador = jogadores.find(j => String(j.id) === document.getElementById('lancJogador').value);
+    const jogador = lancJogadorSelecionado;
     const valor = Math.round(Number(document.getElementById('lancValor').value || 0) * 100) / 100;
     const observacao = document.getElementById('lancObs').value.trim();
 
