@@ -269,9 +269,9 @@
 
   function renderizar() {
 
-    const termo = document.getElementById('pesquisaAberto').value.trim().toLowerCase();
+    const termo = normalizarBusca(document.getElementById('pesquisaAberto').value).trim();
     const todas = linhasPorJogador();
-    const linhas = termo ? todas.filter(l => l.nome.toLowerCase().includes(termo)) : todas;
+    const linhas = termo ? todas.filter(l => normalizarBusca(l.nome).includes(termo)) : todas;
 
     document.getElementById('kpiJogadores').textContent = todas.length;
     document.getElementById('kpiReceber').textContent = formatarMoeda(Math.abs(todas.filter(l => l.resultado < -0.005).reduce((s, l) => s + l.resultado, 0)));

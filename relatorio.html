@@ -533,9 +533,9 @@
     const relatorio = document.getElementById('relatorio');
     const relatorioTabela = document.getElementById('relatorioTabela');
 
-    const termo = filtroRelatorioJogador.toLowerCase();
+    const termo = normalizarBusca(filtroRelatorioJogador);
     const movimentacoesFiltradas = termo
-      ? movimentacoes.filter(mov => mov.jogador.toLowerCase().includes(termo))
+      ? movimentacoes.filter(mov => normalizarBusca(mov.jogador).includes(termo))
       : movimentacoes;
 
     const itensHistorico = agruparParaHistorico(movimentacoesFiltradas);
@@ -644,7 +644,7 @@
     limiteRelatorio = 10;
 
     const sugestoes = document.getElementById('sugestoesJogadoresRelatorio');
-    const termo = pesquisa.toLowerCase();
+    const termo = normalizarBusca(pesquisa);
 
     sugestoes.innerHTML = '';
     sugestoesRelatorioAtuais = [];
@@ -656,10 +656,10 @@
     }
 
     const filtrados = jogadores
-      .filter(j => j.nome.toLowerCase().includes(termo))
+      .filter(j => normalizarBusca(j.nome).includes(termo))
       .sort((a, b) => {
-        const aNome = a.nome.toLowerCase();
-        const bNome = b.nome.toLowerCase();
+        const aNome = normalizarBusca(a.nome);
+        const bNome = normalizarBusca(b.nome);
         const aStarts = aNome.startsWith(termo);
         const bStarts = bNome.startsWith(termo);
         if (aStarts && !bStarts) return -1;
