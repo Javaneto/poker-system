@@ -1971,3 +1971,40 @@ body.mnu-gaveta .mini-relogio {
 @media (max-width: 420px) {
   .hj-tipo-lanc { font-size: 13px; padding: 0 6px; }
 }
+
+/* ---- Diretor: nome do jogador abre menu (eliminar / desfazer) ---- */
+.dir-jogador-nome {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
+  min-height: 36px; padding: 4px 8px; margin: -4px -8px;
+  background: transparent; color: inherit; box-shadow: none; border-radius: 8px;
+  font: inherit; font-weight: 700; text-align: left; cursor: pointer;
+}
+.dir-jogador-nome:hover { background: var(--hover); transform: none; box-shadow: none; }
+.dir-jogador-nome > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dir-posicao {
+  flex: 0 0 auto; min-width: 30px; padding: 2px 6px; border-radius: 999px; text-align: center;
+  font-size: 11px; font-weight: 800; background: var(--superficie-3); color: var(--apagado);
+}
+.dir-posicao.campeao { background: var(--tint-ambar); color: var(--tx-ambar); }
+.dir-linha-eliminado td { color: var(--apagado); }
+.dir-linha-eliminado .dir-jogador-nome > span:last-child { text-decoration: line-through; }
+
+.menu-ctx {
+  position: fixed; z-index: 3500; min-width: 220px; max-width: calc(100vw - 16px);
+  padding: 6px; border-radius: 12px; border: 1px solid var(--borda);
+  background: var(--superficie); color: var(--texto);
+  box-shadow: 0 12px 32px rgba(16, 24, 40, .18);
+}
+.menu-ctx-titulo { padding: 6px 10px 8px; font-size: 12px; font-weight: 700; color: var(--apagado); text-transform: uppercase; letter-spacing: .03em; }
+.menu-ctx-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 10px;
+  border-radius: 8px; background: transparent; color: var(--texto); box-shadow: none; font-weight: 600; text-align: left;
+}
+.menu-ctx-item:hover, .menu-ctx-item:focus-visible { background: var(--hover); transform: none; box-shadow: none; outline: none; }
+.menu-ctx-item.perigo { color: var(--tx-vermelho); }
+.menu-ctx-item svg { width: 18px; height: 18px; flex: 0 0 auto; }
+.menu-ctx-vazio { padding: 8px 10px; font-size: 13px; color: var(--apagado); }
+
+/* Valores do torneio: coluna de fichas cabe sem rolagem lateral */
+.linha-tipo-pagamento input { min-width: 0; }
+.linha-tipo-pagamento .tipo-nome-fixo { min-width: 64px; white-space: nowrap; }

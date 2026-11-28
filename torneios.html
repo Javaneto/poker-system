@@ -67,6 +67,7 @@
           <span>Valor Total</span>
           <span>Rake</span>
           <span>Prêmio</span>
+          <span>Fichas</span>
         </div>
 
         <div id="linhasTiposPagamento"></div>
@@ -545,7 +546,7 @@
     await carregarDados();
   }
 
-  function criarLinhaTipoFixo(tipoFixo, total, rake, containerId, ativo = false) {
+  function criarLinhaTipoFixo(tipoFixo, total, rake, containerId, ativo = false, fichas = 0) {
 
     const div = document.createElement('div');
 
@@ -576,6 +577,7 @@
         </label>
         <input type="number" class="tipo-total" placeholder="Valor (pode ser 0)" min="0" value="${total || ''}">
         <input type="number" class="tipo-rake" placeholder="Rake" min="0" value="${rake || ''}">
+        <input type="number" class="tipo-fichas" placeholder="Fichas" title="Montante de fichas desta entrada" min="0" step="1" inputmode="numeric" value="${fichas || ''}">
       `;
 
       document.getElementById(containerId).appendChild(div);
@@ -587,6 +589,7 @@
       <input type="number" class="tipo-total" placeholder="Valor total (deixe vazio p/ desativar)" min="0" value="${total}">
       <input type="number" class="tipo-rake" placeholder="Rake" min="0" value="${rake}">
       <span class="tipo-prize">R$ 0,00</span>
+      <input type="number" class="tipo-fichas" placeholder="Fichas" title="Montante de fichas desta entrada" min="0" step="1" inputmode="numeric" value="${fichas || ''}">
     `;
 
     const inputTotal = div.querySelector('.tipo-total');
@@ -621,6 +624,7 @@
         const rake = inputRake ? (parseFloat(inputRake.value) || 0) : 0;
         const ehBounty = linha.dataset.tipoChave === 'bounty';
         const checkAtivo = linha.querySelector('.tipo-ativo');
+        const inputFichas = linha.querySelector('.tipo-fichas');
 
         return {
           tipo: tipoNome,
@@ -628,6 +632,7 @@
           valor_rake: rake,
           valor_prize: ehBounty ? 0 : Math.max(total - rake, 0),
           ordem: index,
+          ...(inputFichas ? { fichas: Math.max(parseInt(inputFichas.value, 10) || 0, 0) } : {}),
           _ativo: checkAtivo ? checkAtivo.checked : total > 0
         };
       })
@@ -821,9 +826,17 @@
 
     const tiposComTorneio = tipos.map(t => ({ ...t, torneio_id: torneioCriado.id }));
 
-    const { error: erroValores } = await client
+    let { error: erroValores } = await client
       .from('torneio_valores')
       .insert(tiposComTorneio);
+
+    // Banco ainda sem a coluna de fichas (sql/010): salva sem as fichas e avisa.
+    if (erroValores && /fichas/.test(erroValores.message || '')) {
+      ({ error: erroValores } = await client.from('torneio_valores').insert(tiposComTorneio.map(({ fichas, ...t }) => t)));
+      if (!erroValores && tiposComTorneio.some(t => t.fichas > 0)) {
+        await mostrarAlerta('Torneio criado, mas as fichas não foram salvas. Rode o arquivo sql/010_fichas_torneio.sql no Supabase para ativar fichas, Chip Count e Avg Stack.');
+      }
+    }
 
     if (erroValores) {
       btn.classList.remove('disabled');

@@ -501,3 +501,186 @@ async function salvarClassificacaoTorneio() {
     btn.classList.remove('disabled');
   }
 }
+
+// ---------------------------------------------------------------------------
+// Eliminação pelo nome do jogador (menu de contexto na tabela do Diretor)
+// ---------------------------------------------------------------------------
+// Cada eliminação grava a pior colocação ainda livre em torneio_resultados
+// (de N até 2). Quando sobra um jogador só, ele recebe a 1ª colocação.
+// Posições digitadas na Classificação também contam como eliminação.
+
+async function carregarResultadosTorneio() {
+
+  if (!torneioAtual) { resultadosTorneio = []; return; }
+
+  const { data, error } = await client
+    .from('torneio_resultados')
+    .select('*')
+    .eq('torneio_id', String(torneioAtual.id));
+
+  if (error) {
+    console.error(error);
+    resultadosTorneio = [];
+    return;
+  }
+
+  resultadosTorneio = data || [];
+}
+
+function fecharMenuJogadorTorneio() {
+  document.getElementById('menuJogadorTorneio')?.remove();
+}
+
+function abrirMenuJogadorTorneio(botao) {
+
+  fecharMenuJogadorTorneio();
+
+  if (!adminLiberado || !torneioAtual) return;
+
+  const nome = botao.dataset.nome;
+  const registrados = tsJogadoresRegistrados(movimentacoesTorneio);
+  const resultado = resultadosTorneio.find(r => r.jogador === nome);
+  const posicao = Number(resultado?.posicao) || 0;
+  const proxima = tsProximaPosicaoEliminacao(registrados.length, resultadosTorneio);
+  const registrado = registrados.includes(nome);
+
+  let opcoes;
+
+  if (posicao) {
+    opcoes = `<button type="button" class="menu-ctx-item" data-acao="desfazer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+      <span>Desfazer ${posicao === 1 ? 'campeão' : 'eliminação'} (${posicao}º)</span>
+    </button>`;
+  } else if (!registrado) {
+    opcoes = '<div class="menu-ctx-vazio">Jogador sem registro (Buy-in) neste torneio.</div>';
+  } else if (!proxima) {
+    opcoes = '<div class="menu-ctx-vazio">Todas as colocações já foram preenchidas.</div>';
+  } else {
+    opcoes = `<button type="button" class="menu-ctx-item perigo" data-acao="eliminar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+      <span>Eliminar jogador (${proxima}º lugar)</span>
+    </button>`;
+  }
+
+  const menu = document.createElement('div');
+  menu.id = 'menuJogadorTorneio';
+  menu.className = 'menu-ctx';
+  menu.setAttribute('role', 'menu');
+  menu.innerHTML = `<div class="menu-ctx-titulo">${escapeHtml(nome)}</div>${opcoes}`;
+  document.body.appendChild(menu);
+
+  // Abaixo do nome, sem sair da tela.
+  const r = botao.getBoundingClientRect();
+  const largura = menu.offsetWidth;
+  const altura = menu.offsetHeight;
+  let x = Math.min(r.left, window.innerWidth - largura - 8);
+  let y = r.bottom + 4;
+  if (y + altura > window.innerHeight - 8) y = Math.max(r.top - altura - 4, 8);
+  menu.style.left = `${Math.max(x, 8)}px`;
+  menu.style.top = `${y}px`;
+
+  menu.addEventListener('click', e => {
+    const item = e.target.closest('[data-acao]');
+    if (!item) return;
+    fecharMenuJogadorTorneio();
+    if (item.dataset.acao === 'eliminar') eliminarJogadorTorneio(nome);
+    if (item.dataset.acao === 'desfazer') desfazerEliminacaoTorneio(nome);
+  });
+
+  menu.querySelector('[data-acao]')?.focus();
+}
+
+document.addEventListener('click', e => {
+  const botao = e.target.closest && e.target.closest('.dir-jogador-nome');
+  if (botao) {
+    e.stopPropagation();
+    if (document.getElementById('menuJogadorTorneio')?.dataset.nome === botao.dataset.nome) return fecharMenuJogadorTorneio();
+    abrirMenuJogadorTorneio(botao);
+    const menu = document.getElementById('menuJogadorTorneio');
+    if (menu) menu.dataset.nome = botao.dataset.nome;
+    return;
+  }
+  if (!(e.target.closest && e.target.closest('#menuJogadorTorneio'))) fecharMenuJogadorTorneio();
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharMenuJogadorTorneio(); });
+window.addEventListener('scroll', fecharMenuJogadorTorneio, true);
+window.addEventListener('resize', fecharMenuJogadorTorneio);
+
+async function gravarColocacoesTorneio(linhas) {
+  return client.from('torneio_resultados').upsert(
+    linhas.map(l => ({ torneio_id: String(torneioAtual.id), jogador: l.jogador, posicao: l.posicao })),
+    { onConflict: 'torneio_id,jogador' }
+  );
+}
+
+async function eliminarJogadorTorneio(nome) {
+
+  if (!adminLiberado || !torneioAtual) return;
+
+  await carregarResultadosTorneio();
+
+  const registrados = tsJogadoresRegistrados(movimentacoesTorneio);
+
+  if (resultadosTorneio.some(r => r.jogador === nome)) {
+    await mostrarAlerta(`${nome} já tem colocação neste torneio.`);
+    return;
+  }
+
+  const posicao = tsProximaPosicaoEliminacao(registrados.length, resultadosTorneio);
+
+  if (!posicao) {
+    await mostrarAlerta('Todas as colocações já foram preenchidas. Confira em Classificação.');
+    return;
+  }
+
+  const linhas = [{ jogador: nome, posicao }];
+
+  // Sobrou um jogador: ele é o campeão (1º), se a 1ª colocação ainda estiver livre.
+  const comPosicao = new Set([...resultadosTorneio.map(r => r.jogador), nome]);
+  const restantes = registrados.filter(j => !comPosicao.has(j));
+  const primeiroLivre = !resultadosTorneio.some(r => Number(r.posicao) === 1);
+
+  if (restantes.length === 1 && primeiroLivre) linhas.push({ jogador: restantes[0], posicao: 1 });
+
+  const { error } = await gravarColocacoesTorneio(linhas);
+
+  if (error) {
+    console.error(error);
+    await mostrarAlerta(/torneio_resultados/.test(error.message || '')
+      ? 'A classificação ainda não foi ativada. Rode o arquivo sql/004_ranking.sql no Supabase.'
+      : 'Erro ao eliminar o jogador. Tente de novo.');
+    return;
+  }
+
+  await carregarResultadosTorneio();
+  atualizarTela();
+}
+
+async function desfazerEliminacaoTorneio(nome) {
+
+  if (!adminLiberado || !torneioAtual) return;
+
+  const torneioId = String(torneioAtual.id);
+
+  const { error } = await client.from('torneio_resultados').delete().eq('torneio_id', torneioId).eq('jogador', nome);
+
+  if (error) {
+    console.error(error);
+    await mostrarAlerta('Erro ao desfazer. Tente de novo.');
+    return;
+  }
+
+  await carregarResultadosTorneio();
+
+  // Voltou a ter mais de um jogador no torneio: o campeão automático deixa de valer.
+  const resumo = tsResumoJogadores(movimentacoesTorneio, resultadosTorneio);
+  const campeao = resultadosTorneio.find(r => Number(r.posicao) === 1);
+
+  if (campeao && resumo.restantes > 1) {
+    await client.from('torneio_resultados').delete().eq('torneio_id', torneioId).eq('jogador', campeao.jogador);
+    await carregarResultadosTorneio();
+  }
+
+  atualizarTela();
+}
