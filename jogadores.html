@@ -1049,7 +1049,7 @@
 
         if (nomeAntigo !== nome) {
           const qtd = (resumoPorNome.get(nomeAntigo)?.movs || []).length;
-          if (!await mostrarConfirm(`Renomear "${nomeAntigo}" para "${nome}"? ${qtd} movimentação(ões) também serão atualizadas para o novo nome.`)) return;
+          if (!await mostrarConfirm(`Renomear "${nomeAntigo}" para "${nome}"? O nome será atualizado em todo o histórico: ${qtd} movimentação(ões), classificações de torneios, ranking e mesas de cash.`)) return;
         }
 
         const { error } = await client.from('jogadores').update(dados).eq('id', jogadorEditando.id);
@@ -1060,7 +1060,9 @@
           return;
         }
 
-        // As movimentações guardam o nome do jogador: mantém tudo ligado.
+        // Com o sql/013 o próprio banco atualiza o nome em todas as tabelas
+        // (gatilho propagar_renome_jogador); isto fica como garantia para as
+        // movimentações caso o banco ainda não tenha o gatilho.
         if (nomeAntigo !== nome) {
 
           const { error: erroMovs } = await client
