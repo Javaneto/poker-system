@@ -2753,32 +2753,6 @@
       p_pagamentos: premiacao.pagamentos
     });
 
-    if (error && apErroSqlPendente(error)) {
-
-      // Banco sem o sql/011: encerra como antes, sem lançar os prêmios.
-      btn.classList.remove('disabled');
-
-      if (!await mostrarConfirm('O banco ainda não foi atualizado (rode o sql/011_ajuste_premiacao.sql no Supabase), então os prêmios não podem ser lançados no Em Aberto agora. Encerrar o torneio mesmo assim, sem lançar os prêmios?')) return;
-
-      btn.classList.add('disabled');
-
-      const { error: erroStatus } = await client
-        .from('torneios')
-        .update({ status: 'encerrado' })
-        .eq('id', torneioAtual.id);
-
-      btn.classList.remove('disabled');
-
-      if (erroStatus) {
-        await mostrarAlerta('Erro ao encerrar torneio');
-        console.error(erroStatus);
-        return;
-      }
-
-      carregarDados();
-      return;
-    }
-
     btn.classList.remove('disabled');
 
     if (error) {

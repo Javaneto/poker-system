@@ -329,8 +329,8 @@
 
   // Economia de tráfego: cada aba busca só o que mostra, quando é aberta.
   // Antes a página baixava todas as movimentações (cerca de 1 MB) a cada
-  // abertura e a cada mudança. Com o sql/017 o banco devolve os totais e as
-  // sessões prontas; sem ele, cada aba busca só as colunas que usa.
+  // abertura e a cada mudança. O banco (sql/017) devolve os totais e as
+  // sessões prontas.
   let jogadores = [];
   let jogadoresSujo = true;
   let adminLiberado = false;
@@ -342,15 +342,7 @@
   let recolhimentosCash = [];
   let movsMesasCash = [];
   let cashAtivado = true;
-  let bancoTemResumo = null; // null = ainda não sabe; false = sql/017 não rodado
   const abaSuja = { resumo: true, historico: true, cash: true };
-
-  const TIPOS_ENTRADA = ['Entrada', 'Registro', 'Rebuy', 'Add-on'];
-
-  // Função/visão do sql/017 ainda não existe no banco.
-  function faltaSql017(error) {
-    return !!error && (/relatorio_(resumo|sessoes)/.test(error.message || '') || ['PGRST202', 'PGRST205', '42P01', '42883'].includes(error.code));
-  }
 
   // Soma em centavos para não acumular erro de arredondamento.
   function somar(lista) {
@@ -422,70 +414,14 @@
     carregarAbaAtual();
   }
 
-  // Números do período: prontos do banco (sql/017) ou, sem ele, somados aqui
-  // a partir só das movimentações do período (e só das colunas usadas).
+  // Números do período, prontos do banco (função relatorio_resumo, sql/017).
   async function buscarNumerosResumo(inicio) {
 
-    const inicioIso = inicio ? inicio.toISOString() : null;
+    const { data, error } = await client.rpc('relatorio_resumo', { p_inicio: inicio ? inicio.toISOString() : null });
 
-    if (bancoTemResumo !== false) {
-      const { data, error } = await client.rpc('relatorio_resumo', { p_inicio: inicioIso });
-      if (!error) {
-        bancoTemResumo = true;
-        return { ...data, cashAtivado: true };
-      }
-      if (!faltaSql017(error)) throw error;
-      bancoTemResumo = false;
-    }
+    if (error) throw error;
 
-    const doPeriodo = consulta => inicioIso ? consulta.gte('data', inicioIso) : consulta;
-
-    const [movs, sessoesDB] = await Promise.all([
-      buscarTodas(() => doPeriodo(client
-        .from('movimentacoes')
-        .select('id,jogador,tipo,valor,torneio_id'))
-        .order('id', { ascending: true })),
-      buscarTodas(() => {
-        let consulta = client
-          .from('movimentacoes')
-          .select('id,jogador,sessao_finalizada_em')
-          .not('sessao_finalizada_em', 'is', null);
-        if (inicioIso) consulta = consulta.gte('sessao_finalizada_em', inicioIso);
-        return consulta.order('id', { ascending: true });
-      })
-    ]);
-
-    let recolhidos = [];
-    let comCash = true;
-    try {
-      recolhidos = await buscarTodas(() => {
-        let consulta = client.from('cash_mesa_recolhimentos').select('id,tipo,valor,criado_em');
-        if (inicioIso) consulta = consulta.gte('criado_em', inicioIso);
-        return consulta.order('id', { ascending: true });
-      });
-    } catch (erro) {
-      console.error(erro);
-      comCash = false;
-    }
-
-    const cashEntradas = movs.filter(m => !m.torneio_id && TIPOS_ENTRADA.includes(m.tipo));
-    const cashSaidas = movs.filter(m => !m.torneio_id && m.tipo === 'Saída');
-    const torneioEntradas = movs.filter(m => m.torneio_id && TIPOS_ENTRADA.includes(m.tipo));
-    const pagamentos = movs.filter(m => m.tipo === 'Pagamento');
-
-    return {
-      cashAtivado: comCash,
-      cash_entradas: somar(cashEntradas), cash_entradas_qtd: cashEntradas.length,
-      cash_saidas: somar(cashSaidas), cash_saidas_qtd: cashSaidas.length,
-      torneio_entradas: somar(torneioEntradas), torneio_entradas_qtd: torneioEntradas.length,
-      pagamentos: somar(pagamentos), pagamentos_qtd: pagamentos.length,
-      jogadores: new Set(movs.map(m => m.jogador)).size,
-      sessoes: new Set(sessoesDB.map(m => `${m.jogador}||${m.sessao_finalizada_em}`)).size,
-      rake: somar(recolhidos.filter(r => r.tipo === 'rake')),
-      caixinha: somar(recolhidos.filter(r => r.tipo === 'caixinha')),
-      jackpot: somar(recolhidos.filter(r => r.tipo === 'jackpot')),
-      recolhido: somar(recolhidos)
-    };
+    return { ...data, cashAtivado: true };
   }
 
   async function carregarResumo() {
@@ -684,35 +620,9 @@
     alert(texto);
   }
 
-  // lista em ordem de id decrescente: a sessão com o lançamento mais novo
-  // vem primeiro (mesma ordem da visão relatorio_sessoes, por ultimo_id).
-  function agruparParaHistorico(lista) {
-
-    const grupos = new Map();
-
-    lista.forEach(mov => {
-      if (!mov.sessao_finalizada_em) return;
-      const chave = `${mov.jogador}||${mov.sessao_finalizada_em}`;
-      if (!grupos.has(chave)) grupos.set(chave, []);
-      grupos.get(chave).push(mov);
-    });
-
-    return Array.from(grupos.values()).map(movsGrupo => {
-      const { entrada, saida, resultado } = calcularResultadoMovimentacoes(movsGrupo);
-      return {
-        jogador: movsGrupo[0].jogador,
-        sessaoFinalizadaEm: movsGrupo[0].sessao_finalizada_em,
-        entrada,
-        saida,
-        resultado
-      };
-    });
-  }
-
   // Sessões da página atual (limiteRelatorio) + se há mais.
   let itensHistorico = [];
   let historicoTemMais = false;
-  let movsHistoricoLocal = null; // só sem o sql/017: sessões finalizadas, colunas mínimas
 
   // Filtros do Histórico.
   let periodoHistorico = 'tudo';      // hoje | 7 | 30 | tudo
@@ -776,89 +686,57 @@
     const termo = normalizarBusca(filtroRelatorioJogador);
     const inicio = inicioPeriodoLog(periodoHistorico);
 
-    if (bancoTemResumo !== false) {
+    const montarConsulta = comModalidade => {
+      let consulta = client
+        .from('relatorio_sessoes')
+        .select('jogador,sessao_finalizada_em,entrada,saida,resultado' + (comModalidade ? ',tem_cash,tem_torneio' : ''));
+      if (inicio) consulta = consulta.gte('sessao_finalizada_em', inicio.toISOString());
+      if (comModalidade && modalidadeHistorico === 'cash') consulta = consulta.eq('tem_cash', true);
+      if (comModalidade && modalidadeHistorico === 'torneio') consulta = consulta.eq('tem_torneio', true);
+      return consulta;
+    };
 
-      const montarConsulta = comModalidade => {
-        let consulta = client
-          .from('relatorio_sessoes')
-          .select('jogador,sessao_finalizada_em,entrada,saida,resultado' + (comModalidade ? ',tem_cash,tem_torneio' : ''));
-        if (inicio) consulta = consulta.gte('sessao_finalizada_em', inicio.toISOString());
-        if (comModalidade && modalidadeHistorico === 'cash') consulta = consulta.eq('tem_cash', true);
-        if (comModalidade && modalidadeHistorico === 'torneio') consulta = consulta.eq('tem_torneio', true);
-        return consulta;
-      };
-
-      let ids = null;
-      if (termo) {
-        ids = jogadores.filter(j => normalizarBusca(j.nome).includes(termo)).map(j => j.id);
-        if (ids.length === 0) {
-          itensHistorico = [];
-          historicoTemMais = false;
-          saldoAbertoHistorico = new Map();
-          renderizarHistorico();
-          return;
-        }
-      }
-
-      const executar = async comModalidade => {
-        let consulta = montarConsulta(comModalidade);
-        if (ids) consulta = consulta.in('jogador_id', ids);
-        // Uma linha a mais só para saber se existe "Ver Mais".
-        return consulta.order('ultimo_id', { ascending: false }).range(0, limiteRelatorio);
-      };
-
-      let { data, error } = await executar(visaoTemModalidade !== false);
-
-      // Sem o sql/019 a visão ainda não tem tem_cash/tem_torneio: esconde o
-      // filtro Cash/Torneio e repete sem essas colunas.
-      if (error && visaoTemModalidade !== false && erroColunaModalidade(error)) {
-        visaoTemModalidade = false;
-        modalidadeHistorico = '';
-        ({ data, error } = await executar(false));
-      } else if (!error && visaoTemModalidade === null) {
-        visaoTemModalidade = true;
-      }
-
-      if (!error) {
-        bancoTemResumo = true;
-        movsHistoricoLocal = null;
-        historicoTemMais = (data || []).length > limiteRelatorio;
-        itensHistorico = (data || []).slice(0, limiteRelatorio).map(s => ({
-          jogador: s.jogador,
-          sessaoFinalizadaEm: s.sessao_finalizada_em,
-          entrada: Number(s.entrada),
-          saida: Number(s.saida),
-          resultado: Number(s.resultado)
-        }));
-        await carregarSaldoAbertoHistorico();
-        marcarChipsHistorico();
+    let ids = null;
+    if (termo) {
+      ids = jogadores.filter(j => normalizarBusca(j.nome).includes(termo)).map(j => j.id);
+      if (ids.length === 0) {
+        itensHistorico = [];
+        historicoTemMais = false;
+        saldoAbertoHistorico = new Map();
         renderizarHistorico();
         return;
       }
+    }
 
-      if (!faltaSql017(error)) throw error;
-      bancoTemResumo = false;
+    const executar = async comModalidade => {
+      let consulta = montarConsulta(comModalidade);
+      if (ids) consulta = consulta.in('jogador_id', ids);
+      // Uma linha a mais só para saber se existe "Ver mais".
+      return consulta.order('ultimo_id', { ascending: false }).range(0, limiteRelatorio);
+    };
+
+    let { data, error } = await executar(visaoTemModalidade !== false);
+
+    // Sem o sql/019 a visão ainda não tem tem_cash/tem_torneio: esconde o
+    // filtro Cash/Torneio e repete sem essas colunas.
+    if (error && visaoTemModalidade !== false && erroColunaModalidade(error)) {
       visaoTemModalidade = false;
       modalidadeHistorico = '';
+      ({ data, error } = await executar(false));
+    } else if (!error && visaoTemModalidade === null) {
+      visaoTemModalidade = true;
     }
 
-    // Sem o sql/017: busca as sessões finalizadas (só as colunas da conta) e
-    // agrupa aqui. A busca por jogador, o período e o "Ver Mais" reaproveitam a lista.
-    if (!movsHistoricoLocal || abaSuja.historico) {
-      movsHistoricoLocal = await buscarTodas(() => client
-        .from('movimentacoes')
-        .select('id,jogador,tipo,valor,pago,sessao_finalizada_em')
-        .not('sessao_finalizada_em', 'is', null)
-        .order('id', { ascending: false }));
-    }
+    if (error) throw error;
 
-    const filtradas = movsHistoricoLocal.filter(mov =>
-      (!termo || normalizarBusca(mov.jogador).includes(termo))
-      && (!inicio || new Date(mov.sessao_finalizada_em) >= inicio));
-
-    const todos = agruparParaHistorico(filtradas);
-    historicoTemMais = todos.length > limiteRelatorio;
-    itensHistorico = todos.slice(0, limiteRelatorio);
+    historicoTemMais = (data || []).length > limiteRelatorio;
+    itensHistorico = (data || []).slice(0, limiteRelatorio).map(s => ({
+      jogador: s.jogador,
+      sessaoFinalizadaEm: s.sessao_finalizada_em,
+      entrada: Number(s.entrada),
+      saida: Number(s.saida),
+      resultado: Number(s.resultado)
+    }));
     await carregarSaldoAbertoHistorico();
     marcarChipsHistorico();
     renderizarHistorico();
@@ -1157,10 +1035,7 @@
 
     const mudou = t => !tabelas || tabelas.has(t);
 
-    if (mudou('movimentacoes')) {
-      abaSuja.resumo = abaSuja.historico = abaSuja.cash = true;
-      movsHistoricoLocal = null;
-    }
+    if (mudou('movimentacoes')) abaSuja.resumo = abaSuja.historico = abaSuja.cash = true;
     if (mudou('cash_mesas') || mudou('cash_mesa_recolhimentos')) abaSuja.resumo = abaSuja.cash = true;
     if (mudou('jogadores')) { jogadoresSujo = true; abaSuja.historico = true; }
   }
