@@ -1939,3 +1939,35 @@ body.mnu-gaveta .mini-relogio {
   color: var(--apagado);
   margin-bottom: 4px;
 }
+
+/* Lançar (Em Aberto): mesmo visual de Registrar Pagamento / Lançar Débito de Jogadores */
+.hj-tipos-lancamento {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.hj-tipo-lanc {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--borda-forte);
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hj-tipo-lanc:hover { transform: none; box-shadow: none; }
+.hj-tipo-lanc.pagamento.ativo { background: #16a34a; border-color: #16a34a; color: #fff; }
+.hj-tipo-lanc.debito.ativo { background: #dc2626; border-color: #dc2626; color: #fff; }
+
+@media (max-width: 420px) {
+  .hj-tipo-lanc { font-size: 13px; padding: 0 6px; }
+}

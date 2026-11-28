@@ -48,7 +48,10 @@ function hjGarantirModais() {
             <strong id="hjResultado">R$ 0,00</strong>
           </div>
 
-          <button type="button" id="hjBtnLancar" class="btn-green" onclick="abrirLancamentoJogador()">Lançar</button>
+          <button type="button" id="hjBtnLancar" class="btn-green btn-com-icone" onclick="abrirLancamentoJogador()">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Lançar</span>
+          </button>
         </div>
 
         <div id="hjCarregando" class="hj-vazio oculto">Carregando...</div>
@@ -89,24 +92,32 @@ function hjGarantirModais() {
 
     <div id="modalLancarJogador" class="modal-overlay">
       <div class="modal-box" style="max-width:400px;">
-        <h2>Lançar</h2>
+        <h2 id="hjLancarTitulo">Registrar Pagamento</h2>
 
         <p id="hjLancarResumo" class="modal-resumo"></p>
 
-        <div class="modalidade-opcoes" style="margin-bottom:14px;">
-          <button type="button" id="hjBtnTipoPagamento" class="modalidade-btn ativo" onclick="selecionarTipoLancamento('Pagamento')">Pagamento (+)</button>
-          <button type="button" id="hjBtnTipoCobranca" class="modalidade-btn" onclick="selecionarTipoLancamento('Cobrança')">Cobrança (−)</button>
+        <div class="hj-tipos-lancamento" role="group" aria-label="Tipo de lançamento">
+          <button type="button" id="hjBtnTipoPagamento" class="hj-tipo-lanc pagamento ativo" aria-pressed="true" onclick="selecionarTipoLancamento('Pagamento')">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5.5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>Registrar Pagamento</span>
+          </button>
+          <button type="button" id="hjBtnTipoCobranca" class="hj-tipo-lanc debito" aria-pressed="false" onclick="selecionarTipoLancamento('Cobrança')">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+            <span>Lançar Débito</span>
+          </button>
         </div>
+
+        <label class="rotulo-campo" for="hjLancarValor">Valor (R$)</label>
+        <input type="number" id="hjLancarValor" placeholder="0,00" min="0" step="0.01" inputmode="decimal">
+
+        <label class="rotulo-campo" for="hjLancarObs" id="hjLancarObsRotulo">Observações *</label>
+        <textarea id="hjLancarObs" placeholder="Observações" rows="2" maxlength="300" style="width:100%;box-sizing:border-box;margin-bottom:8px;resize:vertical;font:inherit;"></textarea>
 
         <p id="hjLancarDica" class="hj-dica"></p>
 
-        <input type="number" id="hjLancarValor" placeholder="Valor (R$)" min="0" step="0.01" inputmode="decimal">
-
-        <textarea id="hjLancarObs" placeholder="Observação (obrigatória)" rows="2" maxlength="300" style="width:100%;box-sizing:border-box;margin-bottom:12px;resize:vertical;font:inherit;"></textarea>
-
         <div class="modal-acoes">
           <button type="button" class="btn-gray" onclick="hjFecharModal('modalLancarJogador')">Cancelar</button>
-          <button type="button" id="hjBtnConfirmarLancar" class="btn-green" style="flex:1;" onclick="confirmarLancamentoJogador()">Confirmar</button>
+          <button type="button" id="hjBtnConfirmarLancar" class="btn-green" style="flex:1;" onclick="confirmarLancamentoJogador()">Registrar Pagamento</button>
         </div>
       </div>
     </div>
@@ -387,12 +398,26 @@ function selecionarTipoLancamento(tipo) {
 
   historicoJogador.tipoLancamento = tipo;
 
+  // Mesmos textos de Jogadores (Registrar Pagamento / Lançar Débito).
   const pagamento = tipo === 'Pagamento';
-  document.getElementById('hjBtnTipoPagamento').classList.toggle('ativo', pagamento);
-  document.getElementById('hjBtnTipoCobranca').classList.toggle('ativo', !pagamento);
+  const btnPag = document.getElementById('hjBtnTipoPagamento');
+  const btnDeb = document.getElementById('hjBtnTipoCobranca');
+  btnPag.classList.toggle('ativo', pagamento);
+  btnDeb.classList.toggle('ativo', !pagamento);
+  btnPag.setAttribute('aria-pressed', pagamento ? 'true' : 'false');
+  btnDeb.setAttribute('aria-pressed', pagamento ? 'false' : 'true');
+
+  document.getElementById('hjLancarTitulo').textContent = pagamento ? 'Registrar Pagamento' : 'Lançar Débito Manual';
+  document.getElementById('hjLancarObsRotulo').textContent = pagamento ? 'Observações *' : 'Descrição / Motivo *';
+  document.getElementById('hjLancarObs').placeholder = pagamento ? 'Observações' : 'Ex: Mensalidade, multa, ajuste...';
   document.getElementById('hjLancarDica').textContent = pagamento
     ? 'O jogador pagou ao clube: o valor soma (+) no saldo dele.'
-    : 'Cobrança ao jogador: o valor desconta (−) do saldo dele.';
+    : 'O valor desconta (−) do saldo do jogador: ele passa a dever ao clube.';
+
+  const confirmar = document.getElementById('hjBtnConfirmarLancar');
+  confirmar.textContent = pagamento ? 'Registrar Pagamento' : 'Confirmar Débito';
+  confirmar.classList.toggle('btn-green', pagamento);
+  confirmar.classList.toggle('btn-red', !pagamento);
 }
 
 async function confirmarLancamentoJogador() {
@@ -412,7 +437,7 @@ async function confirmarLancamentoJogador() {
   }
 
   if (!observacao) {
-    await mostrarAlerta('A observação é obrigatória.');
+    await mostrarAlerta(cobranca ? 'Informe a descrição / motivo do débito.' : 'A observação é obrigatória.');
     document.getElementById('hjLancarObs').focus();
     return;
   }
