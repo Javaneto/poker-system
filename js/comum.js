@@ -196,13 +196,19 @@ function formatarMoeda(valor) {
   return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// Busca de jogador usada no Cash Game e no Diretor: nome, apelido, CPF ou
+// Texto para busca: minúsculo e sem acentos/til/cedilha ("Caião" → "caiao").
+function normalizarBusca(texto) {
+  return String(texto ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+}
+
+// Busca de jogador usada no Cash Game, Diretor e Jogadores: nome, apelido, CPF ou
 // telefone (CPF/telefone comparam só os dígitos, a partir de 3 dígitos).
+// Ignora acentos e til: "Caiao" encontra "Caião".
 function jogadorCombinaBusca(jogador, termo) {
-  const t = String(termo || '').trim().toLowerCase();
+  const t = normalizarBusca(termo).trim();
   if (!t) return true;
-  if (String(jogador.nome || '').toLowerCase().includes(t)) return true;
-  if (String(jogador.apelido || '').toLowerCase().includes(t)) return true;
+  if (normalizarBusca(jogador.nome).includes(t)) return true;
+  if (normalizarBusca(jogador.apelido).includes(t)) return true;
   const digitos = t.replace(/\D/g, '');
   if (digitos.length < 3) return false;
   return String(jogador.cpf || '').replace(/\D/g, '').includes(digitos)
@@ -211,8 +217,8 @@ function jogadorCombinaBusca(jogador, termo) {
 
 // Ordem da busca: quem começa com o termo (nome ou apelido) vem primeiro.
 function compararBuscaJogador(a, b, termo) {
-  const t = String(termo || '').trim().toLowerCase();
-  const comeca = j => String(j.nome || '').toLowerCase().startsWith(t) || String(j.apelido || '').toLowerCase().startsWith(t);
+  const t = normalizarBusca(termo).trim();
+  const comeca = j => normalizarBusca(j.nome).startsWith(t) || normalizarBusca(j.apelido).startsWith(t);
   if (t && comeca(a) !== comeca(b)) return comeca(a) ? -1 : 1;
   return String(a.nome).localeCompare(String(b.nome));
 }
@@ -445,7 +451,7 @@ function trocarAbaCentralHistorico(aba) {
 }
 
 function textoBuscaCentral() {
-  return (document.getElementById('chBusca')?.value || '').trim().toLowerCase();
+  return normalizarBusca(document.getElementById('chBusca')?.value || '').trim();
 }
 
 function movCombinaBusca(mov, termo) {
@@ -454,7 +460,7 @@ function movCombinaBusca(mov, termo) {
 
   return [mov.jogador, mov.tipo, mov.tipo_registro, mov.modalidade, mov.observacao]
     .filter(Boolean)
-    .some(t => String(t).toLowerCase().includes(termo));
+    .some(t => normalizarBusca(t).includes(termo));
 }
 
 async function renderizarAbaCentralHistorico() {
@@ -677,8 +683,8 @@ async function renderizarLogCentral(conteudo) {
     const mov = item.dados_depois || item.dados_antes || {};
     return !termo
       || movCombinaBusca(mov, termo)
-      || (mov.nome && mov.nome.toLowerCase().includes(termo))
-      || (item.usuario_email || '').toLowerCase().includes(termo);
+      || (mov.nome && normalizarBusca(mov.nome).includes(termo))
+      || normalizarBusca(item.usuario_email).includes(termo);
   });
 
   if (itens.length === 0) {

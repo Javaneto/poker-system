@@ -713,7 +713,7 @@
       const geral = calcularResultadoMovimentacoes(movs);
       const emAberto = calcularResultadoMovimentacoes(abertas);
 
-      const sessoesCash = new Set(movs.filter(m => !m.torneio_id && m.sessao_finalizada_em).map(m => m.sessao_finalizada_em)).size;
+      const sessoesCash = new Set(movs.filter(m => !m.torneio_id && m.sessao_finalizada_em && m.tipo !== 'Pagamento').map(m => m.sessao_finalizada_em)).size;
       const torneios = new Set(movs.filter(m => m.torneio_id).map(m => m.torneio_id)).size;
 
       const ultima = movs.reduce((maior, m) => (!maior || new Date(m.data) > new Date(maior) ? m.data : maior), null);
@@ -781,8 +781,7 @@
 
   function renderizar() {
 
-    const termo = document.getElementById('busca').value.trim().toLowerCase();
-    const termoDigitos = soDigitos(termo);
+    const termo = document.getElementById('busca').value.trim();
     const ordenacao = document.getElementById('ordenacao').value;
 
     // KPIs (sobre todos os jogadores)
@@ -811,11 +810,7 @@
       if (filtroSituacao === 'deve' && !(r.saldoGeral < -0.005)) return false;
       if (filtroSituacao === 'credito' && !(r.saldoGeral > 0.005)) return false;
 
-      if (!termo) return true;
-
-      return j.nome.toLowerCase().includes(termo)
-        || (j.apelido || '').toLowerCase().includes(termo)
-        || (termoDigitos && (soDigitos(j.telefone).includes(termoDigitos) || soDigitos(j.cpf).includes(termoDigitos)));
+      return jogadorCombinaBusca(j, termo);
     });
 
     const r = j => resumoPorNome.get(j.nome);
@@ -1134,6 +1129,8 @@
   // saldo continuar igual em todas as telas:
   //   Pagamento → tipo 'Pagamento', valor positivo, modalidade 'Cash'
   //   Débito    → tipo 'Pagamento', valor negativo, modalidade 'Cobrança'
+  // Já entra finalizado (sessao_finalizada_em preenchido): só ajusta o saldo do
+  // jogador e NÃO abre comanda no Em Aberto, que é para o dia do evento.
 
   function abrirLancamento(tipo) {
 
@@ -1194,6 +1191,8 @@
 
     btn.classList.add('disabled');
 
+    const agora = new Date().toISOString();
+
     try {
 
       const { error } = await client
@@ -1204,7 +1203,8 @@
           valor: debito ? -valor : valor,
           modalidade: debito ? 'Cobrança' : 'Cash',
           pago: false,
-          data: new Date().toISOString(),
+          data: agora,
+          sessao_finalizada_em: agora,
           cpf: jogador.cpf || null,
           telefone: jogador.telefone || null,
           ...(observacao ? { observacao } : {})
