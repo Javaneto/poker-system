@@ -395,6 +395,7 @@
   let jogadores = [];
   let assentos = [];
   let movs = [];
+  let tabelasMudadasMesa = null;
   let recolhimentos = [];
   let dealersConhecidos = [];
   let adminLiberado = false;
@@ -566,7 +567,10 @@
   // Dados
   // ---------------------------------------------------------------------------
 
-  function carregarDados() {
+  // parcial = veio de um aviso do Realtime (tabelasMudadasMesa diz o que
+  // mudou); qualquer outra chamada recarrega tudo.
+  function carregarDados(parcial = false) {
+    if (!parcial) tabelasMudadasMesa = null;
     return executarSerial('dados-cash-mesa', carregarDadosAgora);
   }
 
@@ -607,19 +611,26 @@
 
     mesa = mesaDB;
 
+    // Economia de tráfego: num aviso do Realtime, cadastro de jogadores e
+    // lista de dealers só são buscados de novo se mudaram.
+    const tabelasDestaCarga = tabelasMudadasMesa;
+    const completa = !tabelasDestaCarga;
+    const mudou = tabela => completa || tabelasDestaCarga.has(tabela);
+    tabelasMudadasMesa = null;
+
     const [resJogadores, resAssentos, resRecolhimentos, resDealers] = await Promise.all([
-      client.from('jogadores').select('id,nome,apelido,cpf,telefone,ativo'),
+      mudou('jogadores') ? client.from('jogadores').select('id,nome,apelido,cpf,telefone,ativo') : null,
       client.from('cash_mesa_jogadores').select('*').eq('mesa_id', mesaId),
       client.from('cash_mesa_recolhimentos').select('*').eq('mesa_id', mesaId).order('criado_em', { ascending: false }),
-      client.from('cash_mesa_recolhimentos').select('dealer').not('dealer', 'is', null).order('criado_em', { ascending: false }).limit(300)
+      mudou('cash_mesa_recolhimentos') ? client.from('cash_mesa_recolhimentos').select('dealer').not('dealer', 'is', null).order('criado_em', { ascending: false }).limit(300) : null
     ]);
 
-    [resJogadores, resAssentos, resRecolhimentos].forEach(r => { if (r.error) throw r.error; });
+    [resJogadores, resAssentos, resRecolhimentos].forEach(r => { if (r?.error) throw r.error; });
 
-    jogadores = (resJogadores.data || []).sort((a, b) => a.nome.localeCompare(b.nome));
+    if (resJogadores) jogadores = (resJogadores.data || []).sort((a, b) => a.nome.localeCompare(b.nome));
     assentos = resAssentos.data || [];
     recolhimentos = resRecolhimentos.data || [];
-    dealersConhecidos = Array.from(new Set((resDealers.data || []).map(r => r.dealer).filter(Boolean)));
+    if (resDealers) dealersConhecidos = Array.from(new Set((resDealers.data || []).map(r => r.dealer).filter(Boolean)));
 
     movs = await buscarTodas(() => client
       .from('movimentacoes')
@@ -1460,7 +1471,10 @@
     iniciarRealtimeRobusto({
       nome: 'cash-mesa-realtime',
       tabelas: ['cash_mesas', 'cash_mesa_jogadores', 'cash_mesa_recolhimentos', 'movimentacoes', 'jogadores'],
-      aoMudar: () => carregarDados()
+      aoMudar: tabelas => {
+        if (tabelas) tabelasMudadasMesa = new Set([...(tabelasMudadasMesa || []), ...tabelas]);
+        carregarDados(!!tabelas);
+      }
     });
 
     // Atualiza o tempo de mesa dos jogadores a cada minuto.
