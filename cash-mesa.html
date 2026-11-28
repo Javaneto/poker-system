@@ -37,9 +37,7 @@
       <button type="button" class="cg-icone-btn" title="Atualizar" aria-label="Atualizar" onclick="carregarDados()">
         <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M3 21v-5h5"/></svg>
       </button>
-      <button type="button" id="btnTopoAdicionar" class="cg-icone-btn disabled" title="Adicionar jogador" aria-label="Adicionar jogador" onclick="abrirModalAdicionar()">
-        <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-      </button>
+      <button type="button" id="btnOcultarValores" class="cg-icone-btn" title="Ocultar valores" aria-label="Ocultar valores" aria-pressed="false" onclick="alternarValoresOcultos()"></button>
       <button type="button" id="btnTopoEncerrar" class="cg-icone-btn perigo disabled" title="Fechamento / encerrar" aria-label="Fechamento / encerrar" onclick="trocarAba('fechamento')">
         <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
       </button>
@@ -64,17 +62,30 @@
         <div class="cg-kpi-valor negativo" id="kpiDevolucoes">-</div>
       </div>
       <div class="cg-kpi">
-        <div class="cg-kpi-rotulo"><svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Rake + Caixinha</div>
+        <div class="cg-kpi-rotulo"><svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Financeiro</div>
         <div class="cg-kpi-valor" id="kpiRecolhido">-</div>
       </div>
     </div>
 
-    <div class="abas cg-abas" role="tablist">
-      <button type="button" class="aba ativa" data-aba="registros" onclick="trocarAba('registros')">Registros</button>
-      <button type="button" class="aba" data-aba="rake" onclick="trocarAba('rake')">Rake</button>
-      <button type="button" class="aba" data-aba="caixinha" onclick="trocarAba('caixinha')">Caixinha</button>
-      <button type="button" class="aba" data-aba="fechamento" onclick="trocarAba('fechamento')">Fechamento</button>
-      <button type="button" class="aba" data-aba="historico" onclick="trocarAba('historico')">Histórico</button>
+    <div class="cg-abas-barra">
+      <div class="cg-abas" role="tablist">
+        <button type="button" class="cg-aba ativa" role="tab" data-aba="registros" onclick="trocarAba('registros')">
+          <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.8 0 5 2 5 5"/></svg>
+          <span>Registros</span>
+        </button>
+        <button type="button" class="cg-aba" role="tab" data-aba="financeiro" onclick="trocarAba('financeiro')">
+          <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>Financeiro</span>
+        </button>
+        <button type="button" class="cg-aba" role="tab" data-aba="fechamento" onclick="trocarAba('fechamento')">
+          <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+          <span>Fechamento</span>
+        </button>
+        <button type="button" class="cg-aba" role="tab" data-aba="historico" onclick="trocarAba('historico')">
+          <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+          <span>Histórico</span>
+        </button>
+      </div>
     </div>
 
     <!-- Registros -->
@@ -114,63 +125,61 @@
       </div>
     </section>
 
-    <!-- Rake / Caixinha -->
-    <section class="cg-painel" id="painel-rake">
-      <div class="card">
-        <div class="cg-titulo-secao">
-          <div>
-            <h2>Rake</h2>
-            <p>Valor arrecadado das jogadas. Registre cada sangria de fichas tirada da mesa.</p>
+    <!-- Financeiro: rake, caixinha e jackpot -->
+    <section class="cg-painel" id="painel-financeiro">
+      <div class="cg-fin-grid">
+        <div class="card cg-fin-card">
+          <div class="cg-titulo-secao">
+            <div>
+              <h2>Retiradas de Fichas</h2>
+              <p>Registre cada sangria de fichas tirada da mesa.</p>
+            </div>
           </div>
+
+          <div class="cg-fin-itens">
+            <div class="cg-fin-item">
+              <span class="cg-fin-tag rake"><svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+              <div class="cg-fin-nome"><strong>Rake</strong><span>Receita do clube</span></div>
+              <strong class="cg-fin-valor" id="totalRake">R$ 0,00</strong>
+              <button type="button" id="btnRegistrarRake" class="cg-fin-inserir disabled" onclick="abrirRecolhimento('rake')">
+                <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Inserir</span>
+              </button>
+            </div>
+
+            <div class="cg-fin-item">
+              <span class="cg-fin-tag caixinha"><svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/></svg></span>
+              <div class="cg-fin-nome"><strong>Caixinha</strong><span>Gorjetas dos dealers</span></div>
+              <strong class="cg-fin-valor" id="totalCaixinha">R$ 0,00</strong>
+              <button type="button" id="btnRegistrarCaixinha" class="cg-fin-inserir disabled" onclick="abrirRecolhimento('caixinha')">
+                <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Inserir</span>
+              </button>
+            </div>
+
+            <div class="cg-fin-item">
+              <span class="cg-fin-tag jackpot"><svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.9 6.1 6.6.8-4.9 4.6 1.3 6.5L12 16.8 6.1 20l1.3-6.5L2.5 8.9l6.6-.8z"/></svg></span>
+              <div class="cg-fin-nome"><strong>Jackpot</strong><span>Fundo do jackpot</span></div>
+              <strong class="cg-fin-valor" id="totalJackpot">R$ 0,00</strong>
+              <button type="button" id="btnRegistrarJackpot" class="cg-fin-inserir disabled" onclick="abrirRecolhimento('jackpot')">
+                <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Inserir</span>
+              </button>
+            </div>
+          </div>
+
+          <details class="cg-fin-historico" id="finHistorico">
+            <summary id="finHistoricoTitulo">Histórico (0 lançamentos)</summary>
+            <div id="listaRecolhimentos"></div>
+          </details>
         </div>
 
-        <div class="cg-form-linha">
-          <div class="cg-campo">
-            <label class="cg-rotulo" for="rakeValor">Valor (R$)</label>
-            <input type="number" id="rakeValor" min="0" step="0.01" inputmode="decimal" placeholder="0,00">
+        <div class="card cg-fin-card">
+          <div class="cg-titulo-secao">
+            <div>
+              <h2>Movimentação de Fichas</h2>
+              <p>Conferência de entrada e saída de fichas</p>
+            </div>
           </div>
-          <div class="cg-campo-largo">
-            <label class="cg-rotulo" for="rakeObs">Observação (opcional)</label>
-            <input type="text" id="rakeObs" maxlength="200" autocomplete="off">
-          </div>
+          <div id="finMovimentacao"></div>
         </div>
-        <button type="button" id="btnRegistrarRake" class="btn-blue disabled" style="margin-top:12px;min-height:44px;" onclick="registrarRecolhimento('rake')">Registrar rake</button>
-        <p class="cg-dica" id="dicaFichasRake"></p>
-
-        <div class="cg-total-linha"><span>Total de rake</span><strong id="totalRake">R$ 0,00</strong></div>
-        <div id="listaRake"></div>
-      </div>
-    </section>
-
-    <section class="cg-painel" id="painel-caixinha">
-      <div class="card">
-        <div class="cg-titulo-secao">
-          <div>
-            <h2>Caixinha</h2>
-            <p>Gorjetas retiradas da mesa. O dealer é opcional.</p>
-          </div>
-        </div>
-
-        <div class="cg-form-linha">
-          <div class="cg-campo">
-            <label class="cg-rotulo" for="caixinhaValor">Valor (R$)</label>
-            <input type="number" id="caixinhaValor" min="0" step="0.01" inputmode="decimal" placeholder="0,00">
-          </div>
-          <div class="cg-campo">
-            <label class="cg-rotulo" for="caixinhaDealer">Dealer (opcional)</label>
-            <input type="text" id="caixinhaDealer" maxlength="60" autocomplete="off" list="listaDealers" placeholder="Nome do dealer">
-            <datalist id="listaDealers"></datalist>
-          </div>
-          <div class="cg-campo-largo">
-            <label class="cg-rotulo" for="caixinhaObs">Observação (opcional)</label>
-            <input type="text" id="caixinhaObs" maxlength="200" autocomplete="off">
-          </div>
-        </div>
-        <button type="button" id="btnRegistrarCaixinha" class="btn-blue disabled" style="margin-top:12px;min-height:44px;" onclick="registrarRecolhimento('caixinha')">Registrar caixinha</button>
-        <p class="cg-dica" id="dicaFichasCaixinha"></p>
-
-        <div class="cg-total-linha"><span>Total de caixinha</span><strong id="totalCaixinha">R$ 0,00</strong></div>
-        <div id="listaCaixinha"></div>
       </div>
     </section>
 
@@ -309,6 +318,31 @@
   </div>
 </div>
 
+<!-- Retirada de fichas (rake, caixinha, jackpot) -->
+<div id="modalRecolhimento" class="modal-overlay">
+  <div class="modal-box cg-modal" style="max-width:420px;">
+    <h2 id="recolhimentoTitulo">Inserir</h2>
+    <p class="cg-info-modal" id="recolhimentoInfo"></p>
+
+    <label class="cg-rotulo" for="recolhimentoValor">Valor (R$)</label>
+    <input type="number" id="recolhimentoValor" min="0" step="0.01" inputmode="decimal" placeholder="0,00">
+
+    <div id="recolhimentoCampoDealer">
+      <label class="cg-rotulo" for="recolhimentoDealer">Dealer (opcional)</label>
+      <input type="text" id="recolhimentoDealer" maxlength="60" autocomplete="off" list="listaDealers" placeholder="Nome do dealer">
+      <datalist id="listaDealers"></datalist>
+    </div>
+
+    <label class="cg-rotulo" for="recolhimentoObs">Observação (opcional)</label>
+    <input type="text" id="recolhimentoObs" maxlength="200" autocomplete="off">
+
+    <div class="modal-acoes">
+      <button type="button" class="btn-gray" onclick="fecharModal('modalRecolhimento')">Cancelar</button>
+      <button type="button" id="btnConfirmarRecolhimento" class="btn-blue" style="flex:1;" onclick="registrarRecolhimento()">Registrar</button>
+    </div>
+  </div>
+</div>
+
 <div id="modalAlerta" class="modal-overlay">
   <div class="modal-box" style="max-width:380px;">
     <h2>Aviso</h2>
@@ -338,7 +372,12 @@
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const mesaId = new URLSearchParams(location.search).get('id');
-  const ABAS = ['registros', 'rake', 'caixinha', 'fechamento', 'historico'];
+  const ABAS = ['registros', 'financeiro', 'fechamento', 'historico'];
+  const ROTULO_RECOLHIMENTO = { rake: 'Rake', caixinha: 'Caixinha', jackpot: 'Jackpot' };
+  const CHAVE_VALORES_OCULTOS = 'cashValoresOcultos';
+  const ICONE_OLHO = '<svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const ICONE_OLHO_FECHADO = '<svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"/></svg>';
+  const ICONE_LIXEIRA = '<svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>';
 
   const ICONE_PESSOAS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.8 0 5 2 5 5"/></svg>';
   const ICONE_MAIS = '<svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
@@ -355,6 +394,10 @@
   let dealersConhecidos = [];
   let adminLiberado = false;
   let abaAtual = 'registros';
+  let valoresOcultos = false;
+  let recolhimentoTipo = null;
+
+  try { valoresOcultos = localStorage.getItem(CHAVE_VALORES_OCULTOS) === '1'; } catch (e) { /* sem armazenamento: começa visível */ }
 
   let compraContexto = null;     // { modo: 'sentar' | 'compra' | 'voltar', jogador }
   let compraPago = false;
@@ -376,6 +419,25 @@
   const centavos = v => Math.round(Number(v || 0) * 100);
   const reais = c => c / 100;
   const somar = lista => reais(lista.reduce((s, item) => s + centavos(item.valor), 0));
+
+  // Valor na tela (respeita o "olhinho"); modais e avisos usam formatarMoeda direto.
+  const moeda = v => valoresOcultos ? 'R$ ••••' : formatarMoeda(v);
+
+  function renderizarBotaoOlho() {
+    const btn = document.getElementById('btnOcultarValores');
+    const rotulo = valoresOcultos ? 'Mostrar valores' : 'Ocultar valores';
+    btn.innerHTML = valoresOcultos ? ICONE_OLHO_FECHADO : ICONE_OLHO;
+    btn.title = rotulo;
+    btn.setAttribute('aria-label', rotulo);
+    btn.setAttribute('aria-pressed', String(valoresOcultos));
+  }
+
+  function alternarValoresOcultos() {
+    valoresOcultos = !valoresOcultos;
+    try { localStorage.setItem(CHAVE_VALORES_OCULTOS, valoresOcultos ? '1' : '0'); } catch (e) { /* segue sem guardar */ }
+    renderizarBotaoOlho();
+    if (mesa) renderizarTudo();
+  }
 
   function lerValor(id) {
     const texto = String(document.getElementById(id).value || '').replace(',', '.');
@@ -445,9 +507,12 @@
     const devolucoes = somar(movs.filter(m => m.tipo === 'Saída'));
     const rake = somar(recolhimentos.filter(r => r.tipo === 'rake'));
     const caixinha = somar(recolhimentos.filter(r => r.tipo === 'caixinha'));
-    const fichas = reais(centavos(compras) - centavos(devolucoes) - centavos(rake) - centavos(caixinha));
+    const jackpot = somar(recolhimentos.filter(r => r.tipo === 'jackpot'));
+    const retiradas = reais(centavos(rake) + centavos(caixinha) + centavos(jackpot));
+    const saidas = reais(centavos(devolucoes) + centavos(retiradas));
+    const fichas = reais(centavos(compras) - centavos(saidas));
 
-    return { compras, devolucoes, rake, caixinha, fichas };
+    return { compras, devolucoes, rake, caixinha, jackpot, retiradas, saidas, fichas };
   }
 
   function valoresJogador(nome) {
@@ -477,10 +542,14 @@
 
   function trocarAba(aba) {
 
+    if (aba === 'rake' || aba === 'caixinha') aba = 'financeiro';
     if (!ABAS.includes(aba)) aba = 'registros';
     abaAtual = aba;
 
-    document.querySelectorAll('.cg-abas .aba').forEach(b => b.classList.toggle('ativa', b.dataset.aba === aba));
+    document.querySelectorAll('.cg-abas .cg-aba').forEach(b => {
+      b.classList.toggle('ativa', b.dataset.aba === aba);
+      b.setAttribute('aria-selected', String(b.dataset.aba === aba));
+    });
     ABAS.forEach(nome => document.getElementById('painel-' + nome).classList.toggle('ativo', nome === aba));
 
     try {
@@ -564,8 +633,7 @@
     renderizarCabecalho();
     renderizarKpis();
     renderizarRegistros();
-    renderizarRecolhimentos('rake');
-    renderizarRecolhimentos('caixinha');
+    renderizarFinanceiro();
     renderizarFechamento();
     renderizarHistorico();
   }
@@ -587,7 +655,7 @@
     document.getElementById('mesaSub').innerHTML = partes.join(' · ');
 
     const podeEditar = adminLiberado && !encerrada;
-    ['btnTopoAdicionar', 'btnAdicionarTopoLista', 'btnRegistrarRake', 'btnRegistrarCaixinha'].forEach(id => {
+    ['btnAdicionarTopoLista', 'btnRegistrarRake', 'btnRegistrarCaixinha', 'btnRegistrarJackpot'].forEach(id => {
       document.getElementById(id).classList.toggle('disabled', !podeEditar);
     });
     document.getElementById('btnTopoEncerrar').classList.toggle('disabled', !adminLiberado);
@@ -599,9 +667,9 @@
     const t = totaisMesa();
 
     document.getElementById('kpiJogadores').textContent = sentados().length;
-    document.getElementById('kpiCompras').textContent = formatarMoeda(t.compras);
-    document.getElementById('kpiDevolucoes').textContent = formatarMoeda(t.devolucoes);
-    document.getElementById('kpiRecolhido').textContent = formatarMoeda(t.rake + t.caixinha);
+    document.getElementById('kpiCompras').textContent = moeda(t.compras);
+    document.getElementById('kpiDevolucoes').textContent = moeda(t.devolucoes);
+    document.getElementById('kpiRecolhido').textContent = moeda(t.retiradas);
   }
 
   function renderizarRegistros() {
@@ -632,8 +700,8 @@
               <span class="cg-tempo" title="Sentou às ${hora(a.sentou_em)}">${duracao(a.sentou_em)}</span>
             </div>
             <div class="cg-jogador-valores">
-              <span>Compras <strong>${formatarMoeda(v.compras)}</strong></span>
-              <span>Devoluções <strong>${formatarMoeda(v.devolucoes)}</strong></span>
+              <span>Compras <strong>${moeda(v.compras)}</strong></span>
+              <span>Devoluções <strong>${moeda(v.devolucoes)}</strong></span>
             </div>
             <div class="cg-jogador-acoes">
               <button type="button" class="cg-btn-contorno${encerrada ? ' disabled' : ''}" data-acao="compra" data-jogador="${nome}">Compra</button>
@@ -659,9 +727,9 @@
         <tr>
           <td>${hora(a.sentou_em)} - ${hora(a.levantou_em)}<span class="cg-duracao">${duracao(a.sentou_em, a.levantou_em)}</span></td>
           <td><strong>${nome}</strong></td>
-          <td class="num">${formatarMoeda(v.compras)}</td>
-          <td class="num">${formatarMoeda(v.devolucoes)}</td>
-          <td class="num ${classe}"><strong>${v.saldo > 0 ? '+ ' : (v.saldo < 0 ? '- ' : '')}${formatarMoeda(Math.abs(v.saldo))}</strong></td>
+          <td class="num">${moeda(v.compras)}</td>
+          <td class="num">${moeda(v.devolucoes)}</td>
+          <td class="num ${classe}"><strong>${v.saldo > 0 ? '+ ' : (v.saldo < 0 ? '- ' : '')}${moeda(Math.abs(v.saldo))}</strong></td>
           <td class="acoes">
             <button type="button" class="cg-btn-contorno btn-com-icone${encerrada ? ' disabled' : ''}" data-acao="voltar" data-jogador="${nome}">${ICONE_REABRIR}<span>Voltar à Mesa</span></button>
             <button type="button" class="btn-gray" data-acao="em-aberto" data-jogador="${nome}">Em Aberto</button>
@@ -671,44 +739,57 @@
     }).join('');
   }
 
-  function renderizarRecolhimentos(tipo) {
+  function renderizarFinanceiro() {
 
-    const itens = recolhimentos.filter(r => r.tipo === tipo);
-    const sufixo = tipo === 'rake' ? 'Rake' : 'Caixinha';
     const t = totaisMesa();
 
-    document.getElementById('total' + sufixo).textContent = formatarMoeda(tipo === 'rake' ? t.rake : t.caixinha);
-    document.getElementById('dicaFichas' + sufixo).textContent = `Fichas na mesa agora: ${formatarMoeda(t.fichas)}`;
+    document.getElementById('totalRake').textContent = moeda(t.rake);
+    document.getElementById('totalCaixinha').textContent = moeda(t.caixinha);
+    document.getElementById('totalJackpot').textContent = moeda(t.jackpot);
 
-    if (tipo === 'caixinha') {
-      document.getElementById('listaDealers').innerHTML =
-        dealersConhecidos.map(d => `<option value="${escapeHtml(d)}"></option>`).join('');
-    }
+    document.getElementById('listaDealers').innerHTML =
+      dealersConhecidos.map(d => `<option value="${escapeHtml(d)}"></option>`).join('');
 
-    const lista = document.getElementById('lista' + sufixo);
+    const n = recolhimentos.length;
+    document.getElementById('finHistoricoTitulo').textContent = `Histórico (${n} ${n === 1 ? 'lançamento' : 'lançamentos'})`;
 
-    if (itens.length === 0) {
-      lista.innerHTML = `<p class="cg-dica">Nenhuma retirada de ${tipo === 'rake' ? 'rake' : 'caixinha'} registrada.</p>`;
-      return;
-    }
-
-    lista.innerHTML = itens.map(r => `
-      <div class="linha-desfazer">
-        <div class="linha-desfazer-info">
-          <strong>${formatarDataHora(r.criado_em)}</strong>
-          ${r.dealer ? `Dealer: ${escapeHtml(r.dealer)}` : ''}
-          ${r.observacao ? `<span class="cg-obs">${escapeHtml(r.observacao)}</span>` : ''}
+    const podeDesfazer = !mesaEncerrada() && adminLiberado;
+    document.getElementById('listaRecolhimentos').innerHTML = n === 0
+      ? '<p class="cg-dica">Nenhuma retirada registrada.</p>'
+      : recolhimentos.map(r => `
+        <div class="cg-fin-lanc">
+          <span class="cg-badge ${escapeHtml(r.tipo)}">${ROTULO_RECOLHIMENTO[r.tipo] || escapeHtml(r.tipo)}</span>
+          <div class="cg-fin-lanc-info">
+            <span>${formatarDataHora(r.criado_em)}${r.dealer ? ` · Dealer: ${escapeHtml(r.dealer)}` : ''}</span>
+            ${r.observacao ? `<span class="cg-obs">${escapeHtml(r.observacao)}</span>` : ''}
+          </div>
+          <strong>${moeda(r.valor)}</strong>
+          <button type="button" class="cg-fin-desfazer${podeDesfazer ? '' : ' disabled'}" title="Desfazer" aria-label="Desfazer" data-acao="desfazer-recolhimento" data-id="${escapeHtml(r.id)}">${ICONE_LIXEIRA}</button>
         </div>
-        <div class="linha-desfazer-valor">
-          <strong>${formatarMoeda(r.valor)}</strong>
-          <button type="button" class="btn-red${mesaEncerrada() || !adminLiberado ? ' disabled' : ''}" data-acao="desfazer-recolhimento" data-id="${escapeHtml(r.id)}">Desfazer</button>
-        </div>
+      `).join('');
+
+    const zerado = Math.abs(t.fichas) < 0.005;
+    const linha = (rotulo, valor, classe, sinal) =>
+      `<div class="cg-fin-mov ${classe}"><span>${rotulo}</span><strong>${sinal} ${moeda(valor)}</strong></div>`;
+
+    document.getElementById('finMovimentacao').innerHTML =
+      linha('Total de Compras', t.compras, 'entrada destaque', '+') +
+      linha('Devoluções aos Jogadores', t.devolucoes, 'devolucao', '−') +
+      linha('Rake (receita do clube)', t.rake, 'rake', '−') +
+      linha('Caixinha (gorjetas dealers)', t.caixinha, 'caixinha', '−') +
+      linha('Jackpot', t.jackpot, 'jackpot', '−') +
+      linha('Total de Saídas', t.saidas, 'saida destaque', '−') +
+      `<div class="cg-fin-fichas">
+        <div><strong>Fichas na Mesa</strong><span>Compras − Saídas = Fichas em jogo</span></div>
+        <strong class="${zerado ? '' : (t.fichas > 0 ? 'positivo' : 'negativo')}">${moeda(t.fichas)}</strong>
       </div>
-    `).join('');
+      <p class="cg-dica" style="text-align:center;">${zerado
+        ? 'Fichas zeradas: a mesa pode ser encerrada.'
+        : (t.fichas > 0 ? 'Ainda há fichas em jogo. Ao encerrar, este valor deve ser zero.' : 'Saiu mais do que entrou. Confira os lançamentos.')}</p>`;
   }
 
   function linhaValor(rotulo, valor, classe = '', extra = '') {
-    return `<div class="cg-linha-valor ${extra}"><span>${rotulo}</span><strong class="${classe}">${formatarMoeda(valor)}</strong></div>`;
+    return `<div class="cg-linha-valor ${extra}"><span>${rotulo}</span><strong class="${classe}">${moeda(valor)}</strong></div>`;
   }
 
   function renderizarFechamento() {
@@ -722,6 +803,7 @@
       linhaValor('Total Devoluções:', t.devolucoes, 'negativo') +
       linhaValor('Rake:', t.rake) +
       linhaValor('Caixinha:', t.caixinha) +
+      linhaValor('Jackpot:', t.jackpot) +
       linhaValor('Fichas ainda na mesa:', t.fichas, Math.abs(t.fichas) < 0.005 ? '' : 'negativo', 'total');
 
     // Resultado de cada jogador na mesa: devoluções − compras.
@@ -730,7 +812,7 @@
     const recebimentos = reais(saldos.filter(s => s.saldo < 0).reduce((s, j) => s - centavos(j.saldo), 0));
     const pagamentos = reais(saldos.filter(s => s.saldo > 0).reduce((s, j) => s + centavos(j.saldo), 0));
     const saldoFinal = reais(centavos(recebimentos) - centavos(pagamentos));
-    const esperado = reais(centavos(t.rake) + centavos(t.caixinha));
+    const esperado = t.retiradas;
     const diferenca = reais(centavos(saldoFinal) - centavos(esperado));
 
     // Acerto pendente: mesma conta do Em Aberto (considera compras já pagas),
@@ -744,18 +826,18 @@
     if (naMesa.length > 0) {
       conferencia = `<div class="cg-conferencia alerta">Ainda há ${naMesa.length} jogador(es) sentado(s). Registre as devoluções e levante todos para conferir.</div>`;
     } else if (Math.abs(diferenca) < 0.005) {
-      conferencia = '<div class="cg-conferencia ok">Conferido: o saldo final bate com o rake + caixinha.</div>';
+      conferencia = '<div class="cg-conferencia ok">Conferido: o saldo final bate com o rake + caixinha + jackpot.</div>';
     } else if (diferenca > 0) {
-      conferencia = `<div class="cg-conferencia alerta">Faltam ${formatarMoeda(diferenca)} em fichas: registre o que falta de devolução, rake ou caixinha.</div>`;
+      conferencia = `<div class="cg-conferencia alerta">Faltam ${moeda(diferenca)} em fichas: registre o que falta de devolução, rake, caixinha ou jackpot.</div>`;
     } else {
-      conferencia = `<div class="cg-conferencia alerta">Saiu ${formatarMoeda(Math.abs(diferenca))} a mais do que entrou. Confira as devoluções, o rake e a caixinha.</div>`;
+      conferencia = `<div class="cg-conferencia alerta">Saiu ${moeda(Math.abs(diferenca))} a mais do que entrou. Confira as devoluções, o rake, a caixinha e o jackpot.</div>`;
     }
 
     document.getElementById('caixaAcerto').innerHTML =
       linhaValor('Recebimentos (perdedores):', recebimentos, 'positivo') +
       linhaValor('Pagamentos (ganhadores):', pagamentos, 'negativo') +
       linhaValor('Saldo Final:', saldoFinal, saldoFinal >= 0 ? 'positivo' : 'negativo', 'total') +
-      linhaValor('Esperado (Rake + Caixinha):', esperado, '', 'menor') +
+      linhaValor('Esperado (Rake + Caixinha + Jackpot):', esperado, '', 'menor') +
       conferencia +
       `<p class="cg-dica">${pendentesComSaldo === 0
         ? 'Nenhum acerto pendente com os jogadores desta mesa.'
@@ -769,7 +851,7 @@
       : `
         <div class="cg-status andamento">${ICONE_RELOGIO}<span>Cash Game em andamento</span></div>
         <button type="button" class="btn-red cg-btn-largo${adminLiberado ? '' : ' disabled'}" onclick="encerrarMesa()">${ICONE_FECHAR}<span>Encerrar Cash Game</span></button>
-        <p class="cg-dica">Para encerrar, levante todos os jogadores e zere as fichas da mesa com devoluções, rake e caixinha.</p>
+        <p class="cg-dica">Para encerrar, levante todos os jogadores e zere as fichas da mesa com devoluções, rake, caixinha e jackpot.</p>
       `;
   }
 
@@ -789,7 +871,7 @@
       ...recolhimentos.map(r => ({
         data: r.criado_em,
         tipo: r.tipo,
-        rotulo: r.tipo === 'rake' ? 'Rake' : 'Caixinha',
+        rotulo: ROTULO_RECOLHIMENTO[r.tipo] || r.tipo,
         quem: r.dealer ? `Dealer: ${r.dealer}` : '-',
         valor: r.valor,
         pago: false,
@@ -810,7 +892,7 @@
         <td style="white-space:nowrap;">${formatarDataHora(l.data)}</td>
         <td><span class="cg-badge ${l.tipo}">${escapeHtml(l.rotulo)}</span>${l.pago ? ' <span class="cg-badge pago">Pago</span>' : ''}</td>
         <td>${escapeHtml(l.quem)}</td>
-        <td class="num">${formatarMoeda(l.valor)}</td>
+        <td class="num">${moeda(l.valor)}</td>
         <td class="cg-obs">${escapeHtml(l.observacao || '')}</td>
       </tr>
     `).join('');
@@ -1193,22 +1275,42 @@
   });
 
   // ---------------------------------------------------------------------------
-  // Rake e caixinha
+  // Retiradas de fichas: rake, caixinha e jackpot
   // ---------------------------------------------------------------------------
 
-  async function registrarRecolhimento(tipo) {
+  function abrirRecolhimento(tipo) {
 
-    if (!adminLiberado || mesaEncerrada()) return;
+    if (!adminLiberado || mesaEncerrada() || !ROTULO_RECOLHIMENTO[tipo]) return;
 
-    const prefixo = tipo === 'rake' ? 'rake' : 'caixinha';
-    const valor = lerValor(prefixo + 'Valor');
-    const observacao = document.getElementById(prefixo + 'Obs').value.trim();
-    const dealer = tipo === 'caixinha' ? document.getElementById('caixinhaDealer').value.trim() : '';
+    recolhimentoTipo = tipo;
+
+    document.getElementById('recolhimentoTitulo').textContent = `Inserir ${ROTULO_RECOLHIMENTO[tipo]}`;
+    document.getElementById('recolhimentoInfo').innerHTML = `Fichas na mesa agora: <strong>${formatarMoeda(totaisMesa().fichas)}</strong>`;
+    document.getElementById('recolhimentoCampoDealer').classList.toggle('oculto', tipo !== 'caixinha');
+    document.getElementById('recolhimentoValor').value = '';
+    document.getElementById('recolhimentoDealer').value = '';
+    document.getElementById('recolhimentoObs').value = '';
+    document.getElementById('btnConfirmarRecolhimento').textContent = `Registrar ${ROTULO_RECOLHIMENTO[tipo].toLowerCase()}`;
+
+    abrirModal('modalRecolhimento');
+    setTimeout(() => document.getElementById('recolhimentoValor').focus(), 50);
+  }
+
+  async function registrarRecolhimento() {
+
+    const tipo = recolhimentoTipo;
+    const btn = document.getElementById('btnConfirmarRecolhimento');
+
+    if (!adminLiberado || mesaEncerrada() || !ROTULO_RECOLHIMENTO[tipo] || btn.classList.contains('disabled')) return;
+
+    const nome = ROTULO_RECOLHIMENTO[tipo].toLowerCase();
+    const valor = lerValor('recolhimentoValor');
+    const observacao = document.getElementById('recolhimentoObs').value.trim();
+    const dealer = tipo === 'caixinha' ? document.getElementById('recolhimentoDealer').value.trim() : '';
     const t = totaisMesa();
-    const nome = tipo === 'rake' ? 'rake' : 'caixinha';
 
     if (!(valor > 0)) {
-      await mostrarAlerta(`Informe o valor da ${nome === 'rake' ? 'retirada de rake' : 'caixinha'}`);
+      await mostrarAlerta(`Informe o valor de ${nome}.`);
       return;
     }
 
@@ -1217,7 +1319,6 @@
       return;
     }
 
-    const btn = document.getElementById(tipo === 'rake' ? 'btnRegistrarRake' : 'btnRegistrarCaixinha');
     btn.classList.add('disabled');
 
     const { error } = await client.from('cash_mesa_recolhimentos').insert([{
@@ -1232,20 +1333,18 @@
 
     if (error) {
       console.error(error);
-      await mostrarAlerta(`Erro ao registrar ${nome}. Tente de novo.`);
+      await mostrarAlerta(tipo === 'jackpot' && /check|tipo/i.test(error.message || '')
+        ? 'O Jackpot ainda não foi ativado. Rode o arquivo sql/009_cash_jackpot.sql no Supabase.'
+        : `Erro ao registrar ${nome}. Tente de novo.`);
       return;
     }
 
-    document.getElementById(prefixo + 'Valor').value = '';
-    document.getElementById(prefixo + 'Obs').value = '';
-
+    fecharModal('modalRecolhimento');
     await carregarDados();
   }
 
-  ['rakeValor', 'caixinhaValor'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); registrarRecolhimento(id === 'rakeValor' ? 'rake' : 'caixinha'); }
-    });
+  document.getElementById('recolhimentoValor').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); registrarRecolhimento(); }
   });
 
   async function desfazerRecolhimento(id) {
@@ -1253,7 +1352,7 @@
     const item = recolhimentos.find(r => r.id === id);
     if (!item) return;
 
-    const nome = item.tipo === 'rake' ? 'rake' : 'caixinha';
+    const nome = (ROTULO_RECOLHIMENTO[item.tipo] || item.tipo).toLowerCase();
 
     if (!await mostrarConfirm(`Desfazer a retirada de ${nome} de ${formatarMoeda(item.valor)}? Ela fica registrada no Log.`)) return;
 
@@ -1287,12 +1386,12 @@
 
     if (Math.abs(t.fichas) >= 0.005) {
       await mostrarAlerta(t.fichas > 0
-        ? `Ainda há ${formatarMoeda(t.fichas)} em fichas na mesa. Registre o rake e a caixinha (ou devoluções) até zerar antes de encerrar.`
-        : `Saiu ${formatarMoeda(Math.abs(t.fichas))} a mais do que entrou. Confira as devoluções, o rake e a caixinha antes de encerrar.`);
+        ? `Ainda há ${formatarMoeda(t.fichas)} em fichas na mesa. Registre o rake, a caixinha e o jackpot (ou devoluções) até zerar antes de encerrar.`
+        : `Saiu ${formatarMoeda(Math.abs(t.fichas))} a mais do que entrou. Confira as devoluções, o rake, a caixinha e o jackpot antes de encerrar.`);
       return;
     }
 
-    if (!await mostrarConfirm(`Encerrar ${mesa.nome}? Rake ${formatarMoeda(t.rake)} · Caixinha ${formatarMoeda(t.caixinha)}. Os acertos dos jogadores continuam no Em Aberto.`)) return;
+    if (!await mostrarConfirm(`Encerrar ${mesa.nome}? Rake ${formatarMoeda(t.rake)} · Caixinha ${formatarMoeda(t.caixinha)} · Jackpot ${formatarMoeda(t.jackpot)}. Os acertos dos jogadores continuam no Em Aberto.`)) return;
 
     const { error } = await client
       .from('cash_mesas')
@@ -1343,6 +1442,7 @@
     }
   });
 
+  renderizarBotaoOlho();
   trocarAba(location.hash.replace('#', '') || 'registros');
 
   (async function inicializar() {

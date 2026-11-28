@@ -120,7 +120,7 @@
         <div class="rel-kpi-detalhe" id="kpiPagamentosQtd"></div>
       </div>
       <div class="rel-kpi">
-        <div class="rel-kpi-rotulo">Rake + Caixinha no Cash</div>
+        <div class="rel-kpi-rotulo">Financeiro do Cash</div>
         <div class="rel-kpi-valor" id="kpiRecolhido">-</div>
         <div class="rel-kpi-detalhe" id="kpiRecolhidoDetalhe"></div>
       </div>
@@ -199,7 +199,7 @@
       <div class="topbar">
         <h2>Mesas de Cash Game</h2>
       </div>
-      <p style="color:var(--apagado);font-size:14px;margin-top:0;">Rake, caixinha e valores movimentados em cada mesa. Toque no nome para abrir a mesa.</p>
+      <p style="color:var(--apagado);font-size:14px;margin-top:0;">Rake, caixinha, jackpot e valores movimentados em cada mesa. Toque no nome para abrir a mesa.</p>
 
       <div class="rel-tabela-rolavel">
         <table class="rel-tabela">
@@ -211,6 +211,7 @@
               <th class="num">Devoluções</th>
               <th class="num">Rake</th>
               <th class="num">Caixinha</th>
+              <th class="num">Jackpot</th>
               <th class="num">Fichas na mesa</th>
             </tr>
           </thead>
@@ -367,9 +368,10 @@
     const recolhidos = recolhimentosCash.filter(r => !inicio || new Date(r.criado_em) >= inicio);
     const rakePeriodo = somar(recolhidos.filter(r => r.tipo === 'rake'));
     const caixinhaPeriodo = somar(recolhidos.filter(r => r.tipo === 'caixinha'));
-    document.getElementById('kpiRecolhido').textContent = cashAtivado ? formatarMoeda(rakePeriodo + caixinhaPeriodo) : '-';
+    const jackpotPeriodo = somar(recolhidos.filter(r => r.tipo === 'jackpot'));
+    document.getElementById('kpiRecolhido').textContent = cashAtivado ? formatarMoeda(somar(recolhidos)) : '-';
     document.getElementById('kpiRecolhidoDetalhe').textContent = cashAtivado
-      ? `Rake ${formatarMoeda(rakePeriodo)} · Caixinha ${formatarMoeda(caixinhaPeriodo)}`
+      ? `Rake ${formatarMoeda(rakePeriodo)} · Caixinha ${formatarMoeda(caixinhaPeriodo)}${jackpotPeriodo > 0 ? ` · Jackpot ${formatarMoeda(jackpotPeriodo)}` : ''}`
       : 'Rode o sql/008 no Supabase';
 
     document.getElementById('kpiSessoes').textContent = sessoes.size;
@@ -389,16 +391,16 @@
     rodape.innerHTML = '';
 
     if (!cashAtivado) {
-      tabela.innerHTML = '<tr><td colspan="7" style="color:var(--apagado);white-space:normal;">As mesas de Cash Game ainda não foram ativadas. Rode o arquivo <strong>sql/008_cash_mesas.sql</strong> no Supabase.</td></tr>';
+      tabela.innerHTML = '<tr><td colspan="8" style="color:var(--apagado);white-space:normal;">As mesas de Cash Game ainda não foram ativadas. Rode o arquivo <strong>sql/008_cash_mesas.sql</strong> no Supabase.</td></tr>';
       return;
     }
 
     if (mesasCash.length === 0) {
-      tabela.innerHTML = '<tr><td colspan="7" style="color:var(--apagado);">Nenhuma mesa de Cash Game ainda.</td></tr>';
+      tabela.innerHTML = '<tr><td colspan="8" style="color:var(--apagado);">Nenhuma mesa de Cash Game ainda.</td></tr>';
       return;
     }
 
-    const total = { compras: 0, devolucoes: 0, rake: 0, caixinha: 0, fichas: 0 };
+    const total = { compras: 0, devolucoes: 0, rake: 0, caixinha: 0, jackpot: 0, fichas: 0 };
 
     tabela.innerHTML = mesasCash.map(mesa => {
 
@@ -408,9 +410,10 @@
         compras: somar(movsMesa.filter(m => m.tipo === 'Entrada')),
         devolucoes: somar(movsMesa.filter(m => m.tipo === 'Saída')),
         rake: somar(rec.filter(r => r.tipo === 'rake')),
-        caixinha: somar(rec.filter(r => r.tipo === 'caixinha'))
+        caixinha: somar(rec.filter(r => r.tipo === 'caixinha')),
+        jackpot: somar(rec.filter(r => r.tipo === 'jackpot'))
       };
-      v.fichas = (centavos(v.compras) - centavos(v.devolucoes) - centavos(v.rake) - centavos(v.caixinha)) / 100;
+      v.fichas = (centavos(v.compras) - centavos(v.devolucoes) - centavos(v.rake) - centavos(v.caixinha) - centavos(v.jackpot)) / 100;
       Object.keys(total).forEach(k => { total[k] = (centavos(total[k]) + centavos(v[k])) / 100; });
 
       const encerrada = mesa.status === 'encerrado';
@@ -423,6 +426,7 @@
           <td class="num">${formatarMoeda(v.devolucoes)}</td>
           <td class="num"><strong>${formatarMoeda(v.rake)}</strong></td>
           <td class="num">${formatarMoeda(v.caixinha)}</td>
+          <td class="num">${formatarMoeda(v.jackpot)}</td>
           <td class="num">${formatarMoeda(v.fichas)}</td>
         </tr>
       `;
@@ -435,6 +439,7 @@
         <td class="num">${formatarMoeda(total.devolucoes)}</td>
         <td class="num">${formatarMoeda(total.rake)}</td>
         <td class="num">${formatarMoeda(total.caixinha)}</td>
+        <td class="num">${formatarMoeda(total.jackpot)}</td>
         <td class="num">${formatarMoeda(total.fichas)}</td>
       </tr>
     `;
