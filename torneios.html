@@ -464,32 +464,32 @@
         btnExcluir.innerHTML = ICONE_LIXEIRA;
         btnExcluir.title = 'Excluir torneio';
         btnExcluir.setAttribute('aria-label', btnExcluir.title);
-        btnExcluir.onclick = () => excluirTorneio(torneio.id, torneio.nome);
+        btnExcluir.onclick = e => { e.stopPropagation(); excluirTorneio(torneio.id, torneio.nome); };
+        btnExcluir.onkeydown = e => e.stopPropagation();
 
         rodape.appendChild(btnExcluir);
       }
 
-      if (ehAtual) {
+      // O card inteiro é o botão (como no Cash Game): atual → abre no Diretor; outro → seleciona.
+      const acao = document.createElement('span');
+      acao.className = 'cg-mesa-acao torneio-card-acao';
+      acao.textContent = ehAtual ? 'Abrir no Diretor ›' : 'Selecionar ›';
+      rodape.appendChild(acao);
 
-        const link = document.createElement('a');
+      const podeAgir = ehAtual || adminLiberado;
+      const executar = () => {
+        if (ehAtual) window.location.href = 'diretor.html';
+        else if (adminLiberado) selecionarTorneio(torneio.id);
+      };
 
-        link.className = 'cg-mesa-acao torneio-card-acao';
-        link.href = 'diretor.html';
-        link.textContent = 'Abrir no Diretor ›';
-
-        rodape.appendChild(link);
-
-      } else {
-
-        const btn = document.createElement('button');
-
-        btn.type = 'button';
-        btn.className = 'cg-mesa-acao torneio-card-acao' + (adminLiberado ? '' : ' disabled');
-        btn.textContent = 'Selecionar ›';
-        btn.onclick = () => selecionarTorneio(torneio.id);
-
-        rodape.appendChild(btn);
-      }
+      div.setAttribute('role', ehAtual ? 'link' : 'button');
+      div.setAttribute('aria-label', `${torneio.nome}: ${ehAtual ? 'abrir no Diretor' : 'selecionar como torneio atual'}`);
+      div.tabIndex = podeAgir ? 0 : -1;
+      div.classList.toggle('sem-acao', !podeAgir);
+      div.onclick = executar;
+      div.onkeydown = e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); executar(); }
+      };
 
       lista.appendChild(div);
     });
