@@ -360,6 +360,10 @@
     adminLiberado = true;
     document.getElementById('btnDesfazer').classList.remove('disabled');
 
+    // Vindo do selo 'Em aberto' do Relatório: já abre filtrado no jogador.
+    const buscaInicial = new URLSearchParams(location.search).get('busca');
+    if (buscaInicial) document.getElementById('pesquisaAberto').value = buscaInicial;
+
     await carregarDados();
 
     iniciarRealtimeRobusto({
