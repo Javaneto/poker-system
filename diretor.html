@@ -2249,6 +2249,7 @@
   // completo.
   let cargaCompletaPedida = true;
   let tabelasMudadasRealtime = null;
+  let idTorneioCarregado; // torneio cujas movimentações estão na tela
 
   // Uma carga por vez; se pedirem outra durante a carga, roda de novo no fim
   // (a tela nunca fica com dados mais velhos que o último pedido).
@@ -2275,7 +2276,7 @@
     if (mudou('jogadores')) {
       const { data: jogadoresDB } = await client
         .from('jogadores')
-        .select('*');
+        .select('id,nome,apelido,cpf,telefone,ativo');
 
       jogadores = jogadoresDB || [];
       jogadores.sort((a, b) => a.nome.localeCompare(b.nome));
@@ -2295,26 +2296,45 @@
     // devolve no máximo 1000 linhas por consulta; buscando a tabela inteira
     // sem ordem vinham só as mais antigas (já finalizadas) e a lista de
     // "Movimentações em Aberto" ficava vazia.
-    const movimentacoesTodasDB = await buscarTodas(() => client
-      .from('movimentacoes')
-      .select('*')
-      .is('sessao_finalizada_em', null)
-      .order('id', { ascending: false }));
+    // Economia de tráfego: o Diretor buscava todos os torneios e todos os
+    // valores de todos os torneios a cada mudança só para achar o atual.
+    // Agora busca só o torneio atual; e as movimentações só quando elas
+    // mudaram ou o torneio atual trocou (o relógio muda a tabela torneios
+    // várias vezes por nível, e isso não precisa baixar as movimentações).
+    const torneioAtualId = configuracaoDB?.torneio_atual_id || null;
+    const trocouTorneio = String(torneioAtualId) !== String(idTorneioCarregado);
+    const recarregarMovs = mudou('movimentacoes') || trocouTorneio;
 
-    movimentacoes = movimentacoesTodasDB || [];
+    if (recarregarMovs) {
+      const movimentacoesTodasDB = await buscarTodas(() => client
+        .from('movimentacoes')
+        .select(COLUNAS_MOV)
+        .is('sessao_finalizada_em', null)
+        .order('id', { ascending: false }));
 
-    const { data: torneiosDB } = await client
-      .from('torneios')
-      .select('*')
-      .order('criado_em', { ascending: false });
+      movimentacoes = movimentacoesTodasDB || [];
+    }
 
-    todosTorneios = torneiosDB || [];
-
-    if (mudou('torneio_valores')) {
-      const { data: todosValoresDB } = await client
-        .from('torneio_valores')
+    if (torneioAtualId) {
+      const { data: torneioDB } = await client
+        .from('torneios')
         .select('*')
-        .order('ordem', { ascending: true });
+        .eq('id', torneioAtualId)
+        .maybeSingle();
+
+      todosTorneios = torneioDB ? [torneioDB] : [];
+    } else {
+      todosTorneios = [];
+    }
+
+    if (mudou('torneio_valores') || trocouTorneio) {
+      const { data: todosValoresDB } = torneioAtualId
+        ? await client
+          .from('torneio_valores')
+          .select('*')
+          .eq('torneio_id', torneioAtualId)
+          .order('ordem', { ascending: true })
+        : { data: [] };
 
       todosValoresTorneios = todosValoresDB || [];
     }
@@ -2333,10 +2353,9 @@
 
     estruturasBlinds = estruturasBlindsDB || [];
 
-    const torneioAtualId = configuracaoDB?.torneio_atual_id || null;
-
     if (!torneioAtualId) {
 
+      idTorneioCarregado = null;
       torneioAtual = null;
       valoresTorneio = [];
       movimentacoesTorneio = [];
@@ -2353,13 +2372,16 @@
 
     valoresTorneio = todosValoresTorneios.filter(v => v.torneio_id === torneioAtualId);
 
-    const movimentacoesDB = await buscarTodas(() => client
-      .from('movimentacoes')
-      .select('*')
-      .eq('torneio_id', torneioAtualId)
-      .order('id', { ascending: true }));
+    if (recarregarMovs) {
+      const movimentacoesDB = await buscarTodas(() => client
+        .from('movimentacoes')
+        .select(COLUNAS_MOV)
+        .eq('torneio_id', torneioAtualId)
+        .order('id', { ascending: true }));
 
-    movimentacoesTorneio = movimentacoesDB || [];
+      movimentacoesTorneio = movimentacoesDB || [];
+      idTorneioCarregado = torneioAtualId;
+    }
 
     await carregarResultadosTorneio();
     await carregarAjustesPremiacao();

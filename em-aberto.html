@@ -250,12 +250,11 @@
 
   async function carregarDadosAgora() {
 
-    const { data: jogadoresDB } = await client.from('jogadores').select('*');
-    jogadores = jogadoresDB || [];
-
+    // A lista usa só as movimentações (o nome do jogador vem nelas); o
+    // cadastro de jogadores não era usado e deixou de ser baixado.
     movimentacoes = await buscarTodas(() => client
       .from('movimentacoes')
-      .select('*')
+      .select(COLUNAS_MOV)
       .is('sessao_finalizada_em', null)
       .order('id', { ascending: true })) || [];
 
@@ -367,7 +366,7 @@
 
     iniciarRealtimeRobusto({
       nome: 'em-aberto-realtime',
-      tabelas: ['movimentacoes', 'jogadores', 'torneios'],
+      tabelas: ['movimentacoes', 'torneios'],
       aoMudar: () => carregarDados()
     });
   })();

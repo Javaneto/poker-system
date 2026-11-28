@@ -634,7 +634,7 @@
 
     movs = await buscarTodas(() => client
       .from('movimentacoes')
-      .select('*')
+      .select(COLUNAS_MOV)
       .eq('mesa_id', mesaId)
       .order('id', { ascending: true }));
 

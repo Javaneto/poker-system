@@ -33,6 +33,11 @@ async function buscarTodas(montarConsulta, tamanhoPagina = 1000) {
   return todas;
 }
 
+// Colunas de movimentacoes que as telas usam. Economia de tráfego: fica de
+// fora a cópia antiga de nome/cpf/telefone gravada em cada lançamento
+// (o cadastro do jogador é a fonte desses dados).
+const COLUNAS_MOV = 'id,jogador,jogador_id,tipo,tipo_registro,modalidade,valor,valor_prize,valor_rake,pago,data,sessao_finalizada_em,torneio_id,mesa_id,observacao';
+
 // ---------------------------------------------------------------------------
 // Recarga serializada: nunca duas cargas ao mesmo tempo
 // ---------------------------------------------------------------------------
@@ -380,18 +385,37 @@ function montarClassificacaoRanking(ranking, vinculos, resultados, ajustes) {
 //   mesaId     — idem para uma mesa de Cash Game ("Só este Cash")
 //   aoAlterar  — chamada depois de qualquer alteração (para recarregar a página)
 
+// Economia de tráfego: o Log abre só com o período escolhido (padrão: 7 dias)
+// e em páginas de 30; "Ver mais" busca só a página seguinte. A busca filtra o
+// que já veio, sem baixar de novo.
+const TAMANHO_PAGINA_LOG = 30;
+const PERIODOS_LOG = [['hoje', 'Hoje'], ['7', '7 dias'], ['30', '30 dias'], ['tudo', 'Tudo']];
+
 const centralHistorico = {
   aba: 'abertas',
   opcoes: {},
   limiteSessoes: 30,
-  limiteLog: 100
+  periodoLog: '7',
+  log: null,          // { itens, fim } do período atual; null = buscar de novo
+  sessoesView: null,  // sql/017 (visão relatorio_sessoes): null = ainda não sabe
+  jogadores: null,    // id/nome para a busca nas sessões (só com o sql/017)
+  sessoes: []
 };
+
+function inicioPeriodoLog(periodo) {
+  if (periodo === 'tudo') return null;
+  const inicio = new Date();
+  inicio.setHours(0, 0, 0, 0);
+  if (periodo !== 'hoje') inicio.setDate(inicio.getDate() - (Number(periodo) - 1));
+  return inicio;
+}
 
 function abrirCentralHistorico(opcoes = {}) {
 
   centralHistorico.opcoes = opcoes;
   centralHistorico.limiteSessoes = 30;
-  centralHistorico.limiteLog = 100;
+  centralHistorico.log = null;
+  centralHistorico.jogadores = null;
 
   garantirModalCentralHistorico();
 
@@ -463,6 +487,9 @@ function trocarAbaCentralHistorico(aba) {
 
   centralHistorico.aba = aba;
 
+  // Log sempre atualizado ao abrir a aba (só a primeira página do período).
+  if (aba === 'log') centralHistorico.log = null;
+
   document.querySelectorAll('#modalCentralHistorico .aba').forEach(b => {
     b.classList.toggle('ativa', b.dataset.aba === aba);
   });
@@ -530,7 +557,7 @@ async function renderizarAbertasCentral(conteudo) {
   const termo = textoBuscaCentral();
 
   let abertas = await buscarTodas(() =>
-    client.from('movimentacoes').select('*').is('sessao_finalizada_em', null).order('id', { ascending: false })
+    client.from('movimentacoes').select(COLUNAS_MOV).is('sessao_finalizada_em', null).order('id', { ascending: false })
   );
 
   if (somenteMesa) {
@@ -577,15 +604,161 @@ async function renderizarAbertasCentral(conteudo) {
   `;
 }
 
+// Com o sql/017: uma linha pronta por sessão (visão relatorio_sessoes); os
+// itens só são buscados ao tocar em "Itens" ou "Reabrir".
+async function renderizarSessoesDaVisao(conteudo, termo) {
+
+  let consulta = client
+    .from('relatorio_sessoes')
+    .select('jogador,sessao_finalizada_em,entrada,saida,resultado,itens');
+
+  if (termo) {
+    if (!centralHistorico.jogadores) {
+      const { data: jogadoresDB, error: erroJogadores } = await client.from('jogadores').select('id,nome');
+      if (erroJogadores) throw erroJogadores;
+      centralHistorico.jogadores = jogadoresDB || [];
+    }
+    const ids = centralHistorico.jogadores.filter(j => normalizarBusca(j.nome).includes(termo)).map(j => j.id);
+    if (ids.length === 0) {
+      conteudo.innerHTML = '<p class="ch-vazio">Nenhuma sessão finalizada encontrada.</p>';
+      return true;
+    }
+    consulta = consulta.in('jogador_id', ids);
+  }
+
+  const { data, error } = await consulta
+    .order('ultimo_id', { ascending: false })
+    .range(0, centralHistorico.limiteSessoes);
+
+  if (error) {
+    if (/relatorio_sessoes/.test(error.message || '') || ['PGRST205', '42P01'].includes(error.code)) return false;
+    throw error;
+  }
+
+  const temMais = (data || []).length > centralHistorico.limiteSessoes;
+  const sessoes = (data || []).slice(0, centralHistorico.limiteSessoes);
+  centralHistorico.sessoes = sessoes;
+
+  if (sessoes.length === 0) {
+    conteudo.innerHTML = '<p class="ch-vazio">Nenhuma sessão finalizada encontrada.</p>';
+    return true;
+  }
+
+  conteudo.innerHTML = `
+    <p class="ch-dica">Reabrir devolve a sessão para "Movimentações em Aberto" para corrigir o fechamento.</p>
+    ${sessoes.map((s, i) => {
+      const resultado = Number(s.resultado);
+      const classe = resultado >= 0 ? 'positivo' : 'negativo';
+      const sinal = resultado >= 0 ? '+' : '-';
+
+      return `
+        <div class="ch-sessao">
+          <div class="linha-desfazer" style="border-bottom:none;">
+            <div class="linha-desfazer-info">
+              <strong>${escapeHtml(s.jogador)}</strong>
+              Entrou ${formatarMoeda(s.entrada)} · Saiu ${formatarMoeda(s.saida)} · ${Number(s.itens)} item(ns)<br>
+              <span class="ch-data">Finalizada em ${formatarDataHora(s.sessao_finalizada_em)}</span>
+            </div>
+            <div class="linha-desfazer-valor">
+              <strong class="${classe}">${sinal} ${formatarMoeda(Math.abs(resultado))}</strong>
+              <button class="btn-gray" onclick="alternarItensSessaoCentral(${i})">Itens</button>
+              <button class="btn-blue" onclick="reabrirSessaoDaVisaoCentral(${i})">Reabrir</button>
+            </div>
+          </div>
+          <div id="chItens${i}" class="ch-itens oculto"></div>
+        </div>
+      `;
+    }).join('')}
+    ${temMais ? '<div style="text-align:center;margin-top:12px;"><button class="btn-gray" onclick="centralHistorico.limiteSessoes += 30; renderizarAbaCentralHistorico();">Ver mais</button></div>' : ''}
+  `;
+
+  return true;
+}
+
+async function buscarItensSessaoCentral(sessao) {
+
+  const { data, error } = await client
+    .from('movimentacoes')
+    .select(COLUNAS_MOV)
+    .eq('jogador', sessao.jogador)
+    .eq('sessao_finalizada_em', sessao.sessao_finalizada_em)
+    .order('id', { ascending: false });
+
+  if (error) throw error;
+
+  return data || [];
+}
+
+async function alternarItensSessaoCentral(i) {
+
+  const div = document.getElementById('chItens' + i);
+  const sessao = centralHistorico.sessoes[i];
+
+  if (!div || !sessao) return;
+
+  if (!div.classList.contains('oculto')) {
+    div.classList.add('oculto');
+    return;
+  }
+
+  div.innerHTML = '<p class="ch-vazio">Carregando...</p>';
+  div.classList.remove('oculto');
+
+  try {
+    const movs = await buscarItensSessaoCentral(sessao);
+    div.innerHTML = movs.map(mov => `
+      <div class="linha-desfazer">
+        <div class="linha-desfazer-info">
+          ${htmlDetalhesMov(mov)}<br>
+          <span class="ch-data">${formatarDataHora(mov.data)}</span>
+        </div>
+        <div class="linha-desfazer-valor">
+          <strong>${formatarMoeda(mov.valor)}</strong>
+          <button class="btn-red" onclick="desfazerMovCentral(${mov.id}, true)">Desfazer</button>
+        </div>
+      </div>
+    `).join('') || '<p class="ch-vazio">Sessão sem itens.</p>';
+  } catch (erro) {
+    console.error(erro);
+    div.innerHTML = '<p class="ch-vazio negativo">Erro ao carregar os itens. Tente de novo.</p>';
+  }
+}
+
+async function reabrirSessaoDaVisaoCentral(i) {
+
+  const sessao = centralHistorico.sessoes[i];
+
+  if (!sessao) return;
+
+  let movs;
+  try {
+    movs = await buscarItensSessaoCentral(sessao);
+  } catch (erro) {
+    console.error(erro);
+    await mostrarAlerta('Erro ao carregar a sessão. Tente de novo.');
+    return;
+  }
+
+  if (movs.length === 0) return;
+
+  await reabrirSessaoCentral(movs.map(m => m.id).join(','));
+}
+
 async function renderizarSessoesCentral(conteudo) {
 
   const termo = textoBuscaCentral();
 
-  // Busca as movimentações finalizadas mais recentes e agrupa por sessão
-  // (jogador + horário de finalização), como no histórico do cash game.
+  if (centralHistorico.sessoesView !== false) {
+    const usouVisao = await renderizarSessoesDaVisao(conteudo, termo);
+    centralHistorico.sessoesView = usouVisao;
+    if (usouVisao) return;
+  }
+
+  // Sem o sql/017: busca as movimentações finalizadas mais recentes e agrupa
+  // por sessão (jogador + horário de finalização), como no histórico do cash.
   const { data, error } = await client
     .from('movimentacoes')
-    .select('*')
+    .select(COLUNAS_MOV)
     .not('sessao_finalizada_em', 'is', null)
     .order('sessao_finalizada_em', { ascending: false })
     .order('id', { ascending: false })
@@ -707,25 +880,71 @@ function tituloLogOutraTabela(tabela, dados) {
   }
 }
 
+// Busca a próxima página do Log no período escolhido (só o que falta).
+async function buscarPaginaLogCentral() {
+
+  const estado = centralHistorico.log || (centralHistorico.log = { itens: [], fim: false });
+  const inicio = inicioPeriodoLog(centralHistorico.periodoLog);
+  const de = estado.itens.length;
+
+  let consulta = client
+    .from('log_alteracoes')
+    .select('id,tabela,operacao,dados_antes,dados_depois,usuario_email,criado_em');
+
+  if (inicio) consulta = consulta.gte('criado_em', inicio.toISOString());
+
+  const { data, error } = await consulta
+    .order('id', { ascending: false })
+    .range(de, de + TAMANHO_PAGINA_LOG - 1);
+
+  if (error) {
+    centralHistorico.log = null;
+    throw error;
+  }
+
+  estado.itens.push(...(data || []));
+  estado.fim = (data || []).length < TAMANHO_PAGINA_LOG;
+}
+
+function trocarPeriodoLogCentral(periodo) {
+  centralHistorico.periodoLog = periodo;
+  centralHistorico.log = null;
+  renderizarAbaCentralHistorico();
+}
+
+async function verMaisLogCentral(botao) {
+  if (botao) {
+    botao.disabled = true;
+    botao.textContent = 'Carregando...';
+  }
+  try {
+    await buscarPaginaLogCentral();
+  } catch (erro) {
+    console.error(erro);
+    await mostrarAlerta('Erro ao carregar mais registros do Log. Tente de novo.');
+  }
+  renderizarAbaCentralHistorico();
+}
+
 async function renderizarLogCentral(conteudo) {
 
   const termo = textoBuscaCentral();
 
-  const { data, error } = await client
-    .from('log_alteracoes')
-    .select('*')
-    .order('id', { ascending: false })
-    .limit(centralHistorico.limiteLog);
-
-  if (error) {
-    if (/log_alteracoes/.test(error.message || '')) {
-      conteudo.innerHTML = '<p class="ch-vazio">O Log ainda não foi ativado. Rode o arquivo <strong>sql/002_log_movimentacoes.sql</strong> no Supabase.</p>';
-      return;
+  if (!centralHistorico.log) {
+    try {
+      await buscarPaginaLogCentral();
+    } catch (error) {
+      if (/log_alteracoes/.test(error.message || '')) {
+        conteudo.innerHTML = '<p class="ch-vazio">O Log ainda não foi ativado. Rode o arquivo <strong>sql/002_log_movimentacoes.sql</strong> no Supabase.</p>';
+        return;
+      }
+      throw error;
     }
-    throw error;
   }
 
-  const itens = (data || []).filter(item => {
+  const estado = centralHistorico.log;
+
+  const itens = estado.itens.filter(item => {
     const mov = item.dados_depois || item.dados_antes || {};
     return !termo
       || movCombinaBusca(mov, termo)
@@ -733,13 +952,26 @@ async function renderizarLogCentral(conteudo) {
       || normalizarBusca(item.usuario_email).includes(termo);
   });
 
+  const periodos = `
+    <div class="ch-periodos" role="group" aria-label="Período do Log">
+      ${PERIODOS_LOG.map(([valor, rotulo]) => `<button type="button" class="aba${centralHistorico.periodoLog === valor ? ' ativa' : ''}" aria-pressed="${centralHistorico.periodoLog === valor}" onclick="trocarPeriodoLogCentral('${valor}')">${rotulo}</button>`).join('')}
+    </div>
+  `;
+
+  const botaoMais = !estado.fim
+    ? '<div style="text-align:center;margin-top:12px;"><button class="btn-gray" onclick="verMaisLogCentral(this)">Ver mais</button></div>'
+    : centralHistorico.periodoLog !== 'tudo'
+      ? '<p class="ch-dica" style="text-align:center;margin-top:12px;">Para ver registros mais antigos, escolha um período maior.</p>'
+      : '';
+
   if (itens.length === 0) {
-    conteudo.innerHTML = '<p class="ch-vazio">Nenhum registro no Log.</p>';
+    conteudo.innerHTML = `${periodos}<p class="ch-vazio">${termo && !estado.fim ? 'Nada encontrado nos registros já carregados. Toque em "Ver mais" para procurar nos mais antigos.' : 'Nenhum registro no Log neste período.'}</p>${botaoMais}`;
     return;
   }
 
   conteudo.innerHTML = `
-    <p class="ch-dica">Últimos ${itens.length} registros. Itens desfeitos podem ser restaurados.</p>
+    ${periodos}
+    <p class="ch-dica">${itens.length} registro(s)${estado.fim ? '' : ' (os mais recentes)'}. Itens desfeitos podem ser restaurados.</p>
     ${itens.map(item => {
       const dados = item.dados_depois || item.dados_antes || {};
       const ehMov = item.tabela === 'movimentacoes';
@@ -772,11 +1004,13 @@ async function renderizarLogCentral(conteudo) {
         </div>
       `;
     }).join('')}
-    ${(data || []).length >= centralHistorico.limiteLog ? '<div style="text-align:center;margin-top:12px;"><button class="btn-gray" onclick="centralHistorico.limiteLog += 100; renderizarAbaCentralHistorico();">Ver mais</button></div>' : ''}
+    ${botaoMais}
   `;
 }
 
 async function aposAlteracaoCentral() {
+
+  centralHistorico.log = null;
 
   await renderizarAbaCentralHistorico();
 
