@@ -1066,22 +1066,36 @@
   <div class="modal-box">
     <h2 id="modalSelecionarJogadorTitulo">Selecionar Jogador</h2>
 
-    <div class="pesquisa-wrapper">
-      <input
-        enterkeyhint="done"
-        autocapitalize="words"
-        spellcheck="false"
-        type="text"
-        id="pesquisaJogadorModal"
-        placeholder="Pesquisar jogador"
-        autocomplete="off"
-        oninput="filtrarJogadoresModal()"
-      >
+    <div id="selecionarJogadorBusca">
+      <div class="pesquisa-wrapper">
+        <input
+          enterkeyhint="done"
+          autocapitalize="words"
+          spellcheck="false"
+          type="text"
+          id="pesquisaJogadorModal"
+          placeholder="Pesquisar jogador"
+          autocomplete="off"
+          oninput="filtrarJogadoresModal()"
+        >
+      </div>
+
+      <div id="listaJogadoresModal" style="max-height:280px;overflow-y:auto;"></div>
+      <div id="cadastroRapidoAtalho"></div>
     </div>
 
-    <div id="listaJogadoresModal" style="max-height:280px;overflow-y:auto;"></div>
+    <div id="selecionarJogadorNovo" class="oculto">
+      <label class="rotulo-campo" for="novoJogadorNomeDiretor">Nome</label>
+      <input type="text" id="novoJogadorNomeDiretor" maxlength="80" autocomplete="off" autocapitalize="words">
+      <label class="rotulo-campo" for="novoJogadorTelefoneDiretor">Telefone (opcional)</label>
+      <input type="tel" id="novoJogadorTelefoneDiretor" maxlength="30" autocomplete="off" inputmode="tel">
+      <div class="modal-acoes" style="margin-top:4px;">
+        <button type="button" class="btn-gray" onclick="mostrarBuscaJogadorModal()">Voltar</button>
+        <button type="button" id="btnCadastrarRegistrar" class="btn-dark" style="flex:1;" onclick="cadastrarERegistrarJogador()">Cadastrar e registrar</button>
+      </div>
+    </div>
 
-    <div class="modal-acoes" style="margin-top:16px;">
+    <div class="modal-acoes" id="acoesSelecionarJogador" style="margin-top:16px;">
       <button class="btn-gray" onclick="fecharModalSelecionarJogador()">
         Cancelar
       </button>
@@ -2768,6 +2782,7 @@
 
     document.getElementById('pesquisaJogadorModal').value = '';
 
+    mostrarBuscaJogadorModal();
     renderizarListaJogadoresModal('');
 
     document.getElementById('modalSelecionarJogador').classList.add('aberto');
@@ -2781,6 +2796,74 @@
 
     document.getElementById('modalSelecionarJogador').classList.remove('aberto');
   }
+
+  function mostrarBuscaJogadorModal() {
+    document.getElementById('selecionarJogadorBusca').classList.remove('oculto');
+    document.getElementById('acoesSelecionarJogador').classList.remove('oculto');
+    document.getElementById('selecionarJogadorNovo').classList.add('oculto');
+  }
+
+  function mostrarCadastroJogadorModal() {
+    if (pagamentoTipoSelecionado !== 'REGISTRO') return;
+    document.getElementById('novoJogadorNomeDiretor').value = document.getElementById('pesquisaJogadorModal').value.trim();
+    document.getElementById('novoJogadorTelefoneDiretor').value = '';
+    document.getElementById('selecionarJogadorBusca').classList.add('oculto');
+    document.getElementById('acoesSelecionarJogador').classList.add('oculto');
+    document.getElementById('selecionarJogadorNovo').classList.remove('oculto');
+    setTimeout(() => document.getElementById('novoJogadorNomeDiretor').focus(), 50);
+  }
+
+  async function cadastrarERegistrarJogador() {
+
+    const btn = document.getElementById('btnCadastrarRegistrar');
+
+    if (!adminLiberado || pagamentoTipoSelecionado !== 'REGISTRO' || btn.classList.contains('disabled')) return;
+
+    const nome = document.getElementById('novoJogadorNomeDiretor').value.trim().replace(/\s+/g, ' ');
+    const telefone = document.getElementById('novoJogadorTelefoneDiretor').value.trim();
+
+    if (!nome) {
+      await mostrarAlerta('Informe o nome do jogador');
+      return;
+    }
+
+    const existente = jogadores.find(j => j.nome.toLowerCase() === nome.toLowerCase());
+
+    if (existente) {
+      if (existente.ativo === false) {
+        await mostrarAlerta(`Já existe um jogador chamado ${existente.nome}, mas está inativo. Reative o cadastro em Jogadores.`);
+        return;
+      }
+      if (!await mostrarConfirm(`Já existe um jogador chamado ${existente.nome}. Registrar esse jogador?`)) return;
+      selecionarJogadorModal(existente.nome);
+      return;
+    }
+
+    btn.classList.add('disabled');
+
+    const { data, error } = await client
+      .from('jogadores')
+      .insert([{ nome, telefone, cpf: '' }])
+      .select('*')
+      .single();
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      console.error(error);
+      await mostrarAlerta('Erro ao cadastrar jogador. Tente de novo.');
+      return;
+    }
+
+    jogadores.push(data);
+    jogadores.sort((a, b) => a.nome.localeCompare(b.nome));
+
+    selecionarJogadorModal(data.nome);
+  }
+
+  document.getElementById('novoJogadorNomeDiretor').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); cadastrarERegistrarJogador(); }
+  });
 
   function filtrarJogadoresModal() {
 
@@ -2808,6 +2891,14 @@
     const nomesRegistrados = restringirARegistrados
       ? new Set(movimentacoesTorneio.filter(m => NOMES_BUYIN.includes(m.tipo_registro)).map(m => m.jogador))
       : null;
+
+    // Registro: depois de pesquisar, oferece cadastrar o jogador ali mesmo (como no Cash Game).
+    document.getElementById('cadastroRapidoAtalho').innerHTML = ehRegistro && termo
+      ? `<button type="button" class="busca-novo" onclick="mostrarCadastroJogadorModal()">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M3 20c0-3.5 3-6 7-6 1.5 0 2.9.3 4 1M18 14v6M15 17h6"/></svg>
+           <span>Cadastrar novo jogador</span>
+         </button>`
+      : '';
 
     let nomesParaMostrar;
 
@@ -2967,6 +3058,8 @@
 
         if (primeiro) {
           primeiro.click();
+        } else if (pagamentoTipoSelecionado === 'REGISTRO' && this.value.trim()) {
+          mostrarCadastroJogadorModal();
         }
       }
   });

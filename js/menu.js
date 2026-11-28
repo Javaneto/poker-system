@@ -37,13 +37,12 @@
     { rotulo: 'Cash Game', icone: 'cash', href: 'index.html', tambem: ['cash-mesa.html'] },
     { rotulo: 'Diretor', icone: 'diretor', href: 'diretor.html' },
     { rotulo: 'Em Aberto', icone: 'aberto', href: 'em-aberto.html' },
-    { rotulo: 'Relatório', icone: 'relatorio', href: 'relatorio.html' },
     { rotulo: 'Tela da TV', icone: 'tv', href: 'detalhes.html' },
     { rotulo: 'Torneios', icone: 'torneios', href: 'torneios.html' },
     { grupo: 'Clube' },
     { rotulo: 'Jogadores', icone: 'jogadores', href: 'jogadores.html' },
     { rotulo: 'Ranking', icone: 'ranking', href: 'rankings.html' },
-    { rotulo: 'Cadastrar jogador', icone: 'cadastro', href: 'jogadores.html#novo', paginaAcao: 'jogadores.html', acao: 'abrirFormJogador' },
+    { rotulo: 'Relatório', icone: 'relatorio', href: 'relatorio.html' },
     { rotulo: 'Estruturas de Torneio', icone: 'config', href: 'diretor.html#config', id: 'btnConfigTorneioMenu', paginaAcao: 'diretor.html', acao: 'abrirModalEstruturas' }
   ];
 
@@ -284,11 +283,33 @@
     fecharModalPeloX(modal);
   }, true);
 
+  // ---- Modal aberto por último fica sempre por cima ----
+  // Evita o Aviso/Confirmar abrir atrás de outro modal (z-index fixo ou ordem no DOM).
+  let zModalTopo = 3000;
+
+  function trazerModalParaFrente(overlay) {
+    zModalTopo += 1;
+    overlay.style.zIndex = String(zModalTopo);
+  }
+
+  function iniciarPilhaDeModais() {
+    document.querySelectorAll('.modal-overlay.aberto').forEach(trazerModalParaFrente);
+    new MutationObserver(mutacoes => {
+      mutacoes.forEach(m => {
+        const el = m.target;
+        if (!el.classList || !el.classList.contains('modal-overlay')) return;
+        const estavaAberto = /(^|\s)aberto(\s|$)/.test(m.oldValue || '');
+        if (el.classList.contains('aberto') && !estavaAberto) trazerModalParaFrente(el);
+      });
+    }).observe(document.body, { attributes: true, attributeFilter: ['class'], attributeOldValue: true, subtree: true });
+  }
+
   function iniciarXNosModais() {
     const estilo = document.createElement('style');
     estilo.textContent = CSS_MODAL;
     document.head.appendChild(estilo);
     adicionarXNosModais(document);
+    iniciarPilhaDeModais();
     // Modais criados depois (Central de Histórico, relatórios do torneio...)
     new MutationObserver(mutacoes => {
       mutacoes.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) adicionarXNosModais(n); }));

@@ -46,41 +46,104 @@
       color: var(--apagado-2);
     }
 
+    .acoes-topo {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .rotulo-curto { display: none; }
+
+    .acoes-topo .btn-gray {
+      background: var(--superficie);
+      border: 1px solid var(--borda-forte);
+      color: var(--texto);
+    }
+
+    .lista-cabecalho {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .lista-cabecalho h2 { margin: 0; }
+
+    #contagem {
+      color: var(--apagado);
+      font-size: 13px;
+    }
+
     .filtros-chips {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .chips-grupo {
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
-      margin-bottom: 10px;
+    }
+
+    .chips-divisor {
+      width: 1px;
+      align-self: stretch;
+      min-height: 24px;
+      background: var(--borda-forte);
     }
 
     .chip {
-      background: var(--superficie-3);
+      background: var(--superficie);
       color: var(--texto-2);
+      border: 1px solid var(--borda-forte);
       box-shadow: none;
-      padding: 7px 12px;
+      min-height: 32px;
+      padding: 5px 11px;
       font-size: 13px;
       border-radius: 999px;
+      white-space: nowrap;
     }
+
+    .chip:hover { transform: none; box-shadow: none; color: var(--texto); }
 
     .chip.ativo {
       background: var(--ativo-fundo);
       color: var(--ativo-texto);
+      border-color: transparent;
     }
 
     .linha-filtros {
       display: flex;
-      gap: 10px;
-      align-items: flex-start;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
       flex-wrap: wrap;
+      margin-bottom: 12px;
     }
 
-    .linha-filtros .pesquisa-wrapper {
-      flex: 1 1 260px;
+    .filtros-direita {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 0 0 auto;
     }
 
-    .linha-filtros select {
-      flex: 0 0 200px;
-      width: 200px;
+    .filtros-direita .pesquisa-wrapper,
+    .filtros-direita input,
+    .filtros-direita select {
+      margin-bottom: 0;
+    }
+
+    .filtros-direita .pesquisa-wrapper { width: 180px; }
+    .filtros-direita .pesquisa-wrapper::before { top: 50%; }
+
+    .filtros-direita select {
+      width: 140px;
     }
 
     .situacao {
@@ -233,10 +296,44 @@
         grid-template-columns: 1fr;
       }
 
-      .linha-filtros select {
+      .filtros-direita {
         flex: 1 1 100%;
-        width: 100%;
       }
+
+      .filtros-direita .pesquisa-wrapper {
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
+      }
+
+      .filtros-direita select {
+        flex: 0 0 140px;
+        width: 140px;
+      }
+
+      .filtros-direita input,
+      .filtros-direita select {
+        font-size: 16px;
+      }
+
+      .chips-divisor { display: none; }
+
+      .topbar { flex-wrap: wrap; gap: 10px; }
+
+      .acoes-topo {
+        width: 100%;
+        flex-wrap: nowrap;
+      }
+
+      .acoes-topo button {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 0 8px;
+        gap: 6px;
+      }
+
+      .rotulo-longo { display: none; }
+      .rotulo-curto { display: inline; }
 
       .kpi-valor {
         font-size: 18px;
@@ -262,7 +359,20 @@
       <h1 style="margin:0;">Jogadores</h1>
     </div>
 
-    <button id="btnNovoJogador" class="btn-blue disabled" onclick="abrirFormJogador()">+ Novo Jogador</button>
+    <div class="acoes-topo">
+      <button type="button" id="btnRegistrarPagamento" class="btn-green btn-com-icone disabled" onclick="abrirLancamento('pagamento')">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5.5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span class="rotulo-longo">Registrar Pagamento</span><span class="rotulo-curto">Pagamento</span>
+      </button>
+      <button type="button" id="btnLancarDebito" class="btn-gray btn-com-icone disabled" onclick="abrirLancamento('debito')">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+        <span class="rotulo-longo">Lançar Débito</span><span class="rotulo-curto">Débito</span>
+      </button>
+      <button type="button" id="btnNovoJogador" class="btn-blue btn-com-icone disabled" onclick="abrirFormJogador()">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M3 20c0-3.5 3-6 7-6 1.5 0 2.9.3 4 1M18 14v6M15 17h6"/></svg>
+        <span class="rotulo-longo">Cadastrar Jogador</span><span class="rotulo-curto">Cadastrar</span>
+      </button>
+    </div>
   </div>
 
   <div class="kpis">
@@ -294,29 +404,41 @@
   </div>
 
   <div class="card">
+    <div class="lista-cabecalho">
+      <h2>Lista de Jogadores</h2>
+      <span id="contagem"></span>
+    </div>
+
     <div class="linha-filtros">
-      <div class="pesquisa-wrapper">
-        <input type="text" id="busca" placeholder="Buscar por nome, apelido, telefone ou CPF" autocomplete="off" oninput="renderizar()">
+      <div class="filtros-chips" role="group" aria-label="Filtrar jogadores">
+        <div class="chips-grupo" id="chipsStatus" role="group" aria-label="Status do cadastro">
+          <button type="button" class="chip ativo" data-filtro="todos" aria-pressed="true" onclick="definirFiltroStatus('todos')">Todos</button>
+          <button type="button" class="chip" data-filtro="ativo" aria-pressed="false" onclick="definirFiltroStatus('ativo')">Ativo</button>
+          <button type="button" class="chip" data-filtro="inativo" aria-pressed="false" onclick="definirFiltroStatus('inativo')">Inativo</button>
+        </div>
+        <span class="chips-divisor" aria-hidden="true"></span>
+        <div class="chips-grupo" id="chipsSituacao" role="group" aria-label="Situação financeira">
+          <button type="button" class="chip ativo" data-filtro="todas" aria-pressed="true" onclick="definirFiltroSituacao('todas')">Todas</button>
+          <button type="button" class="chip" data-filtro="jogo" aria-pressed="false" onclick="definirFiltroSituacao('jogo')">Em jogo / a apurar</button>
+          <button type="button" class="chip" data-filtro="credito" aria-pressed="false" onclick="definirFiltroSituacao('credito')">A receber do clube</button>
+          <button type="button" class="chip" data-filtro="deve" aria-pressed="false" onclick="definirFiltroSituacao('deve')">A pagar ao clube</button>
+        </div>
       </div>
 
-      <select id="ordenacao" onchange="renderizar()">
-        <option value="nome">Nome A→Z</option>
-        <option value="saldo-deve">Maior dívida</option>
-        <option value="saldo-credito">Maior crédito</option>
-        <option value="atividade">Última atividade</option>
-        <option value="jogos">Mais jogos</option>
-      </select>
-    </div>
+      <div class="filtros-direita">
+        <div class="pesquisa-wrapper">
+          <input type="text" id="busca" placeholder="Buscar jogador..." title="Busca por nome, apelido, telefone ou CPF" aria-label="Buscar jogador por nome, apelido, telefone ou CPF" autocomplete="off" oninput="renderizar()">
+        </div>
 
-    <div class="filtros-chips" id="chips">
-      <button class="chip ativo" data-filtro="todos" onclick="definirFiltro('todos')">Todos</button>
-      <button class="chip" data-filtro="jogo" onclick="definirFiltro('jogo')">Em jogo</button>
-      <button class="chip" data-filtro="deve" onclick="definirFiltro('deve')">Devendo ao clube</button>
-      <button class="chip" data-filtro="credito" onclick="definirFiltro('credito')">Clube deve</button>
-      <button class="chip" data-filtro="inativos" onclick="definirFiltro('inativos')">Inativos</button>
+        <select id="ordenacao" onchange="renderizar()" aria-label="Ordenar jogadores">
+          <option value="nome">Nome A→Z</option>
+          <option value="saldo-deve">Maior dívida</option>
+          <option value="saldo-credito">Maior crédito</option>
+          <option value="atividade">Última atividade</option>
+          <option value="jogos">Mais jogos</option>
+        </select>
+      </div>
     </div>
-
-    <p id="contagem" style="color:var(--apagado);font-size:13px;margin:4px 0 0 0;"></p>
 
     <table class="relatorio-desktop">
       <thead>
@@ -340,15 +462,12 @@
 <!-- Detalhe do jogador -->
 <div id="modalDetalhe" class="modal-overlay">
   <div class="modal-box" style="max-width:720px;">
-    <div class="topbar" style="margin-bottom:12px;">
-      <div class="nome-com-avatar">
-        <span class="avatar" id="detalheAvatar"></span>
-        <div>
-          <h2 style="margin:0;" id="detalheNome"></h2>
-          <span id="detalheSituacao"></span>
-        </div>
+    <div class="nome-com-avatar" style="margin-bottom:12px;padding-right:44px;">
+      <span class="avatar" id="detalheAvatar"></span>
+      <div>
+        <h2 style="margin:0;" id="detalheNome"></h2>
+        <span id="detalheSituacao"></span>
       </div>
-      <button class="btn-gray" onclick="fecharModal('modalDetalhe')">Fechar</button>
     </div>
 
     <div class="dados-cadastro" id="detalheDados"></div>
@@ -416,6 +535,35 @@
   </div>
 </div>
 
+<!-- Registrar pagamento / lançar débito -->
+<div id="modalLancamento" class="modal-overlay">
+  <div class="modal-box" style="max-width:480px;">
+    <h2 id="lancTitulo">Registrar Pagamento</h2>
+
+    <div class="form-grid">
+      <div class="largura-total">
+        <label for="lancJogador">Jogador</label>
+        <select id="lancJogador"></select>
+      </div>
+      <div class="largura-total">
+        <label for="lancValor">Valor (R$)</label>
+        <input type="number" id="lancValor" placeholder="0,00" min="0" step="0.01" inputmode="decimal">
+      </div>
+      <div class="largura-total">
+        <label for="lancObs" id="lancObsRotulo">Observações</label>
+        <input type="text" id="lancObs" maxlength="300" autocomplete="off">
+      </div>
+    </div>
+
+    <p id="lancDica" style="color:var(--apagado);font-size:13px;margin:-2px 0 12px;"></p>
+
+    <div class="modal-acoes">
+      <button type="button" class="btn-gray" onclick="fecharModal('modalLancamento')">Cancelar</button>
+      <button type="button" id="btnConfirmarLancamento" class="btn-green" style="flex:1;" onclick="confirmarLancamento()">Registrar Pagamento</button>
+    </div>
+  </div>
+</div>
+
 <!-- Alerta / confirmação -->
 <div id="modalAlerta" class="modal-overlay">
   <div class="modal-box">
@@ -425,7 +573,7 @@
   </div>
 </div>
 
-<div id="modalConfirm" class="modal-overlay" style="z-index:2600;">
+<div id="modalConfirm" class="modal-overlay">
   <div class="modal-box">
     <h2>Confirmar</h2>
     <p id="confirmTexto" class="modal-resumo"></p>
@@ -446,7 +594,9 @@
   let jogadores = [];
   let movimentacoes = [];
   let resumoPorNome = new Map();
-  let filtroAtual = 'todos';
+  let filtroStatus = 'todos';
+  let filtroSituacao = 'todas';
+  let tipoLancamento = 'pagamento';
   let jogadorDetalhe = null;
   let jogadorEditando = null;
   let adminLiberado = false;
@@ -609,9 +759,23 @@
     return `<span class="${classe}">${sinal} ${formatarMoeda(Math.abs(valor))}</span>`;
   }
 
-  function definirFiltro(filtro) {
-    filtroAtual = filtro;
-    document.querySelectorAll('#chips .chip').forEach(c => c.classList.toggle('ativo', c.dataset.filtro === filtro));
+  function marcarChips(grupoId, filtro) {
+    document.querySelectorAll(`#${grupoId} .chip`).forEach(c => {
+      const ativo = c.dataset.filtro === filtro;
+      c.classList.toggle('ativo', ativo);
+      c.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+    });
+  }
+
+  function definirFiltroStatus(filtro) {
+    filtroStatus = filtro;
+    marcarChips('chipsStatus', filtro);
+    renderizar();
+  }
+
+  function definirFiltroSituacao(filtro) {
+    filtroSituacao = filtro;
+    marcarChips('chipsSituacao', filtro);
     renderizar();
   }
 
@@ -641,11 +805,11 @@
 
       const r = resumoPorNome.get(j.nome);
 
-      if (filtroAtual === 'inativos' && j.ativo !== false) return false;
-      if (filtroAtual !== 'inativos' && filtroAtual !== 'todos' && j.ativo === false) return false;
-      if (filtroAtual === 'jogo' && r.abertas.length === 0) return false;
-      if (filtroAtual === 'deve' && !(r.saldoGeral < -0.005)) return false;
-      if (filtroAtual === 'credito' && !(r.saldoGeral > 0.005)) return false;
+      if (filtroStatus === 'ativo' && j.ativo === false) return false;
+      if (filtroStatus === 'inativo' && j.ativo !== false) return false;
+      if (filtroSituacao === 'jogo' && r.abertas.length === 0) return false;
+      if (filtroSituacao === 'deve' && !(r.saldoGeral < -0.005)) return false;
+      if (filtroSituacao === 'credito' && !(r.saldoGeral > 0.005)) return false;
 
       if (!termo) return true;
 
@@ -965,6 +1129,101 @@
     await carregarDados();
   }
 
+  // ---------- registrar pagamento / lançar débito ----------
+  // Mesmo formato do "Lançar" do Em Aberto (js/historico-jogador.js), para o
+  // saldo continuar igual em todas as telas:
+  //   Pagamento → tipo 'Pagamento', valor positivo, modalidade 'Cash'
+  //   Débito    → tipo 'Pagamento', valor negativo, modalidade 'Cobrança'
+
+  function abrirLancamento(tipo) {
+
+    if (!adminLiberado) return;
+
+    tipoLancamento = tipo;
+    const debito = tipo === 'debito';
+
+    document.getElementById('lancTitulo').textContent = debito ? 'Lançar Débito Manual' : 'Registrar Pagamento';
+    document.getElementById('lancObsRotulo').textContent = debito ? 'Descrição / Motivo *' : 'Observações';
+    document.getElementById('lancObs').placeholder = debito ? 'Ex: Mensalidade, multa, ajuste...' : 'Observações';
+    document.getElementById('lancDica').textContent = debito
+      ? 'O valor desconta (−) do saldo do jogador: ele passa a dever ao clube.'
+      : 'O jogador pagou ao clube: o valor soma (+) no saldo dele.';
+
+    const btn = document.getElementById('btnConfirmarLancamento');
+    btn.textContent = debito ? 'Confirmar Débito' : 'Registrar Pagamento';
+    btn.className = debito ? 'btn-red' : 'btn-green';
+
+    const ativos = jogadores.filter(j => j.ativo !== false);
+    document.getElementById('lancJogador').innerHTML =
+      '<option value="">Selecione um jogador</option>' +
+      ativos.map(j => `<option value="${escapeHtml(j.id)}">${escapeHtml(j.nome)}</option>`).join('');
+
+    document.getElementById('lancValor').value = '';
+    document.getElementById('lancObs').value = '';
+
+    document.getElementById('modalLancamento').classList.add('aberto');
+    setTimeout(() => document.getElementById('lancJogador').focus(), 50);
+  }
+
+  async function confirmarLancamento() {
+
+    const btn = document.getElementById('btnConfirmarLancamento');
+
+    if (!adminLiberado || btn.classList.contains('disabled')) return;
+
+    const debito = tipoLancamento === 'debito';
+    const jogador = jogadores.find(j => String(j.id) === document.getElementById('lancJogador').value);
+    const valor = Math.round(Number(document.getElementById('lancValor').value || 0) * 100) / 100;
+    const observacao = document.getElementById('lancObs').value.trim();
+
+    if (!jogador) {
+      await mostrarAlerta('Selecione um jogador.');
+      return;
+    }
+
+    if (!(valor > 0)) {
+      await mostrarAlerta('Informe um valor válido.');
+      return;
+    }
+
+    if (debito && !observacao) {
+      await mostrarAlerta('Informe a descrição / motivo do débito.');
+      document.getElementById('lancObs').focus();
+      return;
+    }
+
+    btn.classList.add('disabled');
+
+    try {
+
+      const { error } = await client
+        .from('movimentacoes')
+        .insert([{
+          jogador: jogador.nome,
+          tipo: 'Pagamento',
+          valor: debito ? -valor : valor,
+          modalidade: debito ? 'Cobrança' : 'Cash',
+          pago: false,
+          data: new Date().toISOString(),
+          cpf: jogador.cpf || null,
+          telefone: jogador.telefone || null,
+          ...(observacao ? { observacao } : {})
+        }]);
+
+      if (error) {
+        console.error(error);
+        await mostrarAlerta(debito ? 'Erro ao lançar o débito. Tente de novo.' : 'Erro ao registrar o pagamento. Tente de novo.');
+        return;
+      }
+
+      fecharModal('modalLancamento');
+      await carregarDados();
+
+    } finally {
+      btn.classList.remove('disabled');
+    }
+  }
+
   // ---------- início ----------
 
   (async function inicializar() {
@@ -977,7 +1236,9 @@
     }
 
     adminLiberado = true;
-    document.getElementById('btnNovoJogador').classList.remove('disabled');
+    ['btnNovoJogador', 'btnRegistrarPagamento', 'btnLancarDebito'].forEach(id =>
+      document.getElementById(id).classList.remove('disabled')
+    );
 
     await carregarDados();
 
