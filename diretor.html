@@ -10,6 +10,7 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="js/comum.js"></script>
   <script src="js/torneio-extras.js"></script>
+  <script src="js/torneio-stats.js"></script>
 
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="cash.css">
@@ -587,13 +588,13 @@
 
     <section class="card dir-stats oculto" id="painelEstatisticasTorneio">
       <div class="painel-info-linha">
-        <span>Próximo SB/BB</span>
+        <span>Próximo Blind</span>
         <span id="statProximoBlind">-</span>
       </div>
 
-      <div class="painel-info-linha">
-        <span>Jogadores Registrados</span>
-        <span id="statJogadoresRegistrados">0</span>
+      <div class="painel-info-linha" title="Jogadores ainda no torneio / jogadores registrados">
+        <span>Jogadores</span>
+        <span id="statJogadoresRegistrados">0/0</span>
       </div>
 
       <div class="painel-info-linha">
@@ -609,6 +610,16 @@
       <div class="painel-info-linha">
         <span>Próximo Intervalo em</span>
         <span id="statProximoIntervalo">-</span>
+      </div>
+
+      <div class="painel-info-linha" title="Total de fichas em jogo">
+        <span>Chip Count</span>
+        <span id="statChipCount">-</span>
+      </div>
+
+      <div class="painel-info-linha" title="Chip Count ÷ jogadores ainda no torneio">
+        <span>Avg Stack</span>
+        <span id="statAvgStack">-</span>
       </div>
 
       <div class="painel-info-linha">
@@ -757,7 +768,7 @@
 </div>
 
 <div id="modalEditarValoresTorneio" class="modal-overlay">
-  <div class="modal-box" style="max-width:640px;">
+  <div class="modal-box" style="max-width:760px;">
     <h2>Valores (Buy-in, Rebuy, Add-on...)</h2>
 
     <div class="cabecalho-tipos">
@@ -765,6 +776,7 @@
       <span>Valor Total</span>
       <span>Rake</span>
       <span>Prêmio</span>
+      <span>Fichas</span>
     </div>
 
     <div id="linhasTiposEditar"></div>
@@ -1316,6 +1328,7 @@
   }
 
   let movimentacoesTorneio = [];
+  let resultadosTorneio = []; // torneio_resultados: colocações / eliminações
   let movimentacoes = [];
   let pagamentoTipoSelecionado = null;
 
@@ -1439,14 +1452,20 @@
     const nivelProximo = niveis[indiceAtual + 1];
 
     document.getElementById('statProximoBlind').textContent = nivelProximo
-      ? `${nivelProximo.sb} / ${nivelProximo.bb}`
+      ? `${nivelProximo.sb}/${nivelProximo.bb} - ${nivelProximo.ante || 0}`
       : (niveis.length > 0 ? 'Último nível' : '-');
 
-    const jogadoresRegistrados = new Set(
-      movimentacoesTorneio.filter(m => NOMES_BUYIN.includes(m.tipo_registro)).map(m => m.jogador)
-    );
+    // Contador de eliminação: restantes / registrados (ex.: 9/10).
+    const resumoJogadores = tsResumoJogadores(movimentacoesTorneio, resultadosTorneio);
 
-    document.getElementById('statJogadoresRegistrados').textContent = jogadoresRegistrados.size;
+    document.getElementById('statJogadoresRegistrados').textContent = `${resumoJogadores.restantes}/${resumoJogadores.total}`;
+
+    const chipCount = tsChipCount(movimentacoesTorneio, valoresTorneio);
+
+    document.getElementById('statChipCount').textContent = chipCount > 0 ? tsFormatarFichas(chipCount) : '-';
+    document.getElementById('statAvgStack').textContent = chipCount > 0 && resumoJogadores.restantes > 0
+      ? tsFormatarFichas(tsAvgStack(chipCount, resumoJogadores.restantes))
+      : '-';
 
     const entradas = movimentacoesTorneio.filter(
       m => m.tipo === 'Entrada' || m.tipo === 'Registro' || m.tipo === 'Rebuy'
@@ -2138,7 +2157,7 @@
   // conferência a cada 30 s (ver js/comum.js).
   iniciarRealtimeRobusto({
     nome: 'torneio-realtime',
-    tabelas: ['movimentacoes', 'jogadores', 'configuracoes', 'torneios', 'torneio_valores', 'estruturas_blinds', 'premiacao_estruturas'],
+    tabelas: ['movimentacoes', 'jogadores', 'configuracoes', 'torneios', 'torneio_valores', 'estruturas_blinds', 'premiacao_estruturas', 'torneio_resultados'],
     aoMudar: () => carregarDados()
   });
 
@@ -2216,6 +2235,7 @@
       torneioAtual = null;
       valoresTorneio = [];
       movimentacoesTorneio = [];
+      resultadosTorneio = [];
 
       atualizarTela();
       return;
@@ -2234,6 +2254,8 @@
       .order('id', { ascending: true }));
 
     movimentacoesTorneio = movimentacoesDB || [];
+
+    await carregarResultadosTorneio();
 
     console.log('Torneio atual:', torneioAtual?.nome);
 
@@ -2342,7 +2364,7 @@
     } else {
       tiposDisponiveis.forEach(t => {
         const existente = valoresTorneio.find(v => v.tipo === t.nome);
-        criarLinhaTipoFixo(t, existente ? existente.valor_total : 0, existente ? existente.valor_rake : 0, 'linhasTiposEditar', !!existente);
+        criarLinhaTipoFixo(t, existente ? existente.valor_total : 0, existente ? existente.valor_rake : 0, 'linhasTiposEditar', !!existente, existente ? existente.fichas : 0);
       });
     }
 
@@ -2564,9 +2586,21 @@
       return;
     }
 
-    const { error: erroInsert } = await client
+    let { error: erroInsert } = await client
       .from('torneio_valores')
       .insert(tipos);
+
+    // Banco ainda sem a coluna de fichas (sql/010): salva sem as fichas e avisa.
+    let avisoFichas = false;
+
+    if (erroInsert && /fichas/.test(erroInsert.message || '')) {
+      ({ error: erroInsert } = await client.from('torneio_valores').insert(tipos.map(({ fichas, ...t }) => t)));
+      avisoFichas = !erroInsert && tipos.some(t => t.fichas > 0);
+    }
+
+    if (avisoFichas) {
+      await mostrarAlerta('Valores salvos, mas as fichas não. Rode o arquivo sql/010_fichas_torneio.sql no Supabase para ativar fichas, Chip Count e Avg Stack.');
+    }
 
     if (erroInsert) {
       btn.classList.remove('disabled');
@@ -2739,9 +2773,16 @@
       return;
     }
 
+    // Eliminados vão para o fim, do melhor para o pior colocado.
+    const posicaoDe = nome => Number(resultadosTorneio.find(r => r.jogador === nome)?.posicao) || 0;
+    const eliminado = nome => posicaoDe(nome) > 1;
+
+    nomesJogadores.sort((a, b) => (eliminado(a) - eliminado(b)) || (posicaoDe(a) - posicaoDe(b)) || a.localeCompare(b));
+
     nomesJogadores.forEach(nome => {
 
       const movsJogador = movimentacoesTorneio.filter(m => m.jogador === nome);
+      const posicao = posicaoDe(nome);
 
       const registro = movsJogador.find(m => m.tipo === 'Registro' || (m.tipo === 'Entrada' && NOMES_BUYIN.includes(m.tipo_registro)));
       const qtdRebuys = movsJogador.filter(m => m.tipo === 'Rebuy' || (m.tipo === 'Entrada' && m !== registro && m.tipo_registro !== 'Add-on')).length;
@@ -2751,8 +2792,13 @@
         .reduce((soma, m) => soma + Number(m.valor), 0);
 
       tabela.innerHTML += `
-        <tr>
-          <td>${escapeHtml(nome)}</td>
+        <tr class="${posicao > 1 ? 'dir-linha-eliminado' : ''}">
+          <td>
+            <button type="button" class="dir-jogador-nome" data-nome="${escapeHtml(nome)}" title="Opções do jogador">
+              ${posicao ? `<span class="dir-posicao${posicao === 1 ? ' campeao' : ''}">${posicao}º</span>` : ''}
+              <span>${escapeHtml(nome)}</span>
+            </button>
+          </td>
           <td>${registro ? escapeHtml(registro.tipo_registro) : '-'}</td>
           <td>${qtdRebuys}</td>
           <td>${temAddon ? '✓' : '-'}</td>
@@ -3079,7 +3125,7 @@
       }
   });
 
-  function criarLinhaTipoFixo(tipoFixo, total, rake, containerId, ativo = false) {
+  function criarLinhaTipoFixo(tipoFixo, total, rake, containerId, ativo = false, fichas = 0) {
 
     const div = document.createElement('div');
 
@@ -3110,6 +3156,7 @@
         </label>
         <input type="number" class="tipo-total" placeholder="Valor (pode ser 0)" min="0" value="${total || ''}">
         <input type="number" class="tipo-rake" placeholder="Rake" min="0" value="${rake || ''}">
+        <input type="number" class="tipo-fichas" placeholder="Fichas" title="Montante de fichas desta entrada" min="0" step="1" inputmode="numeric" value="${fichas || ''}">
       `;
 
       document.getElementById(containerId).appendChild(div);
@@ -3121,6 +3168,7 @@
       <input type="number" class="tipo-total" placeholder="Valor total (deixe vazio p/ desativar)" min="0" value="${total}">
       <input type="number" class="tipo-rake" placeholder="Rake" min="0" value="${rake}">
       <span class="tipo-prize">R$ 0,00</span>
+      <input type="number" class="tipo-fichas" placeholder="Fichas" title="Montante de fichas desta entrada" min="0" step="1" inputmode="numeric" value="${fichas || ''}">
     `;
 
     const inputTotal = div.querySelector('.tipo-total');
@@ -3155,6 +3203,7 @@
         const rake = inputRake ? (parseFloat(inputRake.value) || 0) : 0;
         const ehBounty = linha.dataset.tipoChave === 'bounty';
         const checkAtivo = linha.querySelector('.tipo-ativo');
+        const inputFichas = linha.querySelector('.tipo-fichas');
 
         return {
           tipo: tipoNome,
@@ -3162,6 +3211,7 @@
           valor_rake: rake,
           valor_prize: ehBounty ? 0 : Math.max(total - rake, 0),
           ordem: index,
+          ...(inputFichas ? { fichas: Math.max(parseInt(inputFichas.value, 10) || 0, 0) } : {}),
           _ativo: checkAtivo ? checkAtivo.checked : total > 0
         };
       })

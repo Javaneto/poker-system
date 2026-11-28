@@ -510,6 +510,7 @@
 </head>
 <body data-menu="overlay">
 <script src="js/menu.js"></script>
+<script src="js/torneio-stats.js"></script>
 
 
   <div class="tv-topo">
@@ -550,11 +551,12 @@
       </div>
 
       <div class="tv-painel">
-        <div class="tv-linha"><span>Próximo SB/BB</span><span id="tvProximoBlind">-</span></div>
-        <div class="tv-linha"><span>Próximo Ante</span><span id="tvProximoAnte">-</span></div>
+        <div class="tv-linha"><span>Próximo Blind</span><span id="tvProximoBlind">-</span></div>
         <div class="tv-linha"><span>Próximo Intervalo</span><span id="tvProximoIntervalo">-</span></div>
         <div class="tv-linha"><span>Tempo Decorrido</span><span id="tvTempoDecorrido">00:00</span></div>
         <div class="tv-linha"><span>Entradas</span><span id="tvEntradas">0</span></div>
+        <div class="tv-linha"><span>Chip Count</span><span id="tvChipCount">-</span></div>
+        <div class="tv-linha"><span>Avg Stack</span><span id="tvAvgStack">-</span></div>
         <div class="tv-linha"><span>Bounty</span><span id="tvBounty">N/D</span></div>
         <div class="tv-linha tv-linha-destaque"><span>Prêmio Total</span><span id="tvPremioTotal">R$ 0,00</span></div>
       </div>
@@ -579,6 +581,7 @@
   let torneioAtual = null;
   let valoresTorneio = [];
   let movimentacoesTorneio = [];
+  let resultadosTorneio = []; // colocações/eliminações (torneio_resultados)
   let estruturasPremiacao = [];
   let estruturasBlinds = [];
   let avancoNivelEmAndamento = false;
@@ -981,6 +984,13 @@
 
     movimentacoesTorneio = movsDB || [];
 
+    const { data: resultadosDB, error: erroResultados } = await client
+      .from('torneio_resultados')
+      .select('jogador,posicao')
+      .eq('torneio_id', String(torneioAtualId));
+
+    resultadosTorneio = erroResultados ? [] : (resultadosDB || []);
+
     const { data: estruturasDB } = await client
       .from('premiacao_estruturas')
       .select('*');
@@ -1049,17 +1059,14 @@
     if (niveis.length === 0) {
       document.getElementById('tvBlindsAtuais').textContent = 'Sem estrutura de blinds';
       document.getElementById('tvProximoBlind').textContent = '-';
-      document.getElementById('tvProximoAnte').textContent = '-';
     } else if (emIntervalo) {
       document.getElementById('tvBlindsAtuais').textContent = 'Intervalo';
-      document.getElementById('tvProximoBlind').textContent = nivelProximo ? `${formatarValorBlind(nivelProximo.sb)} / ${formatarValorBlind(nivelProximo.bb)}` : 'Último nível';
-      document.getElementById('tvProximoAnte').textContent = nivelProximo ? formatarValorBlind(nivelProximo.ante || 0) : '-';
+      document.getElementById('tvProximoBlind').textContent = nivelProximo ? `${formatarValorBlind(nivelProximo.sb)}/${formatarValorBlind(nivelProximo.bb)} - ${formatarValorBlind(nivelProximo.ante || 0)}` : 'Último nível';
     } else {
       document.getElementById('tvBlindsAtuais').textContent = nivelAtual
         ? `${formatarValorBlind(nivelAtual.sb)} / ${formatarValorBlind(nivelAtual.bb)} - ${formatarValorBlind(nivelAtual.ante || 0)}`
         : '-';
-      document.getElementById('tvProximoBlind').textContent = nivelProximo ? `${formatarValorBlind(nivelProximo.sb)} / ${formatarValorBlind(nivelProximo.bb)}` : 'Último nível';
-      document.getElementById('tvProximoAnte').textContent = nivelProximo ? formatarValorBlind(nivelProximo.ante || 0) : '-';
+      document.getElementById('tvProximoBlind').textContent = nivelProximo ? `${formatarValorBlind(nivelProximo.sb)}/${formatarValorBlind(nivelProximo.bb)} - ${formatarValorBlind(nivelProximo.ante || 0)}` : 'Último nível';
     }
 
     const segundosProximoIntervalo = calcularSegundosAteProximoIntervalo();
@@ -1076,11 +1083,17 @@
 
     document.getElementById('tvEntradas').textContent = entradas;
 
-    const jogadoresRegistrados = new Set(
-      movimentacoesTorneio.filter(m => NOMES_BUYIN.includes(m.tipo_registro)).map(m => m.jogador)
-    );
+    // Contador de eliminação: restantes / registrados (ex.: 9/10 Jogadores).
+    const resumoJogadores = tsResumoJogadores(movimentacoesTorneio, resultadosTorneio);
 
-    document.getElementById('tvEntradasTopo').textContent = `${jogadoresRegistrados.size} Jogadores`;
+    document.getElementById('tvEntradasTopo').textContent = `${resumoJogadores.restantes}/${resumoJogadores.total} Jogadores`;
+
+    const chipCount = tsChipCount(movimentacoesTorneio, valoresTorneio);
+
+    document.getElementById('tvChipCount').textContent = chipCount > 0 ? tsFormatarFichas(chipCount) : '-';
+    document.getElementById('tvAvgStack').textContent = chipCount > 0 && resumoJogadores.restantes > 0
+      ? tsFormatarFichas(tsAvgStack(chipCount, resumoJogadores.restantes))
+      : '-';
 
     const bounty = valoresTorneio.find(v => v.tipo === 'Bounty (K.O.)');
 
