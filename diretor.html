@@ -1670,7 +1670,13 @@
     if (relogioIntervalId) return;
 
     relogioIntervalId = setInterval(atualizarRelogioTorneio, 1000);
-    relogioSincIntervalId = setInterval(sincronizarRelogioTorneio, 3000);
+    // O relógio é calculado aqui a partir do banco (início, nível, pausa).
+    // Mudanças de outra tela chegam pelo Realtime (tabela torneios), então a
+    // conferência é só uma garantia: a cada 2 min e com a aba visível.
+    // Antes era a cada 3 s e consumia boa parte do plano gratuito.
+    relogioSincIntervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') sincronizarRelogioTorneio();
+    }, 120000);
   }
 
   function atualizarRelogioTorneio() {
