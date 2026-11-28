@@ -858,38 +858,6 @@
     return (Number(valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  function calcularValoresPremiacaoArredondados(totalPrize, percentuais) {
-
-    const unidade = Number(torneioAtual?.arredondamento_premiacao);
-
-    if (!unidade || unidade <= 0) {
-      return percentuais.map(pct => totalPrize * (Number(pct) / 100));
-    }
-
-    let sobra = 0;
-    const resultados = [];
-
-    percentuais.forEach(pct => {
-
-      const bruto = totalPrize * (Number(pct) / 100) + sobra;
-
-      const multiplos = Math.floor(bruto / unidade);
-      const fracao = (bruto - multiplos * unidade) / unidade;
-
-      const valor = fracao >= 0.6 ? (multiplos + 1) * unidade : multiplos * unidade;
-
-      sobra = bruto - valor;
-
-      resultados.push(valor);
-    });
-
-    if (resultados.length > 0) {
-      resultados[resultados.length - 1] = Math.round((resultados[resultados.length - 1] + sobra) * 100) / 100;
-    }
-
-    return resultados;
-  }
-
   function formatarTempoDecorrido(segundos) {
 
     const s = Math.max(Math.floor(segundos), 0);
@@ -1101,8 +1069,7 @@
       ? formatarMoeda(Number(bounty.valor_total))
       : 'N/D';
 
-    const totalPrize = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_prize || 0), 0)
-      + Number(torneioAtual.ajuste_premiacao || 0);
+    const totalPrize = tsPremioTotal(movimentacoesTorneio, torneioAtual);
 
     document.getElementById('tvPremioTotal').textContent = formatarMoeda(totalPrize);
 
@@ -1111,24 +1078,18 @@
 
     premiosEl.innerHTML = '';
 
-    if (estruturaPremiacao) {
+    tsPremiosTorneio(torneioAtual, totalPrize, estruturaPremiacao).forEach(p => {
 
-      const percentuais = estruturaPremiacao.percentuais || [];
-      const valores = calcularValoresPremiacaoArredondados(totalPrize, percentuais);
+      const premio = document.createElement('span');
+      premio.className = 'tv-premio';
 
-      valores.forEach((valor, index) => {
+      const posicao = document.createElement('span');
+      posicao.className = 'tv-premio-pos';
+      posicao.textContent = `${p.posicao}º`;
 
-        const premio = document.createElement('span');
-        premio.className = 'tv-premio';
-
-        const posicao = document.createElement('span');
-        posicao.className = 'tv-premio-pos';
-        posicao.textContent = `${index + 1}º`;
-
-        premio.append(posicao, formatarMoedaSemZeros(valor));
-        premiosEl.appendChild(premio);
-      });
-    }
+      premio.append(posicao, tsTextoPremio(p, formatarMoedaSemZeros));
+      premiosEl.appendChild(premio);
+    });
   }
 
   let wakeLockAtivo = null;

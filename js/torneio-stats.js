@@ -64,3 +64,85 @@ function tsProximaPosicaoEliminacao(totalRegistrados, resultados) {
   }
   return null;
 }
+
+// ---------------------------------------------------------------------------
+// Premiação
+// ---------------------------------------------------------------------------
+// Prêmio total = soma do valor_prize das entradas + ajustes manuais.
+// Por posição: a premiação manual do torneio (torneios.premiacao_manual,
+// sql/011) quando houver; senão a estrutura de premiação arredondada.
+// Contas em centavos inteiros para não acumular erro de ponto flutuante.
+
+function tsCentavos(valor) {
+  return Math.round(Number(valor || 0) * 100);
+}
+
+function tsPremioTotal(movs, torneio) {
+  const prizeCent = (movs || []).reduce((soma, m) => soma + tsCentavos(m.valor_prize), 0);
+  return (prizeCent + tsCentavos(torneio?.ajuste_premiacao)) / 100;
+}
+
+// Valores da estrutura (percentuais) arredondados para múltiplos de
+// "arredondamento": fração ≥ 60% da unidade sobe; a sobra vai para a
+// posição seguinte e o resto final fica com a última posição.
+function tsValoresEstrutura(totalPrize, percentuais, arredondamento) {
+
+  const lista = percentuais || [];
+  const unidadeCent = tsCentavos(arredondamento);
+
+  if (!unidadeCent || unidadeCent <= 0) {
+    return lista.map(pct => Math.round(Number(totalPrize) * Number(pct)) / 100);
+  }
+
+  let sobraCent = 0;
+  const resultadosCent = [];
+
+  lista.forEach(pct => {
+    const brutoCent = Math.round(Number(totalPrize) * Number(pct)) + sobraCent;
+    const multiplos = Math.floor(brutoCent / unidadeCent);
+    const restoCent = brutoCent - multiplos * unidadeCent;
+    const valorCent = restoCent * 10 >= unidadeCent * 6 ? (multiplos + 1) * unidadeCent : multiplos * unidadeCent;
+    sobraCent = brutoCent - valorCent;
+    resultadosCent.push(valorCent);
+  });
+
+  if (resultadosCent.length > 0) {
+    resultadosCent[resultadosCent.length - 1] += sobraCent;
+  }
+
+  return resultadosCent.map(c => c / 100);
+}
+
+function tsTemPremiacaoManual(torneio) {
+  return Array.isArray(torneio?.premiacao_manual) && torneio.premiacao_manual.length > 0;
+}
+
+// [{ posicao, valor, texto }] na ordem das posições.
+function tsPremiosTorneio(torneio, totalPrize, estrutura) {
+
+  if (tsTemPremiacaoManual(torneio)) {
+    return torneio.premiacao_manual.map((p, i) => ({
+      posicao: i + 1,
+      valor: Math.max(tsCentavos(p?.valor), 0) / 100,
+      texto: String(p?.texto || '').trim()
+    }));
+  }
+
+  if (!estrutura) return [];
+
+  return tsValoresEstrutura(totalPrize, estrutura.percentuais, torneio?.arredondamento_premiacao)
+    .map((valor, i) => ({ posicao: i + 1, valor, texto: '' }));
+}
+
+function tsSomaPremios(premios) {
+  return (premios || []).reduce((soma, p) => soma + tsCentavos(p.valor), 0) / 100;
+}
+
+// "Bilhete + R$ 100", "Bilhete" ou "R$ 100".
+function tsTextoPremio(premio, formatar) {
+  const texto = String(premio?.texto || '').trim();
+  const valor = Number(premio?.valor || 0);
+  if (texto && valor > 0) return `${texto} + ${formatar(valor)}`;
+  if (texto) return texto;
+  return formatar(valor);
+}

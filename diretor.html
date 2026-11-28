@@ -11,6 +11,7 @@
   <script src="js/comum.js"></script>
   <script src="js/torneio-extras.js"></script>
   <script src="js/torneio-stats.js"></script>
+  <script src="js/torneio-premiacao.js"></script>
 
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="cash.css">
@@ -287,6 +288,64 @@
       letter-spacing: 0.08em;
       color: var(--apagado-2);
     }
+
+    #linhasPremiosInfo .painel-info-linha span:last-child {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    /* ---- Ajustar Prêmio ---- */
+
+    .modal-box.ap-modal { max-width: 560px; }
+
+    .ap-total {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border-radius: 12px;
+      background: var(--superficie-2, var(--superficie-3)); margin-bottom: 16px;
+    }
+    .ap-total-info { flex: 1; min-width: 0; }
+    .ap-total-info span { display: block; font-size: 12px; font-weight: 700; color: var(--apagado); text-transform: uppercase; letter-spacing: .04em; }
+    .ap-total-info strong { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+    .ap-total-info em { display: block; font-size: 12px; color: var(--apagado); font-style: normal; overflow-wrap: anywhere; }
+    .ap-btn-ajustar { flex: 0 0 auto; }
+
+    .ap-secao-titulo { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+    .ap-secao-titulo h3 { font-size: 15px; margin: 0; }
+    .ap-dica { color: var(--apagado); font-size: 13px; margin: 6px 0 10px; }
+    .ap-dica:empty { display: none; }
+
+    .ap-linhas { display: flex; flex-direction: column; gap: 8px; }
+    .ap-linha {
+      display: grid; grid-template-columns: 42px 1fr auto auto; gap: 8px; align-items: center;
+    }
+    .ap-linha-pos { font-weight: 800; text-align: center; }
+    .ap-linha input { margin: 0; font-size: 16px; min-width: 0; }
+    .ap-linha .ap-texto { grid-column: 2 / 5; }
+    .ap-btn-icone {
+      width: 40px; height: 40px; min-height: 40px; padding: 0; flex: 0 0 auto;
+      display: inline-grid; place-items: center; border-radius: 10px;
+      background: transparent; color: var(--apagado); box-shadow: none; border: 1px solid var(--borda-forte);
+    }
+    .ap-btn-icone:hover { background: var(--hover); transform: none; box-shadow: none; }
+    .ap-btn-icone.ativo { background: var(--tint-azul); color: var(--tx-azul); border-color: transparent; }
+    .ap-btn-icone.remover { color: #dc2626; border-color: transparent; }
+    .ap-btn-icone.remover:hover { background: var(--tint-vermelho); }
+    .ap-btn-icone svg { width: 18px; height: 18px; }
+
+    .ap-linhas-acoes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .ap-linhas-acoes button { flex: 0 0 auto; min-height: 40px; }
+
+    .ap-resumo { margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: 14px; background: var(--superficie-3); }
+    .ap-resumo div { display: flex; justify-content: space-between; gap: 8px; }
+    .ap-resumo strong { font-variant-numeric: tabular-nums; }
+    .ap-resumo.erro { background: var(--tint-vermelho); color: var(--tx-vermelho); }
+
+    .ap-check { display: flex; align-items: center; gap: 10px; margin: 12px 0 0; font-size: 14px; cursor: pointer; min-height: 40px; }
+    .ap-check input { width: 20px; height: 20px; margin: 0; flex: 0 0 auto; }
+
+    .cg-badge.adicao { background: var(--tint-verde); color: var(--tx-verde); }
+    .cg-badge.subtracao { background: var(--tint-vermelho); color: var(--tx-vermelho); }
+    .cg-badge.anterior { background: var(--superficie-3); color: var(--apagado); }
 
     /* ---- Tabela de jogadores ---- */
 
@@ -818,29 +877,82 @@
 </div>
 
 <div id="modalAjustarPremiacao" class="modal-overlay">
-  <div class="modal-box" style="max-width:420px;">
-    <h2>Ajustar Premiação</h2>
+  <div class="modal-box ap-modal">
+    <h2>Ajustar Prêmio</h2>
 
-    <p style="color:var(--apagado);font-size:13px;margin-top:-4px;">
-      Ajuste manual (bônus, patrocínio, correção). Ajuste atual: <strong id="ajustePremiacaoAtual">R$ 0,00</strong>
-    </p>
-
-    <div class="flex" style="align-items:flex-end;">
-      <input type="number" id="valorAjustePremiacao" placeholder="Valor" min="0">
-
-      <button type="button" class="btn-green" style="flex:0 0 auto;" onclick="ajustarPremiacao(1)">
-        + Adicionar
-      </button>
-
-      <button type="button" class="btn-red" style="flex:0 0 auto;" onclick="ajustarPremiacao(-1)">
-        − Subtrair
+    <div class="ap-total">
+      <div class="ap-total-info">
+        <span>Prêmio total</span>
+        <strong id="apPremioTotal">R$ 0,00</strong>
+        <em id="apPremioComposicao"></em>
+      </div>
+      <button type="button" id="apBtnAjustar" class="btn-blue btn-com-icone ap-btn-ajustar" onclick="abrirModalAjusteValorPremio()">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 8h14M7 16h10"/></svg>
+        <span>Ajustar</span>
       </button>
     </div>
 
-    <div class="modal-acoes" style="margin-top:16px;">
-      <button class="btn-gray" onclick="fecharModalAjustarPremiacao()">
-        Fechar
+    <div class="ap-secao-titulo">
+      <h3>Premiação por posição</h3>
+      <span id="apModo" class="cg-badge"></span>
+    </div>
+    <p class="ap-dica">Altere o valor de cada posição se quiser. A soma pode ficar abaixo do prêmio total, nunca acima: para passar dele, use <strong>Ajustar</strong>.</p>
+
+    <div id="apLinhas" class="ap-linhas"></div>
+
+    <div class="ap-linhas-acoes">
+      <button type="button" class="btn-gray btn-com-icone" onclick="adicionarPosicaoPremio()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Posição</span>
       </button>
+      <button type="button" id="apBtnRestaurar" class="btn-gray" onclick="restaurarPremiacaoAutomatica()">Voltar à estrutura</button>
+    </div>
+
+    <div id="apResumo" class="ap-resumo"></div>
+
+    <details class="cg-fin-historico" id="apHistorico">
+      <summary id="apHistoricoTitulo">Histórico (0 ajustes)</summary>
+      <div id="apListaAjustes"></div>
+    </details>
+
+    <div class="modal-acoes" style="margin-top:16px;">
+      <button class="btn-gray" onclick="fecharModalAjustarPremiacao()">Fechar</button>
+      <button id="apBtnSalvar" class="btn-green" onclick="salvarPremiacaoManual()">Salvar premiação</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalAjusteValorPremio" class="modal-overlay">
+  <div class="modal-box" style="max-width:420px;">
+    <h2>Ajustar prêmio total</h2>
+
+    <div class="hj-tipos-lancamento" role="group" aria-label="Tipo de ajuste">
+      <button type="button" id="apTipoAdicionar" class="hj-tipo-lanc pagamento ativo" aria-pressed="true" onclick="selecionarTipoAjustePremio(1)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Adicionar</span>
+      </button>
+      <button type="button" id="apTipoSubtrair" class="hj-tipo-lanc debito" aria-pressed="false" onclick="selecionarTipoAjustePremio(-1)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+        <span>Subtrair</span>
+      </button>
+    </div>
+
+    <label class="rotulo-campo" for="apAjusteValor">Valor (R$)</label>
+    <input type="number" id="apAjusteValor" inputmode="decimal" min="0" step="0.01" placeholder="0,00">
+
+    <label class="rotulo-campo" for="apAjusteObs">Observação *</label>
+    <input type="text" id="apAjusteObs" maxlength="200" placeholder="Ex: patrocínio, bônus, correção...">
+
+    <label id="apProximaPosicaoLinha" class="ap-check">
+      <input type="checkbox" id="apProximaPosicao">
+      <span id="apProximaPosicaoTexto">Premiar a próxima posição com este valor</span>
+    </label>
+
+    <p id="apAjusteDica" class="ap-dica"></p>
+
+    <div class="modal-acoes" style="margin-top:12px;">
+      <button class="btn-gray" onclick="fecharModalAjusteValorPremio()">Cancelar</button>
+      <button id="apBtnConfirmarAjuste" class="btn-green" onclick="confirmarAjusteValorPremio()">Confirmar</button>
     </div>
   </div>
 </div>
@@ -1174,7 +1286,7 @@
   <div class="modal-box" style="max-width:380px;">
     <h2>Confirmar</h2>
 
-    <p id="confirmMensagem" class="modal-resumo"></p>
+    <p id="confirmMensagem" class="modal-resumo" style="white-space:pre-line;"></p>
 
     <div class="modal-acoes">
       <button class="btn-gray" onclick="responderConfirm(false)">
@@ -1489,68 +1601,27 @@
       ? `${formatarMoeda(Number(bounty.valor_total))}`
       : 'N/D';
 
-    const totalPrizeStat = movimentacoesTorneio.reduce((soma, mov) => soma + Number(mov.valor_prize || 0), 0)
-      + Number(torneioAtual.ajuste_premiacao || 0);
+    const totalPrizeStat = tsPremioTotal(movimentacoesTorneio, torneioAtual);
 
     document.getElementById('statPremioTotal').textContent = `${formatarMoeda(totalPrizeStat)}`;
 
     atualizarRakeAcumulado();
 
-    const estruturaPremiacao = estruturasPremiacao.find(e => e.id === torneioAtual.premiacao_estrutura_id);
-    const linhasPremios = document.getElementById('linhasPremiosInfo');
-
-    linhasPremios.innerHTML = '';
-
-    if (estruturaPremiacao) {
-
-      const percentuais = estruturaPremiacao.percentuais || [];
-      const valores = calcularValoresPremiacaoArredondados(totalPrizeStat, percentuais);
-
-      valores.forEach((valor, index) => {
-
-        linhasPremios.innerHTML += `
-          <div class="painel-info-linha">
-            <span>${index + 1}º Colocado</span>
-            <span>${formatarMoedaSemZeros(valor)}</span>
-          </div>
-        `;
-      });
-    }
+    document.getElementById('linhasPremiosInfo').innerHTML = premiosTorneioAtual().map(p => `
+      <div class="painel-info-linha">
+        <span>${p.posicao}º Colocado</span>
+        <span>${escapeHtml(tsTextoPremio(p, formatarMoedaSemZeros))}</span>
+      </div>
+    `).join('');
   }
 
-  function calcularValoresPremiacaoArredondados(totalPrize, percentuais) {
-
-    const unidade = Number(torneioAtual?.arredondamento_premiacao);
-
-    if (!unidade || unidade <= 0) {
-      return percentuais.map(pct => totalPrize * (Number(pct) / 100));
-    }
-
-    // Contas em centavos inteiros: evita erro de ponto flutuante no limite de 60%.
-    const unidadeCent = Math.round(unidade * 100);
-    let sobraCent = 0;
-    const resultadosCent = [];
-
-    percentuais.forEach(pct => {
-
-      const brutoCent = Math.round(totalPrize * Number(pct)) + sobraCent;
-
-      const multiplos = Math.floor(brutoCent / unidadeCent);
-      const restoCent = brutoCent - multiplos * unidadeCent;
-
-      const valorCent = restoCent * 10 >= unidadeCent * 6 ? (multiplos + 1) * unidadeCent : multiplos * unidadeCent;
-
-      sobraCent = brutoCent - valorCent;
-
-      resultadosCent.push(valorCent);
-    });
-
-    if (resultadosCent.length > 0) {
-      resultadosCent[resultadosCent.length - 1] += sobraCent;
-    }
-
-    return resultadosCent.map(c => c / 100);
+  // Premiação final por posição do torneio atual (manual ou da estrutura).
+  function premiosTorneioAtual() {
+    if (!torneioAtual) return [];
+    const estrutura = estruturasPremiacao.find(e => e.id === torneioAtual.premiacao_estrutura_id);
+    return tsPremiosTorneio(torneioAtual, tsPremioTotal(movimentacoesTorneio, torneioAtual), estrutura);
   }
+
 
   function formatarMoedaSemZeros(valor) {
 
@@ -2236,6 +2307,7 @@
       valoresTorneio = [];
       movimentacoesTorneio = [];
       resultadosTorneio = [];
+      ajustesPremiacaoTorneio = [];
 
       atualizarTela();
       return;
@@ -2256,6 +2328,7 @@
     movimentacoesTorneio = movimentacoesDB || [];
 
     await carregarResultadosTorneio();
+    await carregarAjustesPremiacao();
 
     console.log('Torneio atual:', torneioAtual?.nome);
 
@@ -2268,6 +2341,8 @@
       filtrarJogadoresModal();
     }
 
+
+    atualizarModalAjustarPremiacaoSeAberto();
 
     // Relatório aberto acompanha os lançamentos em tempo real.
     if (document.getElementById('modalRelatorioTorneio')?.classList.contains('aberto')) {
@@ -2489,61 +2564,6 @@
     document.getElementById(modalPaiEdicaoEstruturas()).classList.add('aberto');
   }
 
-  function abrirModalAjustarPremiacao() {
-
-    if (!adminLiberado || !torneioAtual) return;
-
-    if (torneioAtual.status === 'encerrado') return;
-
-    document.getElementById('ajustePremiacaoAtual').textContent =
-      `${formatarMoeda(Number(torneioAtual.ajuste_premiacao || 0))}`;
-    document.getElementById('valorAjustePremiacao').value = '';
-
-    document.getElementById('modalAjustarPremiacao').classList.add('aberto');
-  }
-
-  function fecharModalAjustarPremiacao() {
-
-    document.getElementById('modalAjustarPremiacao').classList.remove('aberto');
-  }
-
-  async function ajustarPremiacao(sinal) {
-
-    if (!adminLiberado || !torneioAtual) return;
-
-    if (torneioAtual.status === 'encerrado') return;
-
-    const valor = parseFloat(document.getElementById('valorAjustePremiacao').value);
-
-    if (isNaN(valor) || valor <= 0) {
-      await mostrarAlerta('Informe um valor válido');
-      return;
-    }
-
-    const ajusteAtual = Number(torneioAtual.ajuste_premiacao) || 0;
-    const novoAjuste = ajusteAtual + (sinal * valor);
-
-    const { error } = await client
-      .from('torneios')
-      .update({ ajuste_premiacao: novoAjuste })
-      .eq('id', torneioAtual.id);
-
-    if (error) {
-      await mostrarAlerta('Erro ao ajustar premiação');
-      console.error(error);
-      return;
-    }
-
-    console.log('Premiação ajustada:', novoAjuste);
-
-    document.getElementById('valorAjustePremiacao').value = '';
-
-    await carregarDados();
-
-    document.getElementById('ajustePremiacaoAtual').textContent =
-      `${formatarMoeda(Number(torneioAtual.ajuste_premiacao || 0))}`;
-  }
-
   function fecharModalConfigTorneioAtual() {
 
     document.getElementById('modalConfigTorneioAtual').classList.remove('aberto');
@@ -2653,20 +2673,65 @@
 
     if (torneioAtual.status === 'encerrado') return;
 
-    if (!await mostrarConfirm(`Encerrar o torneio "${torneioAtual.nome}"? Não será mais possível registrar pagamentos nem editar as configurações dele. Depois de encerrado, ele pode ser excluído.`)) return;
+    // Prêmios (manuais ou da estrutura) vão para o Em Aberto de cada premiado.
+    const premiacao = montarPagamentosPremios();
+
+    if (premiacao.erro) {
+      await mostrarAlerta(premiacao.erro);
+      return;
+    }
+
+    const partes = [`Encerrar o torneio "${torneioAtual.nome}"? Não será mais possível registrar pagamentos nem editar as configurações dele.`];
+
+    if (premiacao.linhas.length > 0) {
+      partes.push(`Prêmios que serão lançados no Em Aberto (abre a comanda de quem não tiver uma aberta):\n${premiacao.linhas.join('\n')}`);
+    }
+
+    if (premiacao.semJogador.length > 0) {
+      partes.push(`Sem jogador na classificação (não serão pagos): ${premiacao.semJogador.join(', ')}. Para pagar, cancele e defina a colocação em Classificação.`);
+    }
+
+    if (!await mostrarConfirm(partes.join('\n\n'))) return;
 
     const btn = document.getElementById('btnEncerrarTorneio');
     btn.classList.add('disabled');
 
-    const { error: erroStatus } = await client
-      .from('torneios')
-      .update({ status: 'encerrado' })
-      .eq('id', torneioAtual.id);
+    const { error } = await client.rpc('encerrar_torneio_com_premios', {
+      p_torneio_id: String(torneioAtual.id),
+      p_pagamentos: premiacao.pagamentos
+    });
 
-    if (erroStatus) {
+    if (error && apErroSqlPendente(error)) {
+
+      // Banco sem o sql/011: encerra como antes, sem lançar os prêmios.
       btn.classList.remove('disabled');
-      await mostrarAlerta('Erro ao encerrar torneio');
-      console.error(erroStatus);
+
+      if (!await mostrarConfirm('O banco ainda não foi atualizado (rode o sql/011_ajuste_premiacao.sql no Supabase), então os prêmios não podem ser lançados no Em Aberto agora. Encerrar o torneio mesmo assim, sem lançar os prêmios?')) return;
+
+      btn.classList.add('disabled');
+
+      const { error: erroStatus } = await client
+        .from('torneios')
+        .update({ status: 'encerrado' })
+        .eq('id', torneioAtual.id);
+
+      btn.classList.remove('disabled');
+
+      if (erroStatus) {
+        await mostrarAlerta('Erro ao encerrar torneio');
+        console.error(erroStatus);
+        return;
+      }
+
+      carregarDados();
+      return;
+    }
+
+    btn.classList.remove('disabled');
+
+    if (error) {
+      await mostrarAlerta('Erro ao encerrar torneio. Nada foi alterado; tente novamente.');
+      console.error(error);
       return;
     }
 
@@ -2674,9 +2739,7 @@
     // para o diretor permanecer na página dele e conferir o fechamento.
     // Ele deixa de ser o atual quando outro torneio for selecionado.
 
-    btn.classList.remove('disabled');
-
-    console.log('Torneio encerrado:', torneioAtual.id);
+    console.log('Torneio encerrado:', torneioAtual.id, 'prêmios lançados:', premiacao.pagamentos.length);
 
     carregarDados();
   }
@@ -4181,6 +4244,7 @@
     document.getElementById('modalEditarBlindsTorneio').classList.remove('aberto');
     document.getElementById('modalLimitesTorneio').classList.remove('aberto');
     fecharModalIntervalo();
+    fecharModalAjusteValorPremio();
     fecharModalAjustarPremiacao();
     fecharModalSelecionarJogador();
     fecharModalPagamento();
