@@ -78,7 +78,7 @@
 }
 
 .cg-icone-btn.perigo { background: #dc2626; color: #fff; }
-.cg-acoes-topo { display: flex; gap: 8px; }
+.cg-acoes-topo { display: flex; gap: 8px; align-items: center; }
 
 /* ---- KPIs ---- */
 
