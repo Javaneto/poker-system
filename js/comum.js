@@ -78,17 +78,25 @@ function executarSerial(chave, funcao) {
 // Realtime robusto
 // ---------------------------------------------------------------------------
 // - reconecta sozinho se o canal cair (erro, timeout, fechado);
-// - recarrega ao voltar para a aba, ao reconectar a internet e a cada
-//   30 s como garantia (se algum aviso do Realtime se perder);
+// - recarrega ao voltar para a aba e ao reconectar a internet;
+// - com a aba escondida não recarrega nada: guarda que houve mudança e
+//   recarrega uma vez só quando a aba voltar (economia de tráfego);
+// - garantia (aviso do Realtime perdido): recarga a cada 5 min, só com a aba
+//   visível. Antes era a cada 30 s e gastava a maior parte do plano gratuito;
 // - mostra um indicador "Ao vivo" / "Reconectando..." no canto da tela.
 
-function iniciarRealtimeRobusto({ nome, tabelas, aoMudar, intervaloSeguranca = 30000 }) {
+function iniciarRealtimeRobusto({ nome, tabelas, aoMudar, intervaloSeguranca = 300000 }) {
 
   let canal = null;
   let tentativaReconexao = null;
   let debounce = null;
+  let mudouEscondida = false;
 
   function avisarMudanca() {
+    if (document.visibilityState !== 'visible') {
+      mudouEscondida = true;
+      return;
+    }
     clearTimeout(debounce);
     debounce = setTimeout(() => {
       console.log('Recarregando dados via Realtime');
@@ -134,8 +142,19 @@ function iniciarRealtimeRobusto({ nome, tabelas, aoMudar, intervaloSeguranca = 3
 
   conectar();
 
+  let escondidaDesde = 0;
+
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') aoMudar();
+    if (document.visibilityState !== 'visible') {
+      escondidaDesde = Date.now();
+      return;
+    }
+    // Recarrega se algo mudou enquanto escondida ou se ficou fora mais de
+    // 1 min (o Realtime pode ter caído sem avisar). Troca rápida de aba não.
+    if (mudouEscondida || Date.now() - escondidaDesde > 60000) {
+      mudouEscondida = false;
+      aoMudar();
+    }
   });
 
   window.addEventListener('online', () => {

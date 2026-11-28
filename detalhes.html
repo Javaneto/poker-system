@@ -1146,8 +1146,64 @@
 
     setInterval(atualizarTela, 1000);
     setInterval(atualizarRelogioParede, 1000);
-    setInterval(carregarDados, 3000);
+    iniciarRealtimeTv();
   })();
+
+  // A TV recarregava tudo a cada 3 s (cerca de 1.200 recargas por hora com
+  // 6 consultas cada): era o maior gasto do plano gratuito. Agora recarrega
+  // só quando o banco avisa uma mudança (Realtime), ao voltar a ficar
+  // visível e, como garantia, a cada 5 min. O relógio continua andando
+  // sozinho na tela (é calculado pelo horário de início gravado no banco).
+  function iniciarRealtimeTv() {
+
+    const TABELAS = ['configuracoes', 'torneios', 'movimentacoes', 'torneio_valores',
+                     'torneio_resultados', 'estruturas_blinds', 'premiacao_estruturas'];
+
+    let canal = null;
+    let debounce = null;
+    let reconexao = null;
+
+    function recarregar() {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => carregarDados(), 300);
+    }
+
+    function conectar() {
+
+      if (canal) client.removeChannel(canal);
+
+      const este = client.channel(`tv-realtime-${Date.now()}`);
+      canal = este;
+
+      TABELAS.forEach(tabela => {
+        este.on('postgres_changes', { event: '*', schema: 'public', table: tabela }, recarregar);
+      });
+
+      este.subscribe(status => {
+        if (este !== canal) return;
+        if (status === 'SUBSCRIBED') {
+          recarregar();
+          return;
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          clearTimeout(reconexao);
+          reconexao = setTimeout(conectar, 5000);
+        }
+      });
+    }
+
+    conectar();
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') recarregar();
+    });
+
+    window.addEventListener('online', conectar);
+
+    setInterval(() => {
+      if (document.visibilityState === 'visible') carregarDados();
+    }, 300000);
+  }
 
 </script>
 
