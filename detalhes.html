@@ -1204,10 +1204,15 @@
 
     function conectar() {
 
-      if (canal) client.removeChannel(canal);
+      clearTimeout(reconexao);
 
+      // O canal novo vira o atual ANTES de remover o antigo (removeChannel
+      // avisa CLOSED na hora; senão parecia uma queda e reconectava sem fim).
+      const anterior = canal;
       const este = client.channel(`tv-realtime-${Date.now()}`);
       canal = este;
+
+      if (anterior) client.removeChannel(anterior);
 
       TABELAS.forEach(tabela => {
         este.on('postgres_changes', { event: '*', schema: 'public', table: tabela }, recarregar);

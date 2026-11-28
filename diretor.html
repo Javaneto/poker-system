@@ -2236,7 +2236,7 @@
 
   // Realtime com reconexão automática, recarga ao voltar para a aba e
   // conferência a cada 30 s (ver js/comum.js).
-  iniciarRealtimeRobusto({
+  const realtimeTorneio = iniciarRealtimeRobusto({
     nome: 'torneio-realtime',
     tabelas: ['movimentacoes', 'jogadores', 'configuracoes', 'torneios', 'torneio_valores', 'estruturas_blinds', 'premiacao_estruturas', 'torneio_resultados'],
     aoMudar: tabelas => tabelas ? carregarDadosParcial(tabelas) : carregarDados()
@@ -4345,7 +4345,14 @@
 
     if (!autenticado) return;
 
-    await carregarDados();
+    // O Realtime faz uma carga completa ao conectar. A primeira carga da tela
+    // usa essa (espera a conexão até 3 s) em vez de buscar tudo duas vezes.
+    // Sem conexão a tempo, carrega sozinha como antes.
+    const conectou = await Promise.race([
+      realtimeTorneio.primeiraCarga,
+      new Promise(resolve => setTimeout(() => resolve(false), 3000))
+    ]);
+    if (!conectou) await carregarDados();
     await tratarHashInicial();
 
     iniciarTickerRelogio();

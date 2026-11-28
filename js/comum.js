@@ -90,7 +90,13 @@ function executarSerial(chave, funcao) {
 //   visível. Antes era a cada 30 s e gastava a maior parte do plano gratuito;
 // - mostra um indicador "Ao vivo" / "Reconectando..." no canto da tela.
 
+// Devolve { primeiraCarga }: promessa resolvida quando a carga completa da
+// primeira conexão termina. A página pode esperar por ela em vez de fazer a
+// sua própria carga inicial (senão busca tudo duas vezes ao abrir).
 function iniciarRealtimeRobusto({ nome, tabelas, aoMudar, intervaloSeguranca = 300000 }) {
+
+  let avisarPrimeiraCarga = null;
+  const primeiraCarga = new Promise(resolve => { avisarPrimeiraCarga = resolve; });
 
   let canal = null;
   let tentativaReconexao = null;
@@ -117,12 +123,17 @@ function iniciarRealtimeRobusto({ nome, tabelas, aoMudar, intervaloSeguranca = 3
 
   function conectar() {
 
-    if (canal) {
-      client.removeChannel(canal);
-    }
+    clearTimeout(tentativaReconexao);
 
+    // O canal novo vira o atual ANTES de remover o antigo: removeChannel avisa
+    // CLOSED na hora, e se o antigo ainda fosse o atual esse aviso parecia uma
+    // queda e agendava outra reconexão — um ciclo sem fim que recarregava
+    // tudo a cada 3 s.
+    const anterior = canal;
     const este = client.channel(`${nome}-${Date.now()}`);
     canal = este;
+
+    if (anterior) client.removeChannel(anterior);
 
     tabelas.forEach(tabela => {
       canal.on('postgres_changes', { event: '*', schema: 'public', table: tabela }, avisarMudanca);
@@ -139,7 +150,12 @@ function iniciarRealtimeRobusto({ nome, tabelas, aoMudar, intervaloSeguranca = 3
       if (status === 'SUBSCRIBED') {
         atualizarIndicadorAoVivo('ok');
         // Recarrega ao (re)conectar: pega o que mudou enquanto estava fora.
-        aoMudar();
+        const carga = aoMudar();
+        if (avisarPrimeiraCarga) {
+          const avisar = avisarPrimeiraCarga;
+          avisarPrimeiraCarga = null;
+          Promise.resolve(carga).then(() => avisar(true), () => avisar(true));
+        }
         return;
       }
 
@@ -178,6 +194,8 @@ function iniciarRealtimeRobusto({ nome, tabelas, aoMudar, intervaloSeguranca = 3
   setInterval(() => {
     if (document.visibilityState === 'visible') aoMudar();
   }, intervaloSeguranca);
+
+  return { primeiraCarga };
 }
 
 function atualizarIndicadorAoVivo(estado) {
