@@ -306,6 +306,21 @@
     }
   });
 
+  // Menu "Cash Game": com uma única mesa ativa, abre direto a mesa.
+  // Com zero ou mais de uma, mostra a seleção. O "voltar" da mesa usa
+  // index.html?lista para sempre mostrar a seleção.
+  async function abrirMesaAtivaUnica() {
+
+    if (new URLSearchParams(location.search).has('lista')) return false;
+
+    const { data, error } = await client.from('cash_mesas').select('id').eq('status', 'ativo');
+
+    if (error || !data || data.length !== 1) return false;
+
+    location.replace(`cash-mesa.html?id=${encodeURIComponent(data[0].id)}`);
+    return true;
+  }
+
   (async function inicializar() {
 
     const { data } = await client.auth.getSession();
@@ -317,6 +332,8 @@
 
     adminLiberado = true;
     document.getElementById('btnNovaMesa').classList.remove('disabled');
+
+    if (await abrirMesaAtivaUnica()) return;
 
     await carregarDados();
 

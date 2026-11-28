@@ -34,11 +34,11 @@
   // id/desabilitado: mantêm os ids que as páginas já usam para liberar por permissão.
   const ITENS = [
     { grupo: 'Operação' },
+    // Cash Game e Torneios abrem direto a mesa / o torneio quando só há um ativo.
     { rotulo: 'Cash Game', icone: 'cash', href: 'index.html', tambem: ['cash-mesa.html'] },
-    { rotulo: 'Diretor', icone: 'diretor', href: 'diretor.html' },
+    { rotulo: 'Torneios', icone: 'torneios', href: 'torneios.html', tambem: ['diretor.html'] },
     { rotulo: 'Em Aberto', icone: 'aberto', href: 'em-aberto.html' },
     { rotulo: 'Tela da TV', icone: 'tv', href: 'detalhes.html' },
-    { rotulo: 'Torneios', icone: 'torneios', href: 'torneios.html' },
     { grupo: 'Clube' },
     { rotulo: 'Jogadores', icone: 'jogadores', href: 'jogadores.html' },
     { rotulo: 'Ranking', icone: 'ranking', href: 'rankings.html' },
