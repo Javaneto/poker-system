@@ -438,9 +438,9 @@ function abrirCentralHistorico(opcoes = {}) {
   garantirModalCentralHistorico();
 
   const temFiltro = !!(opcoes.torneioId || opcoes.mesaId);
-  document.getElementById('chFiltroTorneio').checked = temFiltro;
+  definirFiltroCentral(temFiltro);
   document.getElementById('chFiltroTorneioTexto').textContent = opcoes.mesaId ? 'Só este Cash' : 'Só este torneio';
-  document.getElementById('chFiltroTorneioWrapper').classList.toggle('oculto', !temFiltro);
+  document.getElementById('chFiltroTorneio').classList.toggle('oculto', !temFiltro);
   document.getElementById('chBusca').value = '';
 
   document.getElementById('modalCentralHistorico').classList.add('aberto');
@@ -452,6 +452,69 @@ function fecharCentralHistorico() {
   document.getElementById('modalCentralHistorico')?.classList.remove('aberto');
 }
 
+// Interruptor "Só este torneio / Só este Cash" (role="switch").
+function filtroCentralLigado() {
+  const chave = document.getElementById('chFiltroTorneio');
+  return !!chave && !chave.classList.contains('oculto') && chave.getAttribute('aria-checked') === 'true';
+}
+
+function definirFiltroCentral(ligado) {
+  document.getElementById('chFiltroTorneio')?.setAttribute('aria-checked', ligado ? 'true' : 'false');
+}
+
+// Coluna e valor do filtro ligado (torneio ou mesa), ou null.
+function filtroAtivoCentral() {
+  if (!filtroCentralLigado()) return null;
+  const { mesaId, torneioId } = centralHistorico.opcoes;
+  if (mesaId) return { coluna: 'mesa_id', valor: mesaId };
+  if (torneioId) return { coluna: 'torneio_id', valor: torneioId };
+  return null;
+}
+
+const ICONE_CH = {
+  historico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>',
+  fechar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  busca: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+  relogio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  vazio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></svg>',
+  erro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>'
+};
+
+function htmlVazioCentral(texto, erro = false) {
+  return `<div class="ch-vazio${erro ? ' negativo' : ''}"><span class="ch-vazio-ico">${erro ? ICONE_CH.erro : ICONE_CH.vazio}</span><p>${texto}</p></div>`;
+}
+
+function htmlCarregandoCentral(qtd = 3) {
+  return `<div class="ch-carregando" role="status" aria-label="Carregando">${'<div class="ch-esqueleto"><span></span><span></span><span></span></div>'.repeat(qtd)}</div>`;
+}
+
+function htmlDataCentral(texto) {
+  return `<span class="ch-data">${ICONE_CH.relogio}<span>${texto}</span></span>`;
+}
+
+// Cartão padrão do modal (movimentação, sessão ou registro do Log).
+function htmlItemCentral({ topo = '', titulo = '', detalhe = '', data = '', valor = '', classeValor = '', acoes = '' }) {
+  return `
+    <div class="ch-item">
+      <div class="ch-item-info">
+        ${topo}
+        ${titulo ? `<strong class="ch-item-titulo">${titulo}</strong>` : ''}
+        ${detalhe ? `<div class="ch-item-detalhe">${detalhe}</div>` : ''}
+        ${data ? htmlDataCentral(data) : ''}
+      </div>
+      ${valor || acoes ? `
+        <div class="ch-item-lado">
+          ${valor ? `<strong class="ch-valor ${classeValor}">${valor}</strong>` : ''}
+          ${acoes ? `<div class="ch-acoes">${acoes}</div>` : ''}
+        </div>` : ''}
+    </div>
+  `;
+}
+
+function htmlVerMaisCentral(onclick) {
+  return `<div class="ch-mais"><button type="button" class="ch-btn" onclick="${onclick}">Ver mais</button></div>`;
+}
+
 function garantirModalCentralHistorico() {
 
   if (document.getElementById('modalCentralHistorico')) return;
@@ -461,24 +524,32 @@ function garantirModalCentralHistorico() {
   div.id = 'modalCentralHistorico';
   div.className = 'modal-overlay';
   div.innerHTML = `
-    <div class="modal-box modal-grande">
-      <div class="topbar" style="margin-bottom:10px;">
-        <h2 style="margin:0;">Histórico / Log</h2>
+    <div class="modal-box modal-grande ch-modal" role="dialog" aria-modal="true" aria-labelledby="chTitulo">
+      <div class="ch-cabecalho">
+        <span class="ch-cabecalho-ico">${ICONE_CH.historico}</span>
+        <div class="ch-cabecalho-texto">
+          <h2 id="chTitulo">Histórico / Log</h2>
+          <p>Desfazer, reabrir sessões e restaurar</p>
+        </div>
+        <!-- O X automático do menu.js fica escondido: este é o X do cabeçalho; o Esc continua pelo menu.js. -->
+        <button type="button" class="ch-fechar" title="Fechar" aria-label="Fechar" onclick="fecharCentralHistorico()">${ICONE_CH.fechar}</button>
       </div>
 
-      <div class="abas">
-        <button class="aba" data-aba="abertas" onclick="trocarAbaCentralHistorico('abertas')">Em aberto</button>
-        <button class="aba" data-aba="sessoes" onclick="trocarAbaCentralHistorico('sessoes')">Sessões finalizadas</button>
-        <button class="aba" data-aba="log" onclick="trocarAbaCentralHistorico('log')">Log</button>
+      <div class="ch-abas" role="tablist" aria-label="Seções do histórico">
+        <button type="button" class="ch-aba" role="tab" data-aba="abertas" onclick="trocarAbaCentralHistorico('abertas')">Em aberto</button>
+        <button type="button" class="ch-aba" role="tab" data-aba="sessoes" onclick="trocarAbaCentralHistorico('sessoes')">Sessões finalizadas</button>
+        <button type="button" class="ch-aba" role="tab" data-aba="log" onclick="trocarAbaCentralHistorico('log')">Log</button>
       </div>
 
       <div class="ch-filtros">
-        <div class="pesquisa-wrapper" style="flex:1;margin-bottom:0;">
-          <input type="text" id="chBusca" placeholder="Filtrar por jogador, tipo, observação..." autocomplete="off" style="margin-bottom:0;">
-        </div>
-        <label id="chFiltroTorneioWrapper" class="ch-check">
-          <input type="checkbox" id="chFiltroTorneio"> <span id="chFiltroTorneioTexto">Só este torneio</span>
+        <label class="ch-busca">
+          <span class="ch-busca-ico">${ICONE_CH.busca}</span>
+          <input type="search" id="chBusca" placeholder="Filtrar por jogador, tipo, observação..." autocomplete="off" aria-label="Filtrar">
         </label>
+        <button type="button" id="chFiltroTorneio" class="ch-switch" role="switch" aria-checked="false">
+          <span class="ch-switch-trilho" aria-hidden="true"><span class="ch-switch-bolinha"></span></span>
+          <span id="chFiltroTorneioTexto">Só este torneio</span>
+        </button>
       </div>
 
       <div id="chConteudo" class="ch-conteudo"></div>
@@ -494,7 +565,11 @@ function garantirModalCentralHistorico() {
     debounceBusca = setTimeout(renderizarAbaCentralHistorico, 200);
   });
 
-  document.getElementById('chFiltroTorneio').addEventListener('change', renderizarAbaCentralHistorico);
+  document.getElementById('chFiltroTorneio').addEventListener('click', () => {
+    definirFiltroCentral(!filtroCentralLigado());
+    centralHistorico.limiteSessoes = 30;
+    renderizarAbaCentralHistorico();
+  });
 
   div.addEventListener('click', e => {
     if (e.target === div) fecharCentralHistorico();
@@ -508,13 +583,15 @@ function trocarAbaCentralHistorico(aba) {
   // Log sempre atualizado ao abrir a aba (só a primeira página do período).
   if (aba === 'log') centralHistorico.log = null;
 
-  document.querySelectorAll('#modalCentralHistorico .aba').forEach(b => {
+  document.querySelectorAll('#modalCentralHistorico .ch-aba').forEach(b => {
     b.classList.toggle('ativa', b.dataset.aba === aba);
+    b.setAttribute('aria-selected', b.dataset.aba === aba ? 'true' : 'false');
   });
 
-  document.getElementById('chFiltroTorneioWrapper').classList.toggle(
+  // O filtro vale para "Em aberto" e "Sessões finalizadas" (o Log é geral).
+  document.getElementById('chFiltroTorneio').classList.toggle(
     'oculto',
-    aba !== 'abertas' || !(centralHistorico.opcoes.torneioId || centralHistorico.opcoes.mesaId)
+    aba === 'log' || !(centralHistorico.opcoes.torneioId || centralHistorico.opcoes.mesaId)
   );
 
   renderizarAbaCentralHistorico();
@@ -539,7 +616,8 @@ async function renderizarAbaCentralHistorico() {
 
   if (!conteudo) return;
 
-  conteudo.innerHTML = '<p class="ch-vazio">Carregando...</p>';
+  conteudo.innerHTML = htmlCarregandoCentral();
+  conteudo.setAttribute('aria-busy', 'true');
 
   try {
     if (centralHistorico.aba === 'abertas') await renderizarAbertasCentral(conteudo);
@@ -547,8 +625,10 @@ async function renderizarAbaCentralHistorico() {
     if (centralHistorico.aba === 'log') await renderizarLogCentral(conteudo);
   } catch (erro) {
     console.error(erro);
-    conteudo.innerHTML = `<p class="ch-vazio negativo">Erro ao carregar: ${escapeHtml(erro.message || String(erro))}</p>`;
+    conteudo.innerHTML = htmlVazioCentral(`Erro ao carregar: ${escapeHtml(erro.message || String(erro))}`, true);
   }
+
+  conteudo.removeAttribute('aria-busy');
 }
 
 function htmlDetalhesMov(mov) {
@@ -569,7 +649,7 @@ function htmlDetalhesMov(mov) {
 
 async function renderizarAbertasCentral(conteudo) {
 
-  const filtroMarcado = document.getElementById('chFiltroTorneio').checked;
+  const filtroMarcado = filtroCentralLigado();
   const somenteTorneio = filtroMarcado && !centralHistorico.opcoes.mesaId && centralHistorico.opcoes.torneioId;
   const somenteMesa = filtroMarcado && centralHistorico.opcoes.mesaId;
   const termo = textoBuscaCentral();
@@ -600,35 +680,117 @@ async function renderizarAbertasCentral(conteudo) {
   abertas = abertas.filter(m => movCombinaBusca(m, termo));
 
   if (abertas.length === 0) {
-    conteudo.innerHTML = '<p class="ch-vazio">Nenhuma movimentação em aberto.</p>';
+    conteudo.innerHTML = htmlVazioCentral('Nenhuma movimentação em aberto.');
     return;
   }
 
   conteudo.innerHTML = `
-    <p class="ch-dica">${abertas.length} movimentação(ões) em aberto. Desfazer remove a movimentação; ela fica guardada no Log e pode ser restaurada.</p>
-    ${abertas.map(mov => `
-      <div class="linha-desfazer">
-        <div class="linha-desfazer-info">
-          <strong>${escapeHtml(mov.jogador)}</strong>
-          ${htmlDetalhesMov(mov)}${somenteTorneio && mov.torneio_id == null ? ' · <em class="ch-obs">sem vínculo com o torneio (pode ser do cash)</em>' : ''}<br>
-          <span class="ch-data">${formatarDataHora(mov.data)}</span>
-        </div>
-        <div class="linha-desfazer-valor">
-          <strong>${formatarMoeda(mov.valor)}</strong>
-          <button class="btn-red" onclick="desfazerMovCentral(${mov.id})">Desfazer</button>
-        </div>
-      </div>
-    `).join('')}
+    <p class="ch-dica"><strong>${abertas.length}</strong> movimentação(ões) em aberto. Desfazer remove a movimentação; ela fica guardada no Log e pode ser restaurada.</p>
+    <div class="ch-lista">
+      ${abertas.map(mov => htmlItemCentral({
+        titulo: escapeHtml(mov.jogador),
+        detalhe: htmlDetalhesMov(mov) + (somenteTorneio && mov.torneio_id == null ? ' · <em class="ch-obs">sem vínculo com o torneio (pode ser do cash)</em>' : ''),
+        data: formatarDataHora(mov.data),
+        valor: formatarMoeda(mov.valor),
+        acoes: `<button type="button" class="ch-btn ch-btn-perigo" onclick="desfazerMovCentral(${mov.id})">Desfazer</button>`
+      })).join('')}
+    </div>
   `;
+}
+
+// Filtro "Só este torneio / Só este Cash" nas sessões finalizadas: busca só
+// jogador + horário das sessões que têm movimentação do torneio (torneio_id)
+// ou da mesa (mesa_id) — consulta pequena, sem baixar as movimentações.
+// Devolve null sem filtro; senão { chaves (ordem da mais recente), temMais }.
+async function sessoesFiltradasCentral() {
+
+  const filtro = filtroAtivoCentral();
+
+  if (!filtro) return null;
+
+  const linhas = await buscarTodas(() =>
+    client
+      .from('movimentacoes')
+      .select('jogador,sessao_finalizada_em')
+      .eq(filtro.coluna, filtro.valor)
+      .not('sessao_finalizada_em', 'is', null)
+      .order('id', { ascending: false })
+  );
+
+  const chaves = [];
+  const vistas = new Set();
+
+  linhas.forEach(m => {
+    const chave = `${m.jogador}||${m.sessao_finalizada_em}`;
+    if (vistas.has(chave)) return;
+    vistas.add(chave);
+    chaves.push({ chave, jogador: m.jogador, sessao_finalizada_em: m.sessao_finalizada_em });
+  });
+
+  return {
+    chaves: chaves.slice(0, centralHistorico.limiteSessoes),
+    temMais: chaves.length > centralHistorico.limiteSessoes
+  };
+}
+
+function htmlItensSessaoCentral(movs) {
+  return movs.map(mov => htmlItemCentral({
+    detalhe: htmlDetalhesMov(mov),
+    data: formatarDataHora(mov.data),
+    valor: formatarMoeda(mov.valor),
+    acoes: `<button type="button" class="ch-btn ch-btn-perigo" onclick="desfazerMovCentral(${mov.id}, true)">Desfazer</button>`
+  })).join('') || htmlVazioCentral('Sessão sem itens.');
+}
+
+function htmlSessaoCentral({ i, jogador, entrada, saida, itens, finalizada, resultado, acaoItens, acaoReabrir, itensHtml = '' }) {
+  const classe = resultado >= 0 ? 'positivo' : 'negativo';
+  const sinal = resultado >= 0 ? '+' : '-';
+
+  return `
+    <div class="ch-sessao">
+      ${htmlItemCentral({
+        titulo: escapeHtml(jogador),
+        detalhe: `Entrou ${formatarMoeda(entrada)} · Saiu ${formatarMoeda(saida)} · ${itens} item(ns)`,
+        data: `Finalizada em ${formatarDataHora(finalizada)}`,
+        valor: `${sinal} ${formatarMoeda(Math.abs(resultado))}`,
+        classeValor: classe,
+        acoes: `
+          <button type="button" class="ch-btn" aria-expanded="false" aria-controls="chItens${i}" onclick="${acaoItens}">Itens</button>
+          <button type="button" class="ch-btn ch-btn-azul" onclick="${acaoReabrir}">Reabrir</button>
+        `
+      })}
+      <div id="chItens${i}" class="ch-itens oculto">${itensHtml}</div>
+    </div>
+  `;
+}
+
+function alternarExpansaoItensCentral(i) {
+  const div = document.getElementById('chItens' + i);
+  if (!div) return false;
+  const abrir = div.classList.contains('oculto');
+  div.classList.toggle('oculto', !abrir);
+  document.querySelector(`[aria-controls="chItens${i}"]`)?.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+  return abrir;
 }
 
 // Com o sql/017: uma linha pronta por sessão (visão relatorio_sessoes); os
 // itens só são buscados ao tocar em "Itens" ou "Reabrir".
-async function renderizarSessoesDaVisao(conteudo, termo) {
+async function renderizarSessoesDaVisao(conteudo, termo, filtradas) {
+
+  const VAZIO = htmlVazioCentral('Nenhuma sessão finalizada encontrada.');
 
   let consulta = client
     .from('relatorio_sessoes')
     .select('jogador,sessao_finalizada_em,entrada,saida,resultado,itens');
+
+  if (filtradas) {
+    if (filtradas.chaves.length === 0) {
+      conteudo.innerHTML = VAZIO;
+      return true;
+    }
+    const tempos = Array.from(new Set(filtradas.chaves.map(c => c.sessao_finalizada_em)));
+    consulta = consulta.in('sessao_finalizada_em', tempos);
+  }
 
   if (termo) {
     if (!centralHistorico.jogadores) {
@@ -638,7 +800,7 @@ async function renderizarSessoesDaVisao(conteudo, termo) {
     }
     const ids = centralHistorico.jogadores.filter(j => normalizarBusca(j.nome).includes(termo)).map(j => j.id);
     if (ids.length === 0) {
-      conteudo.innerHTML = '<p class="ch-vazio">Nenhuma sessão finalizada encontrada.</p>';
+      conteudo.innerHTML = VAZIO;
       return true;
     }
     consulta = consulta.in('jogador_id', ids);
@@ -646,48 +808,50 @@ async function renderizarSessoesDaVisao(conteudo, termo) {
 
   const { data, error } = await consulta
     .order('ultimo_id', { ascending: false })
-    .range(0, centralHistorico.limiteSessoes);
+    .range(0, filtradas ? 999 : centralHistorico.limiteSessoes);
 
   if (error) {
     if (/relatorio_sessoes/.test(error.message || '') || ['PGRST205', '42P01'].includes(error.code)) return false;
     throw error;
   }
 
-  const temMais = (data || []).length > centralHistorico.limiteSessoes;
-  const sessoes = (data || []).slice(0, centralHistorico.limiteSessoes);
+  let sessoes;
+  let temMais;
+
+  if (filtradas) {
+    // O "in" por horário pode trazer sessões de outros jogadores fechadas no
+    // mesmo instante: fica só o par jogador + horário do torneio/mesa.
+    const validas = new Set(filtradas.chaves.map(c => c.chave));
+    sessoes = (data || []).filter(s => validas.has(`${s.jogador}||${s.sessao_finalizada_em}`));
+    temMais = filtradas.temMais;
+  } else {
+    temMais = (data || []).length > centralHistorico.limiteSessoes;
+    sessoes = (data || []).slice(0, centralHistorico.limiteSessoes);
+  }
+
   centralHistorico.sessoes = sessoes;
 
   if (sessoes.length === 0) {
-    conteudo.innerHTML = '<p class="ch-vazio">Nenhuma sessão finalizada encontrada.</p>';
+    conteudo.innerHTML = VAZIO;
     return true;
   }
 
   conteudo.innerHTML = `
     <p class="ch-dica">Reabrir devolve a sessão para "Movimentações em Aberto" para corrigir o fechamento.</p>
-    ${sessoes.map((s, i) => {
-      const resultado = Number(s.resultado);
-      const classe = resultado >= 0 ? 'positivo' : 'negativo';
-      const sinal = resultado >= 0 ? '+' : '-';
-
-      return `
-        <div class="ch-sessao">
-          <div class="linha-desfazer" style="border-bottom:none;">
-            <div class="linha-desfazer-info">
-              <strong>${escapeHtml(s.jogador)}</strong>
-              Entrou ${formatarMoeda(s.entrada)} · Saiu ${formatarMoeda(s.saida)} · ${Number(s.itens)} item(ns)<br>
-              <span class="ch-data">Finalizada em ${formatarDataHora(s.sessao_finalizada_em)}</span>
-            </div>
-            <div class="linha-desfazer-valor">
-              <strong class="${classe}">${sinal} ${formatarMoeda(Math.abs(resultado))}</strong>
-              <button class="btn-gray" onclick="alternarItensSessaoCentral(${i})">Itens</button>
-              <button class="btn-blue" onclick="reabrirSessaoDaVisaoCentral(${i})">Reabrir</button>
-            </div>
-          </div>
-          <div id="chItens${i}" class="ch-itens oculto"></div>
-        </div>
-      `;
-    }).join('')}
-    ${temMais ? '<div style="text-align:center;margin-top:12px;"><button class="btn-gray" onclick="centralHistorico.limiteSessoes += 30; renderizarAbaCentralHistorico();">Ver mais</button></div>' : ''}
+    <div class="ch-lista">
+      ${sessoes.map((s, i) => htmlSessaoCentral({
+        i,
+        jogador: s.jogador,
+        entrada: s.entrada,
+        saida: s.saida,
+        itens: Number(s.itens),
+        finalizada: s.sessao_finalizada_em,
+        resultado: Number(s.resultado),
+        acaoItens: `alternarItensSessaoCentral(${i})`,
+        acaoReabrir: `reabrirSessaoDaVisaoCentral(${i})`
+      })).join('')}
+    </div>
+    ${temMais ? htmlVerMaisCentral('centralHistorico.limiteSessoes += 30; renderizarAbaCentralHistorico();') : ''}
   `;
 
   return true;
@@ -714,31 +878,16 @@ async function alternarItensSessaoCentral(i) {
 
   if (!div || !sessao) return;
 
-  if (!div.classList.contains('oculto')) {
-    div.classList.add('oculto');
-    return;
-  }
+  if (!alternarExpansaoItensCentral(i)) return;
 
-  div.innerHTML = '<p class="ch-vazio">Carregando...</p>';
-  div.classList.remove('oculto');
+  div.innerHTML = htmlCarregandoCentral(1);
 
   try {
     const movs = await buscarItensSessaoCentral(sessao);
-    div.innerHTML = movs.map(mov => `
-      <div class="linha-desfazer">
-        <div class="linha-desfazer-info">
-          ${htmlDetalhesMov(mov)}<br>
-          <span class="ch-data">${formatarDataHora(mov.data)}</span>
-        </div>
-        <div class="linha-desfazer-valor">
-          <strong>${formatarMoeda(mov.valor)}</strong>
-          <button class="btn-red" onclick="desfazerMovCentral(${mov.id}, true)">Desfazer</button>
-        </div>
-      </div>
-    `).join('') || '<p class="ch-vazio">Sessão sem itens.</p>';
+    div.innerHTML = htmlItensSessaoCentral(movs);
   } catch (erro) {
     console.error(erro);
-    div.innerHTML = '<p class="ch-vazio negativo">Erro ao carregar os itens. Tente de novo.</p>';
+    div.innerHTML = htmlVazioCentral('Erro ao carregar os itens. Tente de novo.', true);
   }
 }
 
@@ -765,93 +914,98 @@ async function reabrirSessaoDaVisaoCentral(i) {
 async function renderizarSessoesCentral(conteudo) {
 
   const termo = textoBuscaCentral();
+  const filtradas = await sessoesFiltradasCentral();
 
   if (centralHistorico.sessoesView !== false) {
-    const usouVisao = await renderizarSessoesDaVisao(conteudo, termo);
+    const usouVisao = await renderizarSessoesDaVisao(conteudo, termo, filtradas);
     centralHistorico.sessoesView = usouVisao;
     if (usouVisao) return;
   }
 
-  // Sem o sql/017: busca as movimentações finalizadas mais recentes e agrupa
-  // por sessão (jogador + horário de finalização), como no histórico do cash.
-  const { data, error } = await client
-    .from('movimentacoes')
-    .select(COLUNAS_MOV)
-    .not('sessao_finalizada_em', 'is', null)
-    .order('sessao_finalizada_em', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(centralHistorico.limiteSessoes * 15 + 1);
+  let todosGrupos;
+  let consultaCortada = false;
 
-  if (error) throw error;
+  if (filtradas) {
+    // Sem o sql/017 e com filtro: só as movimentações das sessões do
+    // torneio/mesa (no máximo uma página de sessões).
+    todosGrupos = [];
+    if (filtradas.chaves.length > 0) {
+      const tempos = Array.from(new Set(filtradas.chaves.map(c => c.sessao_finalizada_em)));
+      const movsFiltradas = await buscarTodas(() =>
+        client
+          .from('movimentacoes')
+          .select(COLUNAS_MOV)
+          .in('sessao_finalizada_em', tempos)
+          .order('id', { ascending: false })
+      );
+      const porChave = new Map(filtradas.chaves.map(c => [c.chave, []]));
+      movsFiltradas.forEach(mov => porChave.get(`${mov.jogador}||${mov.sessao_finalizada_em}`)?.push(mov));
+      todosGrupos = Array.from(porChave.values()).filter(movs => movs.length > 0);
+    }
+  } else {
+    // Sem o sql/017: busca as movimentações finalizadas mais recentes e agrupa
+    // por sessão (jogador + horário de finalização), como no histórico do cash.
+    const { data, error } = await client
+      .from('movimentacoes')
+      .select(COLUNAS_MOV)
+      .not('sessao_finalizada_em', 'is', null)
+      .order('sessao_finalizada_em', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(centralHistorico.limiteSessoes * 15 + 1);
 
-  const limiteLinhas = centralHistorico.limiteSessoes * 15;
-  const grupos = new Map();
+    if (error) throw error;
 
-  (data || []).forEach(mov => {
-    const chave = `${mov.jogador}||${mov.sessao_finalizada_em}`;
-    if (!grupos.has(chave)) grupos.set(chave, []);
-    grupos.get(chave).push(mov);
-  });
+    const limiteLinhas = centralHistorico.limiteSessoes * 15;
+    const grupos = new Map();
 
-  // Se a consulta bateu no limite, a sessão mais antiga pode estar
-  // incompleta: descarta para não mostrar resultado errado nem reabrir
-  // só parte dela (ela aparece completa no "Ver mais").
-  const consultaCortada = (data || []).length > limiteLinhas;
-  const todosGrupos = Array.from(grupos.values());
-  if (consultaCortada && todosGrupos.length > 1) todosGrupos.pop();
+    (data || []).forEach(mov => {
+      const chave = `${mov.jogador}||${mov.sessao_finalizada_em}`;
+      if (!grupos.has(chave)) grupos.set(chave, []);
+      grupos.get(chave).push(mov);
+    });
+
+    // Se a consulta bateu no limite, a sessão mais antiga pode estar
+    // incompleta: descarta para não mostrar resultado errado nem reabrir
+    // só parte dela (ela aparece completa no "Ver mais").
+    consultaCortada = (data || []).length > limiteLinhas;
+    todosGrupos = Array.from(grupos.values());
+    if (consultaCortada && todosGrupos.length > 1) todosGrupos.pop();
+  }
 
   let sessoes = todosGrupos
     .filter(movs => !termo || movs.some(m => movCombinaBusca(m, termo)));
 
-  const temMais = consultaCortada || sessoes.length > centralHistorico.limiteSessoes;
+  const temMais = filtradas
+    ? filtradas.temMais
+    : consultaCortada || sessoes.length > centralHistorico.limiteSessoes;
 
   sessoes = sessoes.slice(0, centralHistorico.limiteSessoes);
 
   if (sessoes.length === 0) {
-    conteudo.innerHTML = '<p class="ch-vazio">Nenhuma sessão finalizada encontrada.</p>';
+    conteudo.innerHTML = htmlVazioCentral('Nenhuma sessão finalizada encontrada.');
     return;
   }
 
   conteudo.innerHTML = `
     <p class="ch-dica">Reabrir devolve a sessão para "Movimentações em Aberto" para corrigir o fechamento.</p>
-    ${sessoes.map((movs, i) => {
-      const { entrada, saida, resultado } = calcularResultadoMovimentacoes(movs);
-      const classe = resultado >= 0 ? 'positivo' : 'negativo';
-      const sinal = resultado >= 0 ? '+' : '-';
-      const ids = movs.map(m => m.id).join(',');
-
-      return `
-        <div class="ch-sessao">
-          <div class="linha-desfazer" style="border-bottom:none;">
-            <div class="linha-desfazer-info">
-              <strong>${escapeHtml(movs[0].jogador)}</strong>
-              Entrou ${formatarMoeda(entrada)} · Saiu ${formatarMoeda(saida)} · ${movs.length} item(ns)<br>
-              <span class="ch-data">Finalizada em ${formatarDataHora(movs[0].sessao_finalizada_em)}</span>
-            </div>
-            <div class="linha-desfazer-valor">
-              <strong class="${classe}">${sinal} ${formatarMoeda(Math.abs(resultado))}</strong>
-              <button class="btn-gray" onclick="document.getElementById('chItens${i}').classList.toggle('oculto')">Itens</button>
-              <button class="btn-blue" onclick="reabrirSessaoCentral('${ids}')">Reabrir</button>
-            </div>
-          </div>
-          <div id="chItens${i}" class="ch-itens oculto">
-            ${movs.map(mov => `
-              <div class="linha-desfazer">
-                <div class="linha-desfazer-info">
-                  ${htmlDetalhesMov(mov)}<br>
-                  <span class="ch-data">${formatarDataHora(mov.data)}</span>
-                </div>
-                <div class="linha-desfazer-valor">
-                  <strong>${formatarMoeda(mov.valor)}</strong>
-                  <button class="btn-red" onclick="desfazerMovCentral(${mov.id}, true)">Desfazer</button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    }).join('')}
-    ${temMais ? '<div style="text-align:center;margin-top:12px;"><button class="btn-gray" onclick="centralHistorico.limiteSessoes += 30; renderizarAbaCentralHistorico();">Ver mais</button></div>' : ''}
+    <div class="ch-lista">
+      ${sessoes.map((movs, i) => {
+        const { entrada, saida, resultado } = calcularResultadoMovimentacoes(movs);
+        return htmlSessaoCentral({
+          i,
+          jogador: movs[0].jogador,
+          entrada,
+          saida,
+          itens: movs.length,
+          finalizada: movs[0].sessao_finalizada_em,
+          resultado,
+          acaoItens: `alternarExpansaoItensCentral(${i})`,
+          acaoReabrir: `reabrirSessaoCentral('${movs.map(m => m.id).join(',')}')`,
+          itensHtml: htmlItensSessaoCentral(movs)
+        });
+      }).join('')}
+    </div>
+    ${temMais ? htmlVerMaisCentral('centralHistorico.limiteSessoes += 30; renderizarAbaCentralHistorico();') : ''}
   `;
 }
 
@@ -953,7 +1107,7 @@ async function renderizarLogCentral(conteudo) {
       await buscarPaginaLogCentral();
     } catch (error) {
       if (/log_alteracoes/.test(error.message || '')) {
-        conteudo.innerHTML = '<p class="ch-vazio">O Log ainda não foi ativado. Rode o arquivo <strong>sql/002_log_movimentacoes.sql</strong> no Supabase.</p>';
+        conteudo.innerHTML = htmlVazioCentral('O Log ainda não foi ativado. Rode o arquivo <strong>sql/002_log_movimentacoes.sql</strong> no Supabase.');
         return;
       }
       throw error;
@@ -972,24 +1126,25 @@ async function renderizarLogCentral(conteudo) {
 
   const periodos = `
     <div class="ch-periodos" role="group" aria-label="Período do Log">
-      ${PERIODOS_LOG.map(([valor, rotulo]) => `<button type="button" class="aba${centralHistorico.periodoLog === valor ? ' ativa' : ''}" aria-pressed="${centralHistorico.periodoLog === valor}" onclick="trocarPeriodoLogCentral('${valor}')">${rotulo}</button>`).join('')}
+      ${PERIODOS_LOG.map(([valor, rotulo]) => `<button type="button" class="ch-chip${centralHistorico.periodoLog === valor ? ' ativa' : ''}" aria-pressed="${centralHistorico.periodoLog === valor}" onclick="trocarPeriodoLogCentral('${valor}')">${rotulo}</button>`).join('')}
     </div>
   `;
 
   const botaoMais = !estado.fim
-    ? '<div style="text-align:center;margin-top:12px;"><button class="btn-gray" onclick="verMaisLogCentral(this)">Ver mais</button></div>'
+    ? htmlVerMaisCentral('verMaisLogCentral(this)')
     : centralHistorico.periodoLog !== 'tudo'
-      ? '<p class="ch-dica" style="text-align:center;margin-top:12px;">Para ver registros mais antigos, escolha um período maior.</p>'
+      ? '<p class="ch-dica ch-dica-centro">Para ver registros mais antigos, escolha um período maior.</p>'
       : '';
 
   if (itens.length === 0) {
-    conteudo.innerHTML = `${periodos}<p class="ch-vazio">${termo && !estado.fim ? 'Nada encontrado nos registros já carregados. Toque em "Ver mais" para procurar nos mais antigos.' : 'Nenhum registro no Log neste período.'}</p>${botaoMais}`;
+    conteudo.innerHTML = `${periodos}${htmlVazioCentral(termo && !estado.fim ? 'Nada encontrado nos registros já carregados. Toque em "Ver mais" para procurar nos mais antigos.' : 'Nenhum registro no Log neste período.')}${botaoMais}`;
     return;
   }
 
   conteudo.innerHTML = `
     ${periodos}
-    <p class="ch-dica">${itens.length} registro(s)${estado.fim ? '' : ' (os mais recentes)'}. Itens desfeitos podem ser restaurados.</p>
+    <p class="ch-dica"><strong>${itens.length}</strong> registro(s)${estado.fim ? '' : ' (os mais recentes)'}. Itens desfeitos podem ser restaurados.</p>
+    <div class="ch-lista">
     ${itens.map(item => {
       const dados = item.dados_depois || item.dados_antes || {};
       const ehMov = item.tabela === 'movimentacoes';
@@ -1007,21 +1162,16 @@ async function renderizarLogCentral(conteudo) {
       const alteracao = descreverAlteracaoLog(item);
       const podeRestaurar = item.operacao === 'DELETE' && ehMov;
 
-      return `
-        <div class="linha-desfazer">
-          <div class="linha-desfazer-info">
-            <span class="ch-badge ch-badge-${item.operacao.toLowerCase()}">${NOMES_OPERACAO_LOG[item.operacao] || item.operacao}</span>
-            <strong>${titulo}</strong>
-            ${detalhe}${alteracao ? `<br>${alteracao}` : ''}<br>
-            <span class="ch-data">${formatarDataHora(item.criado_em)}${item.usuario_email ? ' · ' + escapeHtml(item.usuario_email) : ''}</span>
-          </div>
-          <div class="linha-desfazer-valor">
-            ${ehMov || ehRecolhimento ? `<strong>${formatarMoeda(dados.valor)}</strong>` : ''}
-            ${podeRestaurar ? `<button class="btn-green" onclick="restaurarMovCentral(${item.id})">Restaurar</button>` : ''}
-          </div>
-        </div>
-      `;
+      return htmlItemCentral({
+        topo: `<span class="ch-badge ch-badge-${item.operacao.toLowerCase()}">${NOMES_OPERACAO_LOG[item.operacao] || item.operacao}</span>`,
+        titulo,
+        detalhe: detalhe + (alteracao ? `${detalhe ? '<br>' : ''}${alteracao}` : ''),
+        data: formatarDataHora(item.criado_em) + (item.usuario_email ? ' · ' + escapeHtml(item.usuario_email) : ''),
+        valor: ehMov || ehRecolhimento ? formatarMoeda(dados.valor) : '',
+        acoes: podeRestaurar ? `<button type="button" class="ch-btn ch-btn-verde" onclick="restaurarMovCentral(${item.id})">Restaurar</button>` : ''
+      });
     }).join('')}
+    </div>
     ${botaoMais}
   `;
 }

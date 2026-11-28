@@ -148,9 +148,7 @@
 
         <div style="display:flex;gap:8px;">
           <button class="btn-gray" onclick="location.href='em-aberto.html'">Em Aberto</button>
-          <button id="btnDesfazer" class="btn-gray disabled" onclick="abrirCentralHistorico({ aoAlterar: carregarDados })">
-            Desfazer / Log
-          </button>
+          <button type="button" id="btnDesfazer" class="btn-historico disabled" title="Desfazer / Log" aria-label="Desfazer / Log" onclick="abrirCentralHistorico({ aoAlterar: carregarDados })"><svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></button>
         </div>
       </div>
 
@@ -233,6 +231,26 @@
 
 </div>
 
+
+<!-- Alerta / confirmação (usados pelo "Desfazer / Log") -->
+<div id="modalAlerta" class="modal-overlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2>Aviso</h2>
+    <p id="alertaTexto" class="modal-resumo"></p>
+    <div class="modal-acoes"><button class="btn-dark" style="flex:1;" onclick="responderAlerta()">OK</button></div>
+  </div>
+</div>
+
+<div id="modalConfirm" class="modal-overlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2>Confirmar</h2>
+    <p id="confirmTexto" class="modal-resumo"></p>
+    <div class="modal-acoes">
+      <button class="btn-gray" onclick="responderConfirm(false)">Cancelar</button>
+      <button class="btn-dark" onclick="responderConfirm(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <div id="modalDetalheHistorico" class="modal-overlay">
   <div class="modal-box" style="max-width:400px;">
@@ -578,6 +596,35 @@
 
   function fecharModalDetalheHistorico() {
     document.getElementById('modalDetalheHistorico').classList.remove('aberto');
+  }
+
+  // Alerta / confirmação do "Desfazer / Log" (comum.js usa mostrarAlerta e
+  // mostrarConfirm; sem eles os botões Desfazer/Reabrir/Restaurar não agiam).
+  let resolverAlerta = null;
+  let resolverConfirm = null;
+
+  function mostrarAlerta(texto) {
+    document.getElementById('alertaTexto').textContent = texto;
+    document.getElementById('modalAlerta').classList.add('aberto');
+    return new Promise(r => { resolverAlerta = r; });
+  }
+
+  function responderAlerta() {
+    document.getElementById('modalAlerta').classList.remove('aberto');
+    if (resolverAlerta) resolverAlerta();
+    resolverAlerta = null;
+  }
+
+  function mostrarConfirm(texto) {
+    document.getElementById('confirmTexto').textContent = texto;
+    document.getElementById('modalConfirm').classList.add('aberto');
+    return new Promise(r => { resolverConfirm = r; });
+  }
+
+  function responderConfirm(valor) {
+    document.getElementById('modalConfirm').classList.remove('aberto');
+    if (resolverConfirm) resolverConfirm(valor);
+    resolverConfirm = null;
   }
 
   function mostrarAlertaRelatorio(texto) {
