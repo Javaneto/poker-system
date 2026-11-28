@@ -444,21 +444,6 @@ async function confirmarLancamentoJogador() {
 
   btn.classList.add('disabled');
 
-  let cpf = null;
-  let telefone = null;
-
-  const { data: jogador } = await client
-    .from('jogadores')
-    .select('cpf,telefone')
-    .eq('nome', nome)
-    .limit(1)
-    .maybeSingle();
-
-  if (jogador) {
-    cpf = jogador.cpf || null;
-    telefone = jogador.telefone || null;
-  }
-
   const { error } = await client
     .from('movimentacoes')
     .insert([{
@@ -468,8 +453,6 @@ async function confirmarLancamentoJogador() {
       modalidade: cobranca ? 'Cobrança' : 'Cash',
       pago: false,
       data: new Date().toISOString(),
-      cpf,
-      telefone,
       observacao
     }]);
 
@@ -490,13 +473,6 @@ async function confirmarLancamentoJogador() {
 
 async function hjInserirPagamento(nome, valor, observacao) {
 
-  const { data: jogador } = await client
-    .from('jogadores')
-    .select('cpf,telefone')
-    .eq('nome', nome)
-    .limit(1)
-    .maybeSingle();
-
   return client
     .from('movimentacoes')
     .insert([{
@@ -506,8 +482,6 @@ async function hjInserirPagamento(nome, valor, observacao) {
       modalidade: 'Cash',
       pago: false,
       data: new Date().toISOString(),
-      cpf: jogador?.cpf || null,
-      telefone: jogador?.telefone || null,
       ...(observacao ? { observacao } : {})
     }])
     .select()
@@ -695,7 +669,7 @@ async function hjConfirmarFechamento() {
 
 // ---------- impressão ----------
 
-function imprimirMovimentacaoJogador(id) {
+async function imprimirMovimentacaoJogador(id) {
 
   const mov = historicoJogador.movs.find(m => Number(m.id) === Number(id));
 
@@ -709,6 +683,16 @@ function imprimirMovimentacaoJogador(id) {
   }
 
   const tipo = hjEhLancamento(mov) ? rotuloLancamento(mov) : mov.tipo;
+
+  // CPF/telefone vêm do cadastro; lançamentos antigos guardavam uma cópia.
+  const { data: cadastro } = await client
+    .from('jogadores')
+    .select('cpf,telefone')
+    .eq('nome', mov.jogador)
+    .maybeSingle();
+
+  const cpf = cadastro?.cpf || mov.cpf || '-';
+  const telefone = cadastro?.telefone || mov.telefone || '-';
 
   janela.document.write(`
     <html>
@@ -729,8 +713,8 @@ function imprimirMovimentacaoJogador(id) {
       <p>Tipo: ${escapeHtml(tipo)}</p>
       <p>Modalidade: ${escapeHtml(mov.torneio_id ? 'Torneio' : (mov.modalidade || '-'))}</p>
       ${mov.observacao ? `<p>Obs: ${escapeHtml(mov.observacao)}</p>` : ''}
-      <p>CPF: ${escapeHtml(mov.cpf || '-')}</p>
-      <p>Telefone: ${escapeHtml(mov.telefone || '-')}</p>
+      <p>CPF: ${escapeHtml(cpf)}</p>
+      <p>Telefone: ${escapeHtml(telefone)}</p>
       <br><br><br>
       ____________________________
       <br>

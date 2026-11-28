@@ -1106,11 +1106,6 @@
     document.getElementById('btnCompraPago').classList.toggle('ativo', pago);
   }
 
-  function dadosJogador(nome) {
-    const j = jogadores.find(x => x.nome === nome) || {};
-    return { cpf: j.cpf || null, telefone: j.telefone || null };
-  }
-
   async function confirmarCompra() {
 
     if (!compraContexto) return;
@@ -1146,8 +1141,7 @@
         pago: compraPago,
         observacao: observacao || null,
         data: new Date().toISOString(),
-        mesa_id: mesaId,
-        ...dadosJogador(jogador)
+        mesa_id: mesaId
       }]);
 
       if (error) throw error;
@@ -1244,8 +1238,7 @@
           modalidade: 'Cash',
           observacao: observacao || null,
           data: new Date().toISOString(),
-          mesa_id: mesaId,
-          ...dadosJogador(jogador)
+          mesa_id: mesaId
         }]);
 
         if (error) throw error;
