@@ -474,7 +474,7 @@
       // O card inteiro é o botão (como no Cash Game): atual → abre no Diretor; outro → seleciona.
       const acao = document.createElement('span');
       acao.className = 'cg-mesa-acao torneio-card-acao';
-      acao.textContent = 'Abrir no Diretor ›';
+      acao.textContent = 'Abrir torneio ›';
       rodape.appendChild(acao);
 
       const podeAgir = ehAtual || adminLiberado;
@@ -484,7 +484,7 @@
       };
 
       div.setAttribute('role', ehAtual ? 'link' : 'button');
-      div.setAttribute('aria-label', `${torneio.nome}: abrir no Diretor`);
+      div.setAttribute('aria-label', `${torneio.nome}: abrir torneio`);
       div.tabIndex = podeAgir ? 0 : -1;
       div.classList.toggle('sem-acao', !podeAgir);
       div.onclick = executar;
@@ -882,11 +882,53 @@
     fecharModalNovoTorneio();
   });
 
+  // Menu "Torneios": com um único torneio ativo, abre direto no Diretor.
+  // Com zero ou mais de um, mostra a seleção. O "voltar" do Diretor usa
+  // torneios.html?lista para sempre mostrar a seleção.
+  async function abrirTorneioAtivoUnico() {
+
+    if (new URLSearchParams(location.search).has('lista')) return false;
+
+    const { data: torneiosDB, error } = await client.from('torneios').select('id,status');
+
+    if (error) return false;
+
+    const ativos = (torneiosDB || []).filter(t => (t.status || 'aberto') !== 'encerrado');
+
+    if (ativos.length !== 1) return false;
+
+    const { data: configuracaoDB } = await client
+      .from('configuracoes')
+      .select('torneio_atual_id')
+      .eq('id', 1)
+      .single();
+
+    if (String(configuracaoDB?.torneio_atual_id) !== String(ativos[0].id)) {
+
+      if (!adminLiberado) return false;
+
+      const { error: erroSelecao } = await client
+        .from('configuracoes')
+        .update({ torneio_atual_id: ativos[0].id })
+        .eq('id', 1);
+
+      if (erroSelecao) {
+        console.error(erroSelecao);
+        return false;
+      }
+    }
+
+    location.replace('diretor.html');
+    return true;
+  }
+
   (async function inicializar() {
 
     const autenticado = await exigirSessaoOuRedirecionar();
 
     if (!autenticado) return;
+
+    if (await abrirTorneioAtivoUnico()) return;
 
     await carregarDados();
   })();

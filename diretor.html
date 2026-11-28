@@ -56,6 +56,7 @@
     }
 
     .dir-titulo {
+      flex: 1;
       min-width: 0;
     }
 
@@ -542,6 +543,9 @@
 <div class="container">
 
   <header class="dir-cabecalho">
+    <a class="cg-voltar" href="torneios.html?lista" title="Voltar para os torneios" aria-label="Voltar para os torneios">
+      <svg class="cg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </a>
     <div class="dir-titulo">
       <span class="dir-sobretitulo">Diretor de torneio</span>
       <h1 id="faixaNomeTorneio" class="dir-nome">Carregando...</h1>
@@ -577,7 +581,7 @@
         <h2>Torneio</h2>
 
         <div id="semTorneio">
-          <p class="dir-painel-vazio">Nenhum torneio selecionado.</p>
+          <p class="dir-painel-vazio">Nenhum torneio selecionado. <a href="torneios.html?lista">Escolher um torneio</a></p>
         </div>
 
         <div id="infoTorneio" class="oculto">
