@@ -307,6 +307,7 @@
 
 .cg-busca-item:hover, .cg-busca-item.destacado { background: var(--tint-ambar); transform: none; box-shadow: none; }
 .cg-busca-item small { display: block; font-weight: 400; color: var(--apagado); font-size: 12px; }
+.cg-busca-lista:empty { display: none; }
 .cg-busca-vazio { padding: 12px 14px; color: var(--apagado); font-size: 14px; }
 
 .cg-busca-novo {
