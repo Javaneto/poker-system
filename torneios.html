@@ -187,8 +187,7 @@
   let torneioAtualId = null;
   let todosTorneios = [];
   let todosValoresTorneios = [];
-  let movsTorneios = []; // torneio_id, jogador, valor_prize (só sem o sql/016)
-  let totaisTorneios = null; // sql/016: premiação e jogadores prontos por torneio (Map por id)
+  let totaisTorneios = new Map(); // premiação e jogadores prontos por torneio (visão torneios_totais, sql/016)
   let estruturasPremiacao = [];
   let estruturasBlinds = [];
 
@@ -316,25 +315,10 @@
     todosTorneios = torneiosDB || [];
 
     todosValoresTorneios = [];
-    totaisTorneios = null;
+    totaisTorneios = new Map();
     detalhesCarregados = new Set();
-    usaTotaisDoBanco = null;
 
     await garantirDetalhesTorneios();
-
-    // Sem o sql/016: soma as movimentações aqui como antes.
-    movsTorneios = [];
-    for (let inicio = 0; usaTotaisDoBanco === false; inicio += 1000) {
-      const { data, error } = await client
-        .from('movimentacoes')
-        .select('id,torneio_id,jogador,valor_prize')
-        .not('torneio_id', 'is', null)
-        .order('id', { ascending: true })
-        .range(inicio, inicio + 999);
-      if (error) { console.error(error); break; }
-      movsTorneios.push(...(data || []));
-      if (!data || data.length < 1000) break;
-    }
 
     const { data: estruturasDB } = await client
       .from('premiacao_estruturas')
@@ -354,7 +338,6 @@
   }
 
   let detalhesCarregados = new Set(); // ids com valores/totais já buscados
-  let usaTotaisDoBanco = null;        // sql/016: null = ainda não sabe
 
   function torneiosDoFiltro() {
     const filtroStatus = document.getElementById('filtroStatusTorneios').value;
@@ -372,28 +355,18 @@
 
     const [resValores, resTotais] = await Promise.all([
       client.from('torneio_valores').select('torneio_id,tipo,valor_total,ordem').in('torneio_id', ids).order('ordem', { ascending: true }),
-      usaTotaisDoBanco === false ? null : client.from('torneios_totais').select('torneio_id,premio_entradas,jogadores').in('torneio_id', ids)
+      client.from('torneios_totais').select('torneio_id,premio_entradas,jogadores').in('torneio_id', ids)
     ]);
 
-    if (resValores.error) {
-      console.error(resValores.error);
+    if (resValores.error || resTotais.error) {
+      console.error(resValores.error || resTotais.error);
       return;
     }
 
     todosValoresTorneios = [...todosValoresTorneios, ...(resValores.data || [])]
       .sort((a, b) => Number(a.ordem) - Number(b.ordem));
 
-    if (resTotais) {
-      if (resTotais.error) {
-        usaTotaisDoBanco = false;
-      } else {
-        usaTotaisDoBanco = true;
-        if (!totaisTorneios) totaisTorneios = new Map();
-        (resTotais.data || []).forEach(t => totaisTorneios.set(String(t.torneio_id), t));
-      }
-    }
-
-    if (usaTotaisDoBanco === false) totaisTorneios = null;
+    (resTotais.data || []).forEach(t => totaisTorneios.set(String(t.torneio_id), t));
 
     ids.forEach(id => detalhesCarregados.add(id));
   }
@@ -478,16 +451,9 @@
       const estaEncerrado = torneio.status === 'encerrado';
 
       // Mesmo cálculo do Diretor: soma do prêmio das entradas + ajuste manual.
-      let premiacao, qtdJogadores;
-      if (totaisTorneios) {
-        const tot = totaisTorneios.get(String(torneio.id));
-        premiacao = Number(tot?.premio_entradas || 0) + Number(torneio.ajuste_premiacao || 0);
-        qtdJogadores = Number(tot?.jogadores || 0);
-      } else {
-        const movs = movsTorneios.filter(m => m.torneio_id === torneio.id);
-        premiacao = movs.reduce((s, m) => s + Number(m.valor_prize || 0), 0) + Number(torneio.ajuste_premiacao || 0);
-        qtdJogadores = new Set(movs.map(m => m.jogador)).size;
-      }
+      const tot = totaisTorneios.get(String(torneio.id));
+      const premiacao = Number(tot?.premio_entradas || 0) + Number(torneio.ajuste_premiacao || 0);
+      const qtdJogadores = Number(tot?.jogadores || 0);
 
       const dataFormatada = new Date(torneio.criado_em).toLocaleString('pt-BR', {
         day: '2-digit',

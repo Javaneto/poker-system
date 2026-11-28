@@ -594,7 +594,6 @@
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let jogadores = [];
-  let movimentacoes = [];
   let resumoPorNome = new Map();
   let filtroStatus = 'todos';
   let filtroSituacao = 'todas';
@@ -681,21 +680,13 @@
 
     jogadores = (jogadoresDB || []).sort((a, b) => a.nome.localeCompare(b.nome));
 
-    // Resumos prontos do banco (sql/016): uma linha por jogador em vez de
-    // baixar todas as movimentações a cada mudança. Sem o sql/016, faz a
-    // conta aqui como antes.
+    // Resumos prontos do banco (visão jogadores_resumo, sql/016): uma linha
+    // por jogador em vez de baixar todas as movimentações a cada mudança.
     const { data: resumosDB, error: erroResumos } = await client.from('jogadores_resumo').select('*');
 
-    if (!erroResumos) {
-      movimentacoes = [];
-      montarResumosDoBanco(resumosDB || []);
-    } else {
-      movimentacoes = await buscarTodas(() => client
-        .from('movimentacoes')
-        .select('id,jogador,tipo,tipo_registro,modalidade,valor,pago,data,sessao_finalizada_em,torneio_id,observacao')
-        .order('id', { ascending: false }));
-      montarResumos();
-    }
+    if (erroResumos) throw erroResumos;
+
+    montarResumosDoBanco(resumosDB || []);
 
     renderizar();
 
@@ -740,53 +731,6 @@
         jogos: sessoesCash + torneios + (qtdAbertas > 0 ? 1 : 0),
         ultima: l.ultima || null,
         situacao: situacaoJogador(j, qtdAbertas, saldoGeral)
-      });
-    });
-  }
-
-  function montarResumos() {
-
-    const porNome = new Map();
-
-    movimentacoes.forEach(m => {
-      if (!porNome.has(m.jogador)) porNome.set(m.jogador, []);
-      porNome.get(m.jogador).push(m);
-    });
-
-    resumoPorNome = new Map();
-
-    jogadores.forEach(j => {
-
-      const movs = porNome.get(j.nome) || [];
-      const abertas = movs.filter(m => !m.sessao_finalizada_em);
-
-      const geral = calcularResultadoMovimentacoes(movs);
-      const emAberto = calcularResultadoMovimentacoes(abertas);
-
-      const sessoesCash = new Set(movs.filter(m => !m.torneio_id && m.sessao_finalizada_em && m.tipo !== 'Pagamento').map(m => m.sessao_finalizada_em)).size;
-      const torneios = new Set(movs.filter(m => m.torneio_id).map(m => m.torneio_id)).size;
-
-      const ultima = movs.reduce((maior, m) => (!maior || new Date(m.data) > new Date(maior) ? m.data : maior), null);
-
-      let situacao = 'ok';
-      if (j.ativo === false) situacao = 'inativo';
-      else if (abertas.length > 0) situacao = 'jogo';
-      else if (geral.resultado < -0.005) situacao = 'deve';
-      else if (geral.resultado > 0.005) situacao = 'credito';
-
-      resumoPorNome.set(j.nome, {
-        movs,
-        qtdMovs: movs.length,
-        qtdAbertas: abertas.length,
-        saldoGeral: geral.resultado,
-        saldoAberto: emAberto.resultado,
-        totalEntrou: geral.entrada,
-        totalSaiu: geral.saida,
-        sessoesCash,
-        torneios,
-        jogos: sessoesCash + torneios + (abertas.length > 0 ? 1 : 0),
-        ultima,
-        situacao
       });
     });
   }

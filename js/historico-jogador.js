@@ -684,15 +684,15 @@ async function imprimirMovimentacaoJogador(id) {
 
   const tipo = hjEhLancamento(mov) ? rotuloLancamento(mov) : mov.tipo;
 
-  // CPF/telefone vêm do cadastro; lançamentos antigos guardavam uma cópia.
+  // CPF/telefone vêm do cadastro do jogador.
   const { data: cadastro } = await client
     .from('jogadores')
     .select('cpf,telefone')
     .eq('nome', mov.jogador)
     .maybeSingle();
 
-  const cpf = cadastro?.cpf || mov.cpf || '-';
-  const telefone = cadastro?.telefone || mov.telefone || '-';
+  const cpf = cadastro?.cpf || '-';
+  const telefone = cadastro?.telefone || '-';
 
   janela.document.write(`
     <html>

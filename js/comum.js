@@ -33,9 +33,8 @@ async function buscarTodas(montarConsulta, tamanhoPagina = 1000) {
   return todas;
 }
 
-// Colunas de movimentacoes que as telas usam. Economia de tráfego: fica de
-// fora a cópia antiga de nome/cpf/telefone gravada em cada lançamento
-// (o cadastro do jogador é a fonte desses dados).
+// Colunas de movimentacoes que as telas usam (economia de tráfego).
+// CPF e telefone ficam só no cadastro do jogador (sql/020 removeu as cópias).
 const COLUNAS_MOV = 'id,jogador,jogador_id,tipo,tipo_registro,modalidade,valor,valor_prize,valor_rake,pago,data,sessao_finalizada_em,torneio_id,mesa_id,observacao';
 
 // ---------------------------------------------------------------------------
@@ -415,8 +414,7 @@ const centralHistorico = {
   limiteSessoes: 30,
   periodoLog: '7',
   log: null,          // { itens, fim } do período atual; null = buscar de novo
-  sessoesView: null,  // sql/017 (visão relatorio_sessoes): null = ainda não sabe
-  jogadores: null,    // id/nome para a busca nas sessões (só com o sql/017)
+  jogadores: null,    // id/nome para a busca nas sessões
   sessoes: []
 };
 
@@ -741,7 +739,7 @@ function htmlItensSessaoCentral(movs) {
   })).join('') || htmlVazioCentral('Sessão sem itens.');
 }
 
-function htmlSessaoCentral({ i, jogador, entrada, saida, itens, finalizada, resultado, acaoItens, acaoReabrir, itensHtml = '' }) {
+function htmlSessaoCentral({ i, jogador, entrada, saida, itens, finalizada, resultado, acaoItens, acaoReabrir }) {
   const classe = resultado >= 0 ? 'positivo' : 'negativo';
   const sinal = resultado >= 0 ? '+' : '-';
 
@@ -758,7 +756,7 @@ function htmlSessaoCentral({ i, jogador, entrada, saida, itens, finalizada, resu
           <button type="button" class="ch-btn ch-btn-azul" onclick="${acaoReabrir}">Reabrir</button>
         `
       })}
-      <div id="chItens${i}" class="ch-itens oculto">${itensHtml}</div>
+      <div id="chItens${i}" class="ch-itens oculto"></div>
     </div>
   `;
 }
@@ -772,8 +770,8 @@ function alternarExpansaoItensCentral(i) {
   return abrir;
 }
 
-// Com o sql/017: uma linha pronta por sessão (visão relatorio_sessoes); os
-// itens só são buscados ao tocar em "Itens" ou "Reabrir".
+// Uma linha pronta por sessão (visão relatorio_sessoes, sql/017); os itens
+// só são buscados ao tocar em "Itens" ou "Reabrir".
 async function renderizarSessoesDaVisao(conteudo, termo, filtradas) {
 
   const VAZIO = htmlVazioCentral('Nenhuma sessão finalizada encontrada.');
@@ -809,10 +807,7 @@ async function renderizarSessoesDaVisao(conteudo, termo, filtradas) {
     .order('ultimo_id', { ascending: false })
     .range(0, filtradas ? 999 : centralHistorico.limiteSessoes);
 
-  if (error) {
-    if (/relatorio_sessoes/.test(error.message || '') || ['PGRST205', '42P01'].includes(error.code)) return false;
-    throw error;
-  }
+  if (error) throw error;
 
   let sessoes;
   let temMais;
@@ -911,101 +906,8 @@ async function reabrirSessaoDaVisaoCentral(i) {
 }
 
 async function renderizarSessoesCentral(conteudo) {
-
-  const termo = textoBuscaCentral();
   const filtradas = await sessoesFiltradasCentral();
-
-  if (centralHistorico.sessoesView !== false) {
-    const usouVisao = await renderizarSessoesDaVisao(conteudo, termo, filtradas);
-    centralHistorico.sessoesView = usouVisao;
-    if (usouVisao) return;
-  }
-
-  let todosGrupos;
-  let consultaCortada = false;
-
-  if (filtradas) {
-    // Sem o sql/017 e com filtro: só as movimentações das sessões do
-    // torneio/mesa (no máximo uma página de sessões).
-    todosGrupos = [];
-    if (filtradas.chaves.length > 0) {
-      const tempos = Array.from(new Set(filtradas.chaves.map(c => c.sessao_finalizada_em)));
-      const movsFiltradas = await buscarTodas(() =>
-        client
-          .from('movimentacoes')
-          .select(COLUNAS_MOV)
-          .in('sessao_finalizada_em', tempos)
-          .order('id', { ascending: false })
-      );
-      const porChave = new Map(filtradas.chaves.map(c => [c.chave, []]));
-      movsFiltradas.forEach(mov => porChave.get(`${mov.jogador}||${mov.sessao_finalizada_em}`)?.push(mov));
-      todosGrupos = Array.from(porChave.values()).filter(movs => movs.length > 0);
-    }
-  } else {
-    // Sem o sql/017: busca as movimentações finalizadas mais recentes e agrupa
-    // por sessão (jogador + horário de finalização), como no histórico do cash.
-    const { data, error } = await client
-      .from('movimentacoes')
-      .select(COLUNAS_MOV)
-      .not('sessao_finalizada_em', 'is', null)
-      .order('sessao_finalizada_em', { ascending: false })
-      .order('id', { ascending: false })
-      .limit(centralHistorico.limiteSessoes * 15 + 1);
-
-    if (error) throw error;
-
-    const limiteLinhas = centralHistorico.limiteSessoes * 15;
-    const grupos = new Map();
-
-    (data || []).forEach(mov => {
-      const chave = `${mov.jogador}||${mov.sessao_finalizada_em}`;
-      if (!grupos.has(chave)) grupos.set(chave, []);
-      grupos.get(chave).push(mov);
-    });
-
-    // Se a consulta bateu no limite, a sessão mais antiga pode estar
-    // incompleta: descarta para não mostrar resultado errado nem reabrir
-    // só parte dela (ela aparece completa no "Ver mais").
-    consultaCortada = (data || []).length > limiteLinhas;
-    todosGrupos = Array.from(grupos.values());
-    if (consultaCortada && todosGrupos.length > 1) todosGrupos.pop();
-  }
-
-  let sessoes = todosGrupos
-    .filter(movs => !termo || movs.some(m => movCombinaBusca(m, termo)));
-
-  const temMais = filtradas
-    ? filtradas.temMais
-    : consultaCortada || sessoes.length > centralHistorico.limiteSessoes;
-
-  sessoes = sessoes.slice(0, centralHistorico.limiteSessoes);
-
-  if (sessoes.length === 0) {
-    conteudo.innerHTML = htmlVazioCentral('Nenhuma sessão finalizada encontrada.');
-    return;
-  }
-
-  conteudo.innerHTML = `
-    <p class="ch-dica">Reabrir devolve a sessão para "Movimentações em Aberto" para corrigir o fechamento.</p>
-    <div class="ch-lista">
-      ${sessoes.map((movs, i) => {
-        const { entrada, saida, resultado } = calcularResultadoMovimentacoes(movs);
-        return htmlSessaoCentral({
-          i,
-          jogador: movs[0].jogador,
-          entrada,
-          saida,
-          itens: movs.length,
-          finalizada: movs[0].sessao_finalizada_em,
-          resultado,
-          acaoItens: `alternarExpansaoItensCentral(${i})`,
-          acaoReabrir: `reabrirSessaoCentral('${movs.map(m => m.id).join(',')}')`,
-          itensHtml: htmlItensSessaoCentral(movs)
-        });
-      }).join('')}
-    </div>
-    ${temMais ? htmlVerMaisCentral('centralHistorico.limiteSessoes += 30; renderizarAbaCentralHistorico();') : ''}
-  `;
+  await renderizarSessoesDaVisao(conteudo, textoBuscaCentral(), filtradas);
 }
 
 const NOMES_OPERACAO_LOG = {
@@ -1243,6 +1145,10 @@ async function restaurarMovCentral(idLog) {
   }
 
   const dados = { ...item.dados_antes };
+
+  // Registros antigos do Log trazem colunas que não existem mais
+  // (removidas no sql/020); sem isso o Restaurar daria erro.
+  ['nome', 'cpf', 'telefone'].forEach(coluna => delete dados[coluna]);
 
   if (!await mostrarConfirm(`Restaurar ${dados.tipo} de ${formatarMoeda(dados.valor)} de ${dados.jogador}?`)) return;
 
