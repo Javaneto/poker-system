@@ -188,7 +188,7 @@
   let todosTorneios = [];
   let todosValoresTorneios = [];
   let movsTorneios = []; // torneio_id, jogador, valor_prize (só sem o sql/016)
-  let totaisTorneios = null; // sql/016: premiação e jogadores prontos por torneio
+  let totaisTorneios = null; // sql/016: premiação e jogadores prontos por torneio (Map por id)
   let estruturasPremiacao = [];
   let estruturasBlinds = [];
 
@@ -305,28 +305,26 @@
     tiposRegistroAtivos = [...new Set([...TIPOS_REGISTRO_OBRIGATORIOS, ...tiposRegistroAtivos])];
     padraoTorneio = configuracaoDB?.padrao_torneio || {};
 
+    // Economia de tráfego: a lista vem só com as colunas dos cards. Valor de
+    // entrada e totais dos torneios encerrados só são buscados quando a aba
+    // Encerrados (ou Todos) é aberta.
     const { data: torneiosDB } = await client
       .from('torneios')
-      .select('*')
+      .select('id,nome,status,criado_em,ajuste_premiacao')
       .order('criado_em', { ascending: false });
 
     todosTorneios = torneiosDB || [];
 
-    const { data: todosValoresDB } = await client
-      .from('torneio_valores')
-      .select('*')
-      .order('ordem', { ascending: true });
-
-    todosValoresTorneios = todosValoresDB || [];
-
-    // Totais prontos do banco (sql/016): uma linha por torneio. Sem o
-    // sql/016, soma as movimentações aqui como antes.
+    todosValoresTorneios = [];
     totaisTorneios = null;
-    movsTorneios = [];
-    const { data: totaisDB, error: erroTotais } = await client.from('torneios_totais').select('*');
-    if (!erroTotais) totaisTorneios = new Map((totaisDB || []).map(t => [String(t.torneio_id), t]));
+    detalhesCarregados = new Set();
+    usaTotaisDoBanco = null;
 
-    for (let inicio = 0; !totaisTorneios; inicio += 1000) {
+    await garantirDetalhesTorneios();
+
+    // Sem o sql/016: soma as movimentações aqui como antes.
+    movsTorneios = [];
+    for (let inicio = 0; usaTotaisDoBanco === false; inicio += 1000) {
       const { data, error } = await client
         .from('movimentacoes')
         .select('id,torneio_id,jogador,valor_prize')
@@ -353,6 +351,51 @@
     estruturasBlinds = estruturasBlindsDB || [];
 
     renderizarListaTorneios();
+  }
+
+  let detalhesCarregados = new Set(); // ids com valores/totais já buscados
+  let usaTotaisDoBanco = null;        // sql/016: null = ainda não sabe
+
+  function torneiosDoFiltro() {
+    const filtroStatus = document.getElementById('filtroStatusTorneios').value;
+    return filtroStatus
+      ? todosTorneios.filter(t => (t.status || 'aberto') === filtroStatus)
+      : todosTorneios;
+  }
+
+  // Busca valores e totais só dos torneios do filtro que ainda não vieram.
+  async function garantirDetalhesTorneios() {
+
+    const ids = torneiosDoFiltro().map(t => t.id).filter(id => !detalhesCarregados.has(id));
+
+    if (ids.length === 0) return;
+
+    const [resValores, resTotais] = await Promise.all([
+      client.from('torneio_valores').select('torneio_id,tipo,valor_total,ordem').in('torneio_id', ids).order('ordem', { ascending: true }),
+      usaTotaisDoBanco === false ? null : client.from('torneios_totais').select('torneio_id,premio_entradas,jogadores').in('torneio_id', ids)
+    ]);
+
+    if (resValores.error) {
+      console.error(resValores.error);
+      return;
+    }
+
+    todosValoresTorneios = [...todosValoresTorneios, ...(resValores.data || [])]
+      .sort((a, b) => Number(a.ordem) - Number(b.ordem));
+
+    if (resTotais) {
+      if (resTotais.error) {
+        usaTotaisDoBanco = false;
+      } else {
+        usaTotaisDoBanco = true;
+        if (!totaisTorneios) totaisTorneios = new Map();
+        (resTotais.data || []).forEach(t => totaisTorneios.set(String(t.torneio_id), t));
+      }
+    }
+
+    if (usaTotaisDoBanco === false) totaisTorneios = null;
+
+    ids.forEach(id => detalhesCarregados.add(id));
   }
 
   const ICONE_LIXEIRA = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>';
@@ -387,7 +430,9 @@
       botao.setAttribute('aria-pressed', ativo ? 'true' : 'false');
     });
 
-    renderizarListaTorneios();
+    garantirDetalhesTorneios()
+      .catch(erro => console.error(erro))
+      .then(() => renderizarListaTorneios());
   }
 
   let paginacaoTorneios = null;

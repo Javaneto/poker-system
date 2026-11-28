@@ -257,15 +257,30 @@
 
   const ABAS = ['resumo', 'historico', 'cash', 'torneios'];
 
+  // Economia de tráfego: cada aba busca só o que mostra, quando é aberta.
+  // Antes a página baixava todas as movimentações (cerca de 1 MB) a cada
+  // abertura e a cada mudança. Com o sql/017 o banco devolve os totais e as
+  // sessões prontas; sem ele, cada aba busca só as colunas que usa.
   let jogadores = [];
-  let movimentacoes = [];
+  let jogadoresSujo = true;
   let adminLiberado = false;
   let limiteRelatorio = 10;
   let filtroRelatorioJogador = '';
   let periodoResumo = 'hoje';
+  let abaAtual = 'resumo';
   let mesasCash = [];
   let recolhimentosCash = [];
+  let movsMesasCash = [];
   let cashAtivado = true;
+  let bancoTemResumo = null; // null = ainda não sabe; false = sql/017 não rodado
+  const abaSuja = { resumo: true, historico: true, cash: true };
+
+  const TIPOS_ENTRADA = ['Entrada', 'Registro', 'Rebuy', 'Add-on'];
+
+  // Função/visão do sql/017 ainda não existe no banco.
+  function faltaSql017(error) {
+    return !!error && (/relatorio_(resumo|sessoes)/.test(error.message || '') || ['PGRST202', 'PGRST205', '42P01', '42883'].includes(error.code));
+  }
 
   // Soma em centavos para não acumular erro de arredondamento.
   function somar(lista) {
@@ -304,6 +319,9 @@
     try {
       history.replaceState(null, '', aba === 'resumo' ? location.pathname : '#' + aba);
     } catch (e) { /* navegador não deixou mudar o endereço: segue sem guardar */ }
+
+    abaAtual = aba;
+    if (adminLiberado) carregarAbaAtual();
   }
 
   // ---------------------------------------------------------------------------
@@ -330,52 +348,109 @@
       botao.classList.toggle('ativa', botao.dataset.periodo === periodo);
     });
 
-    renderizarResumo();
+    abaSuja.resumo = true;
+    carregarAbaAtual();
   }
 
-  function renderizarResumo() {
+  // Números do período: prontos do banco (sql/017) ou, sem ele, somados aqui
+  // a partir só das movimentações do período (e só das colunas usadas).
+  async function buscarNumerosResumo(inicio) {
 
-    const inicio = inicioDoPeriodo(periodoResumo);
-    const noPeriodo = inicio
-      ? movimentacoes.filter(m => new Date(m.data) >= inicio)
-      : movimentacoes;
+    const inicioIso = inicio ? inicio.toISOString() : null;
 
-    const tiposEntrada = ['Entrada', 'Registro', 'Rebuy', 'Add-on'];
+    if (bancoTemResumo !== false) {
+      const { data, error } = await client.rpc('relatorio_resumo', { p_inicio: inicioIso });
+      if (!error) {
+        bancoTemResumo = true;
+        return { ...data, cashAtivado: true };
+      }
+      if (!faltaSql017(error)) throw error;
+      bancoTemResumo = false;
+    }
 
-    const qtd = (n, singular, plural) => `${n} ${n === 1 ? singular : plural}`;
+    const doPeriodo = consulta => inicioIso ? consulta.gte('data', inicioIso) : consulta;
 
-    const cashEntradas = noPeriodo.filter(m => !m.torneio_id && tiposEntrada.includes(m.tipo));
-    const cashSaidas = noPeriodo.filter(m => !m.torneio_id && m.tipo === 'Saída');
-    const torneioEntradas = noPeriodo.filter(m => m.torneio_id && tiposEntrada.includes(m.tipo));
-    const pagamentos = noPeriodo.filter(m => m.tipo === 'Pagamento');
+    const [movs, sessoesDB] = await Promise.all([
+      buscarTodas(() => doPeriodo(client
+        .from('movimentacoes')
+        .select('id,jogador,tipo,valor,torneio_id'))
+        .order('id', { ascending: true })),
+      buscarTodas(() => {
+        let consulta = client
+          .from('movimentacoes')
+          .select('id,jogador,sessao_finalizada_em')
+          .not('sessao_finalizada_em', 'is', null);
+        if (inicioIso) consulta = consulta.gte('sessao_finalizada_em', inicioIso);
+        return consulta.order('id', { ascending: true });
+      })
+    ]);
 
-    const sessoes = new Set(
-      movimentacoes
-        .filter(m => m.sessao_finalizada_em && (!inicio || new Date(m.sessao_finalizada_em) >= inicio))
-        .map(m => `${m.jogador}||${m.sessao_finalizada_em}`)
-    );
+    let recolhidos = [];
+    let comCash = true;
+    try {
+      recolhidos = await buscarTodas(() => {
+        let consulta = client.from('cash_mesa_recolhimentos').select('id,tipo,valor,criado_em');
+        if (inicioIso) consulta = consulta.gte('criado_em', inicioIso);
+        return consulta.order('id', { ascending: true });
+      });
+    } catch (erro) {
+      console.error(erro);
+      comCash = false;
+    }
 
-    const jogadoresNoPeriodo = new Set(noPeriodo.map(m => m.jogador));
+    const cashEntradas = movs.filter(m => !m.torneio_id && TIPOS_ENTRADA.includes(m.tipo));
+    const cashSaidas = movs.filter(m => !m.torneio_id && m.tipo === 'Saída');
+    const torneioEntradas = movs.filter(m => m.torneio_id && TIPOS_ENTRADA.includes(m.tipo));
+    const pagamentos = movs.filter(m => m.tipo === 'Pagamento');
 
-    document.getElementById('kpiCashEntradas').textContent = formatarMoeda(somar(cashEntradas));
-    document.getElementById('kpiCashEntradasQtd').textContent = qtd(cashEntradas.length, 'entrada', 'entradas');
-    document.getElementById('kpiCashSaidas').textContent = formatarMoeda(somar(cashSaidas));
-    document.getElementById('kpiCashSaidasQtd').textContent = qtd(cashSaidas.length, 'saída', 'saídas');
-    document.getElementById('kpiTorneioEntradas').textContent = formatarMoeda(somar(torneioEntradas));
-    document.getElementById('kpiTorneioEntradasQtd').textContent = qtd(torneioEntradas.length, 'registro/rebuy/add-on', 'registros/rebuys/add-ons');
-    document.getElementById('kpiPagamentos').textContent = formatarMoeda(somar(pagamentos));
-    document.getElementById('kpiPagamentosQtd').textContent = qtd(pagamentos.length, 'pagamento', 'pagamentos');
-    const recolhidos = recolhimentosCash.filter(r => !inicio || new Date(r.criado_em) >= inicio);
-    const rakePeriodo = somar(recolhidos.filter(r => r.tipo === 'rake'));
-    const caixinhaPeriodo = somar(recolhidos.filter(r => r.tipo === 'caixinha'));
-    const jackpotPeriodo = somar(recolhidos.filter(r => r.tipo === 'jackpot'));
-    document.getElementById('kpiRecolhido').textContent = cashAtivado ? formatarMoeda(somar(recolhidos)) : '-';
-    document.getElementById('kpiRecolhidoDetalhe').textContent = cashAtivado
-      ? `Rake ${formatarMoeda(rakePeriodo)} · Caixinha ${formatarMoeda(caixinhaPeriodo)}${jackpotPeriodo > 0 ? ` · Jackpot ${formatarMoeda(jackpotPeriodo)}` : ''}`
+    return {
+      cashAtivado: comCash,
+      cash_entradas: somar(cashEntradas), cash_entradas_qtd: cashEntradas.length,
+      cash_saidas: somar(cashSaidas), cash_saidas_qtd: cashSaidas.length,
+      torneio_entradas: somar(torneioEntradas), torneio_entradas_qtd: torneioEntradas.length,
+      pagamentos: somar(pagamentos), pagamentos_qtd: pagamentos.length,
+      jogadores: new Set(movs.map(m => m.jogador)).size,
+      sessoes: new Set(sessoesDB.map(m => `${m.jogador}||${m.sessao_finalizada_em}`)).size,
+      rake: somar(recolhidos.filter(r => r.tipo === 'rake')),
+      caixinha: somar(recolhidos.filter(r => r.tipo === 'caixinha')),
+      jackpot: somar(recolhidos.filter(r => r.tipo === 'jackpot')),
+      recolhido: somar(recolhidos)
+    };
+  }
+
+  async function carregarResumo() {
+
+    const periodoPedido = periodoResumo;
+    const n = await buscarNumerosResumo(inicioDoPeriodo(periodoPedido));
+
+    // Trocou de período durante a busca: a carga seguinte mostra o certo.
+    if (periodoPedido !== periodoResumo) return;
+
+    renderizarResumo(n);
+  }
+
+  function renderizarResumo(n) {
+
+    const qtd = (q, singular, plural) => {
+      const v = Number(q || 0);
+      return `${v} ${v === 1 ? singular : plural}`;
+    };
+
+    document.getElementById('kpiCashEntradas').textContent = formatarMoeda(n.cash_entradas);
+    document.getElementById('kpiCashEntradasQtd').textContent = qtd(n.cash_entradas_qtd, 'entrada', 'entradas');
+    document.getElementById('kpiCashSaidas').textContent = formatarMoeda(n.cash_saidas);
+    document.getElementById('kpiCashSaidasQtd').textContent = qtd(n.cash_saidas_qtd, 'saída', 'saídas');
+    document.getElementById('kpiTorneioEntradas').textContent = formatarMoeda(n.torneio_entradas);
+    document.getElementById('kpiTorneioEntradasQtd').textContent = qtd(n.torneio_entradas_qtd, 'registro/rebuy/add-on', 'registros/rebuys/add-ons');
+    document.getElementById('kpiPagamentos').textContent = formatarMoeda(n.pagamentos);
+    document.getElementById('kpiPagamentosQtd').textContent = qtd(n.pagamentos_qtd, 'pagamento', 'pagamentos');
+    document.getElementById('kpiRecolhido').textContent = n.cashAtivado ? formatarMoeda(n.recolhido) : '-';
+    document.getElementById('kpiRecolhidoDetalhe').textContent = n.cashAtivado
+      ? `Rake ${formatarMoeda(n.rake)} · Caixinha ${formatarMoeda(n.caixinha)}${Number(n.jackpot) > 0 ? ` · Jackpot ${formatarMoeda(n.jackpot)}` : ''}`
       : 'Rode o sql/008 no Supabase';
 
-    document.getElementById('kpiSessoes').textContent = sessoes.size;
-    document.getElementById('kpiJogadores').textContent = jogadoresNoPeriodo.size;
+    document.getElementById('kpiSessoes').textContent = Number(n.sessoes || 0);
+    document.getElementById('kpiJogadores').textContent = Number(n.jogadores || 0);
   }
 
   // ---------------------------------------------------------------------------
@@ -404,7 +479,7 @@
 
     tabela.innerHTML = mesasCash.map(mesa => {
 
-      const movsMesa = movimentacoes.filter(m => m.mesa_id === mesa.id);
+      const movsMesa = movsMesasCash.filter(m => m.mesa_id === mesa.id);
       const rec = recolhimentosCash.filter(r => r.mesa_id === mesa.id);
       const v = {
         compras: somar(movsMesa.filter(m => m.tipo === 'Entrada')),
@@ -449,11 +524,23 @@
   // Histórico de Movimentações (sessões de cash finalizadas)
   // ---------------------------------------------------------------------------
 
-  function abrirModalDetalheSessao(jogador, sessaoFinalizadaEm) {
+  // Itens da sessão: buscados só quando o detalhe é aberto.
+  async function abrirModalDetalheSessao(jogador, sessaoFinalizadaEm) {
 
-    const movsGrupo = movimentacoes
-      .filter(m => m.jogador === jogador && m.sessao_finalizada_em === sessaoFinalizadaEm)
-      .sort((a, b) => new Date(a.data) - new Date(b.data));
+    const { data, error } = await client
+      .from('movimentacoes')
+      .select('id,tipo,modalidade,valor,pago,data')
+      .eq('jogador', jogador)
+      .eq('sessao_finalizada_em', sessaoFinalizadaEm)
+      .order('id', { ascending: true });
+
+    if (error) {
+      console.error(error);
+      await mostrarAlertaRelatorio('Não foi possível abrir a sessão. Tente de novo.');
+      return;
+    }
+
+    const movsGrupo = (data || []).sort((a, b) => new Date(a.data) - new Date(b.data));
 
     if (movsGrupo.length === 0) return;
 
@@ -493,6 +580,13 @@
     document.getElementById('modalDetalheHistorico').classList.remove('aberto');
   }
 
+  function mostrarAlertaRelatorio(texto) {
+    if (typeof mostrarAlerta === 'function') return mostrarAlerta(texto);
+    alert(texto);
+  }
+
+  // lista em ordem de id decrescente: a sessão com o lançamento mais novo
+  // vem primeiro (mesma ordem da visão relatorio_sessoes, por ultimo_id).
   function agruparParaHistorico(lista) {
 
     const grupos = new Map();
@@ -516,6 +610,87 @@
     });
   }
 
+  // Sessões da página atual (limiteRelatorio) + se há mais.
+  let itensHistorico = [];
+  let historicoTemMais = false;
+  let movsHistoricoLocal = null; // só sem o sql/017: sessões finalizadas, colunas mínimas
+
+  async function carregarHistorico() {
+
+    if (jogadoresSujo || jogadores.length === 0) {
+      const { data: jogadoresDB, error: erroJogadores } = await client.from('jogadores').select('id,nome');
+      if (erroJogadores) console.error(erroJogadores);
+      jogadores = (jogadoresDB || []).sort((a, b) => a.nome.localeCompare(b.nome));
+      jogadoresSujo = false;
+    }
+
+    const termo = normalizarBusca(filtroRelatorioJogador);
+
+    if (bancoTemResumo !== false) {
+
+      let consulta = client
+        .from('relatorio_sessoes')
+        .select('jogador,sessao_finalizada_em,entrada,saida,resultado');
+
+      if (termo) {
+        const ids = jogadores.filter(j => normalizarBusca(j.nome).includes(termo)).map(j => j.id);
+        if (ids.length === 0) {
+          itensHistorico = [];
+          historicoTemMais = false;
+          renderizarHistorico();
+          return;
+        }
+        consulta = consulta.in('jogador_id', ids);
+      }
+
+      // Uma linha a mais só para saber se existe "Ver Mais".
+      const { data, error } = await consulta
+        .order('ultimo_id', { ascending: false })
+        .range(0, limiteRelatorio);
+
+      if (!error) {
+        bancoTemResumo = true;
+        movsHistoricoLocal = null;
+        historicoTemMais = (data || []).length > limiteRelatorio;
+        itensHistorico = (data || []).slice(0, limiteRelatorio).map(s => ({
+          jogador: s.jogador,
+          sessaoFinalizadaEm: s.sessao_finalizada_em,
+          entrada: Number(s.entrada),
+          saida: Number(s.saida),
+          resultado: Number(s.resultado)
+        }));
+        renderizarHistorico();
+        return;
+      }
+
+      if (!faltaSql017(error)) throw error;
+      bancoTemResumo = false;
+    }
+
+    // Sem o sql/017: busca as sessões finalizadas (só as colunas da conta) e
+    // agrupa aqui. A busca por jogador e o "Ver Mais" reaproveitam a lista.
+    if (!movsHistoricoLocal || abaSuja.historico) {
+      movsHistoricoLocal = await buscarTodas(() => client
+        .from('movimentacoes')
+        .select('id,jogador,tipo,valor,pago,sessao_finalizada_em')
+        .not('sessao_finalizada_em', 'is', null)
+        .order('id', { ascending: false }));
+    }
+
+    const filtradas = termo
+      ? movsHistoricoLocal.filter(mov => normalizarBusca(mov.jogador).includes(termo))
+      : movsHistoricoLocal;
+
+    const todos = agruparParaHistorico(filtradas);
+    historicoTemMais = todos.length > limiteRelatorio;
+    itensHistorico = todos.slice(0, limiteRelatorio);
+    renderizarHistorico();
+  }
+
+  function recarregarHistorico() {
+    return executarSerial('relatorio-historico', carregarHistorico);
+  }
+
   function tratarCliqueHistorico(e) {
 
     const el = e.target.closest('.jogador-clicavel');
@@ -533,15 +708,9 @@
     const relatorio = document.getElementById('relatorio');
     const relatorioTabela = document.getElementById('relatorioTabela');
 
-    const termo = normalizarBusca(filtroRelatorioJogador);
-    const movimentacoesFiltradas = termo
-      ? movimentacoes.filter(mov => normalizarBusca(mov.jogador).includes(termo))
-      : movimentacoes;
+    const itensVisiveis = itensHistorico;
 
-    const itensHistorico = agruparParaHistorico(movimentacoesFiltradas);
-    const itensVisiveis = itensHistorico.slice(0, limiteRelatorio);
-
-    document.getElementById('btnVerMais').style.display = itensHistorico.length > limiteRelatorio ? '' : 'none';
+    document.getElementById('btnVerMais').style.display = historicoTemMais ? '' : 'none';
 
     if (itensVisiveis.length === 0) {
       relatorio.innerHTML = '<p style="color:var(--apagado);padding:8px 0;">Nenhuma sessão finalizada ainda.</p>';
@@ -606,7 +775,7 @@
 
   function verMaisRelatorio() {
     limiteRelatorio += 10;
-    renderizarHistorico();
+    recarregarHistorico();
   }
 
   let sugestoesRelatorioAtuais = [];
@@ -633,7 +802,7 @@
     filtroRelatorioJogador = jogador.nome;
     document.getElementById('sugestoesJogadoresRelatorio').style.display = 'none';
 
-    renderizarHistorico();
+    recarregarHistorico();
   }
 
   function filtrarJogadoresRelatorio() {
@@ -651,7 +820,7 @@
 
     if (!termo) {
       sugestoes.style.display = 'none';
-      renderizarHistorico();
+      buscarHistoricoComAtraso();
       return;
     }
 
@@ -671,7 +840,7 @@
 
     if (filtrados.length === 0) {
       sugestoes.style.display = 'none';
-      renderizarHistorico();
+      buscarHistoricoComAtraso();
       return;
     }
 
@@ -686,7 +855,7 @@
     });
 
     destacarSugestaoRelatorio(0);
-    renderizarHistorico();
+    buscarHistoricoComAtraso();
   }
 
   document.getElementById('pesquisaJogadorRelatorio')
@@ -718,31 +887,11 @@
   // Dados
   // ---------------------------------------------------------------------------
 
-  // Uma carga por vez; se pedirem outra durante a carga, roda de novo no fim.
-  function carregarDados() {
-    return executarSerial('dados-relatorio', carregarDadosAgora);
-  }
-
-  async function carregarDadosAgora() {
-
-    const { data: jogadoresDB, error: erroJogadores } = await client
-      .from('jogadores')
-      .select('*');
-
-    if (erroJogadores) console.error(erroJogadores);
-
-    // Todas as movimentações, em páginas de 1000 (limite do Supabase).
-    const movimentacoesDB = await buscarTodas(() => client
-      .from('movimentacoes')
-      .select('*')
-      .order('id', { ascending: false }));
-
-    jogadores = (jogadoresDB || []).sort((a, b) => a.nome.localeCompare(b.nome));
-    movimentacoes = movimentacoesDB || [];
+  async function carregarCash() {
 
     const { data: mesasDB, error: erroMesas } = await client
       .from('cash_mesas')
-      .select('*')
+      .select('id,nome,status,iniciado_em')
       .order('iniciado_em', { ascending: false });
 
     if (erroMesas) {
@@ -750,19 +899,72 @@
       cashAtivado = false;
       mesasCash = [];
       recolhimentosCash = [];
+      movsMesasCash = [];
     } else {
       cashAtivado = true;
       mesasCash = mesasDB || [];
-      recolhimentosCash = await buscarTodas(() => client
-        .from('cash_mesa_recolhimentos')
-        .select('*')
-        .order('criado_em', { ascending: true })
-        .order('id', { ascending: true }));
+      [recolhimentosCash, movsMesasCash] = await Promise.all([
+        buscarTodas(() => client
+          .from('cash_mesa_recolhimentos')
+          .select('id,mesa_id,tipo,valor')
+          .order('id', { ascending: true })),
+        buscarTodas(() => client
+          .from('movimentacoes')
+          .select('id,mesa_id,tipo,valor')
+          .not('mesa_id', 'is', null)
+          .order('id', { ascending: true }))
+      ]);
     }
 
-    renderizarResumo();
-    renderizarHistorico();
     renderizarCashMesas();
+  }
+
+  const CARGAS_ABA = { resumo: carregarResumo, historico: carregarHistorico, cash: carregarCash };
+
+  // Busca a aba aberta se algo mudou desde a última vez. Uma carga por vez
+  // por aba; se pedirem outra durante a carga, roda de novo no fim.
+  function carregarAbaAtual() {
+
+    const aba = abaAtual;
+    const carga = CARGAS_ABA[aba];
+
+    if (!carga || !abaSuja[aba]) return Promise.resolve();
+
+    return executarSerial('relatorio-' + aba, async () => {
+      abaSuja[aba] = false;
+      try {
+        await carga();
+      } catch (erro) {
+        abaSuja[aba] = true;
+        throw erro;
+      }
+    });
+  }
+
+  let atrasoBuscaHistorico = null;
+
+  function buscarHistoricoComAtraso() {
+    clearTimeout(atrasoBuscaHistorico);
+    atrasoBuscaHistorico = setTimeout(recarregarHistorico, 250);
+  }
+
+  // tabelas: o que mudou (aviso do Realtime); sem argumento = tudo.
+  function marcarMudanca(tabelas) {
+
+    const mudou = t => !tabelas || tabelas.has(t);
+
+    if (mudou('movimentacoes')) {
+      abaSuja.resumo = abaSuja.historico = abaSuja.cash = true;
+      movsHistoricoLocal = null;
+    }
+    if (mudou('cash_mesas') || mudou('cash_mesa_recolhimentos')) abaSuja.resumo = abaSuja.cash = true;
+    if (mudou('jogadores')) { jogadoresSujo = true; abaSuja.historico = true; }
+  }
+
+  // Depois de desfazer/reabrir no "Desfazer / Log" e nos avisos do Realtime.
+  function carregarDados(tabelas) {
+    marcarMudanca(tabelas);
+    return carregarAbaAtual();
   }
 
   async function sair() {
@@ -794,12 +996,19 @@
     adminLiberado = true;
     document.getElementById('btnDesfazer').classList.remove('disabled');
 
-    await carregarDados();
+    await carregarAbaAtual();
+
+    // O Realtime pede uma recarga completa ao conectar; logo depois da
+    // primeira carga ela só repetiria o download.
+    const inicioPagina = Date.now();
 
     iniciarRealtimeRobusto({
       nome: 'relatorio-realtime',
       tabelas: ['movimentacoes', 'jogadores', 'cash_mesas', 'cash_mesa_recolhimentos'],
-      aoMudar: () => carregarDados()
+      aoMudar: tabelas => {
+        if (!tabelas && Date.now() - inicioPagina < 5000) return;
+        carregarDados(tabelas);
+      }
     });
   })();
 </script>

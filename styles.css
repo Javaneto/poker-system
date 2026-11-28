@@ -1156,6 +1156,17 @@ tbody tr:hover {
   padding-right: 4px;
 }
 
+.ch-periodos {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.ch-periodos .aba {
+  min-height: 40px;
+}
+
 .ch-vazio {
   color: var(--apagado);
   padding: 16px 0;

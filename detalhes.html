@@ -909,21 +909,30 @@
     });
   }
 
-  async function carregarDados() {
+  // Economia de tráfego: num aviso do Realtime a TV busca de novo só as
+  // tabelas que mudaram (o relógio muda só a tabela torneios). Ao abrir, ao
+  // voltar a ficar visível e na garantia de 5 min, busca tudo.
+  let idTorneioCarregadoTv; // torneio cujos valores/movimentações estão na tela
+
+  async function carregarDados(tabelas) {
 
     const { data: configuracaoDB } = await client
       .from('configuracoes')
-      .select('*')
+      .select('torneio_atual_id')
       .eq('id', 1)
       .single();
 
     const torneioAtualId = configuracaoDB?.torneio_atual_id || null;
 
     if (!torneioAtualId) {
+      idTorneioCarregadoTv = null;
       torneioAtual = null;
       atualizarTela();
       return;
     }
+
+    const trocouTorneio = String(torneioAtualId) !== String(idTorneioCarregadoTv);
+    const mudou = tabela => !tabelas || trocouTorneio || tabelas.has(tabela);
 
     const { data: torneioDB } = await client
       .from('torneios')
@@ -938,38 +947,52 @@
       return;
     }
 
-    const { data: valoresDB } = await client
-      .from('torneio_valores')
-      .select('*')
-      .eq('torneio_id', torneioAtualId);
+    if (mudou('torneio_valores')) {
+      const { data: valoresDB } = await client
+        .from('torneio_valores')
+        .select('tipo,valor_total,fichas')
+        .eq('torneio_id', torneioAtualId);
 
-    valoresTorneio = valoresDB || [];
+      valoresTorneio = valoresDB || [];
+    }
 
-    const { data: movsDB } = await client
-      .from('movimentacoes')
-      .select('*')
-      .eq('torneio_id', torneioAtualId);
+    if (mudou('movimentacoes')) {
+      // Só as colunas que a TV usa (contagem, fichas e prêmio).
+      const { data: movsDB, error: erroMovs } = await client
+        .from('movimentacoes')
+        .select('jogador,tipo,tipo_registro,valor_prize')
+        .eq('torneio_id', torneioAtualId);
 
-    movimentacoesTorneio = movsDB || [];
+      if (erroMovs) throw erroMovs;
+      movimentacoesTorneio = movsDB || [];
+    }
 
-    const { data: resultadosDB, error: erroResultados } = await client
-      .from('torneio_resultados')
-      .select('jogador,posicao')
-      .eq('torneio_id', String(torneioAtualId));
+    if (mudou('torneio_resultados')) {
+      const { data: resultadosDB, error: erroResultados } = await client
+        .from('torneio_resultados')
+        .select('jogador,posicao')
+        .eq('torneio_id', String(torneioAtualId));
 
-    resultadosTorneio = erroResultados ? [] : (resultadosDB || []);
+      resultadosTorneio = erroResultados ? [] : (resultadosDB || []);
+    }
 
-    const { data: estruturasDB } = await client
-      .from('premiacao_estruturas')
-      .select('*');
+    if (mudou('premiacao_estruturas')) {
+      const { data: estruturasDB } = await client
+        .from('premiacao_estruturas')
+        .select('*');
 
-    estruturasPremiacao = estruturasDB || [];
+      estruturasPremiacao = estruturasDB || [];
+    }
 
-    const { data: estruturasBlindsDB } = await client
-      .from('estruturas_blinds')
-      .select('*');
+    if (mudou('estruturas_blinds')) {
+      const { data: estruturasBlindsDB } = await client
+        .from('estruturas_blinds')
+        .select('*');
 
-    estruturasBlinds = estruturasBlindsDB || [];
+      estruturasBlinds = estruturasBlindsDB || [];
+    }
+
+    idTorneioCarregadoTv = torneioAtualId;
 
     atualizarTela();
   }
@@ -1162,10 +1185,21 @@
     let canal = null;
     let debounce = null;
     let reconexao = null;
+    let tabelasMudadas = new Set();
+    let completa = false;
 
-    function recarregar() {
+    // evento do Realtime: recarrega só a tabela avisada; sem evento
+    // (conectou, voltou a ficar visível): recarrega tudo.
+    function recarregar(evento) {
+      if (evento?.table) tabelasMudadas.add(evento.table);
+      else completa = true;
       clearTimeout(debounce);
-      debounce = setTimeout(() => carregarDados(), 300);
+      debounce = setTimeout(() => {
+        const tabelas = completa ? undefined : tabelasMudadas;
+        tabelasMudadas = new Set();
+        completa = false;
+        carregarDados(tabelas).catch(erro => console.error('Erro ao carregar dados da TV:', erro));
+      }, 300);
     }
 
     function conectar() {
