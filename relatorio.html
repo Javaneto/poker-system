@@ -71,6 +71,42 @@
       .rel-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .rel-kpi-valor { font-size: 19px; }
     }
+
+    /* Histórico de Movimentações */
+    .rh-filtros { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .rh-filtros .rh-busca { flex: 1 1 260px; min-width: 0; margin-bottom: 0; }
+    .rh-filtros .rh-busca input { margin-bottom: 0; }
+    .rh-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .rh-tabela td, .rh-tabela th { vertical-align: middle; }
+    .rh-tabela .col-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .rh-tabela td.col-num:last-child { font-weight: 800; }
+    .rh-tabela .rh-data { color: var(--apagado); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .rh-tabela td .ch-vazio { padding: 24px 0; }
+
+    .rh-selo {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .ch-item-detalhe .rh-selo { margin: 6px 0 0; }
+    .rh-selo.deve { background: var(--tint-vermelho); color: var(--tx-vermelho); }
+    .rh-selo.recebe { background: var(--tint-verde); color: var(--tx-verde); }
+    .rh-selo:hover { text-decoration: underline; }
+
+    .rh-esqueleto span { display: block; height: 12px; width: 70%; border-radius: 6px; background: var(--superficie-3); animation: ch-pulsar 1.2s ease-in-out infinite; }
+
+    @media (max-width: 768px) {
+      .rh-filtros { flex-direction: column; align-items: stretch; gap: 8px; }
+      .rh-filtros .rh-busca { flex: 0 0 auto; }
+      .rh-filtros .rh-busca input { font-size: 16px; }
+    }
   </style>
 </head>
 <body>
@@ -152,29 +188,45 @@
         </div>
       </div>
 
-      <div class="pesquisa-wrapper">
-        <input
-          enterkeyhint="done"
-          autocapitalize="words"
-          spellcheck="false"
-          type="text"
-          id="pesquisaJogadorRelatorio"
-          placeholder="Pesquisar jogador"
-          autocomplete="off"
-          oninput="filtrarJogadoresRelatorio()"
-        >
+      <div class="rh-filtros">
+        <div class="pesquisa-wrapper rh-busca">
+          <input
+            enterkeyhint="done"
+            autocapitalize="words"
+            spellcheck="false"
+            type="text"
+            id="pesquisaJogadorRelatorio"
+            placeholder="Pesquisar jogador"
+            aria-label="Pesquisar jogador"
+            autocomplete="off"
+            oninput="filtrarJogadoresRelatorio()"
+          >
 
-        <div id="sugestoesJogadoresRelatorio"></div>
+          <div id="sugestoesJogadoresRelatorio"></div>
+        </div>
+
+        <div class="rh-chips" id="periodosHistorico" role="group" aria-label="Período">
+          <button type="button" class="ch-chip" data-periodo="hoje" aria-pressed="false" onclick="trocarPeriodoHistorico('hoje')">Hoje</button>
+          <button type="button" class="ch-chip" data-periodo="7" aria-pressed="false" onclick="trocarPeriodoHistorico('7')">7 dias</button>
+          <button type="button" class="ch-chip" data-periodo="30" aria-pressed="false" onclick="trocarPeriodoHistorico('30')">30 dias</button>
+          <button type="button" class="ch-chip ativa" data-periodo="tudo" aria-pressed="true" onclick="trocarPeriodoHistorico('tudo')">Tudo</button>
+        </div>
+
+        <div class="rh-chips oculto" id="modalidadeHistorico" role="group" aria-label="Modalidade">
+          <button type="button" class="ch-chip ativa" data-modalidade="" aria-pressed="true" onclick="trocarModalidadeHistorico('')">Todos</button>
+          <button type="button" class="ch-chip" data-modalidade="cash" aria-pressed="false" onclick="trocarModalidadeHistorico('cash')">Cash</button>
+          <button type="button" class="ch-chip" data-modalidade="torneio" aria-pressed="false" onclick="trocarModalidadeHistorico('torneio')">Torneio</button>
+        </div>
       </div>
 
-      <table class="relatorio-desktop">
+      <table class="relatorio-desktop rh-tabela">
         <thead>
           <tr>
-            <th>Data/Hora</th>
+            <th>Finalizada em</th>
             <th>Jogador</th>
-            <th>Tipo</th>
-            <th>Pagamento</th>
-            <th>Resultado</th>
+            <th class="col-num">Entrou</th>
+            <th class="col-num">Saiu</th>
+            <th class="col-num">Resultado</th>
           </tr>
         </thead>
 
@@ -183,9 +235,9 @@
 
       <div id="relatorio" class="relatorio-mobile"></div>
 
-      <div style="margin-top:12px;text-align:center;">
-        <button id="btnVerMais" class="btn-gray" onclick="verMaisRelatorio()" type="button">
-          Ver Mais
+      <div class="ch-mais">
+        <button id="btnVerMais" class="ch-btn" onclick="verMaisRelatorio()" type="button">
+          Ver mais
         </button>
       </div>
     </div>
@@ -662,7 +714,57 @@
   let historicoTemMais = false;
   let movsHistoricoLocal = null; // só sem o sql/017: sessões finalizadas, colunas mínimas
 
+  // Filtros do Histórico.
+  let periodoHistorico = 'tudo';      // hoje | 7 | 30 | tudo
+  let modalidadeHistorico = '';       // '' | cash | torneio
+  let visaoTemModalidade = null;      // sql/019 (tem_cash/tem_torneio): null = ainda não sabe
+
+  // Saldo em aberto AGORA dos jogadores da página: nome -> resultado
+  // (mesma conta do Em Aberto: negativo = jogador deve; positivo = clube paga).
+  let saldoAbertoHistorico = new Map();
+
+  function trocarPeriodoHistorico(periodo) {
+    periodoHistorico = periodo;
+    limiteRelatorio = 10;
+    marcarChipsHistorico();
+    recarregarHistorico();
+  }
+
+  function trocarModalidadeHistorico(modalidade) {
+    modalidadeHistorico = modalidade;
+    limiteRelatorio = 10;
+    marcarChipsHistorico();
+    recarregarHistorico();
+  }
+
+  function marcarChipsHistorico() {
+    document.querySelectorAll('#periodosHistorico .ch-chip').forEach(b => {
+      const ativo = b.dataset.periodo === periodoHistorico;
+      b.classList.toggle('ativa', ativo);
+      b.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+    });
+    document.querySelectorAll('#modalidadeHistorico .ch-chip').forEach(b => {
+      const ativo = b.dataset.modalidade === modalidadeHistorico;
+      b.classList.toggle('ativa', ativo);
+      b.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+    });
+    document.getElementById('modalidadeHistorico').classList.toggle('oculto', visaoTemModalidade !== true);
+  }
+
+  function erroColunaModalidade(error) {
+    return error && (error.code === '42703' || /tem_cash|tem_torneio/.test(error.message || ''));
+  }
+
+  function mostrarCarregandoHistorico() {
+    document.getElementById('btnVerMais').style.display = 'none';
+    document.getElementById('relatorio').innerHTML = htmlCarregandoCentral(3);
+    document.getElementById('relatorioTabela').innerHTML = Array.from({ length: 3 }, () =>
+      '<tr class="rh-esqueleto">' + '<td><span></span></td>'.repeat(5) + '</tr>').join('');
+  }
+
   async function carregarHistorico() {
+
+    if (itensHistorico.length === 0) mostrarCarregandoHistorico();
 
     if (jogadoresSujo || jogadores.length === 0) {
       const { data: jogadoresDB, error: erroJogadores } = await client.from('jogadores').select('id,nome');
@@ -672,28 +774,50 @@
     }
 
     const termo = normalizarBusca(filtroRelatorioJogador);
+    const inicio = inicioPeriodoLog(periodoHistorico);
 
     if (bancoTemResumo !== false) {
 
-      let consulta = client
-        .from('relatorio_sessoes')
-        .select('jogador,sessao_finalizada_em,entrada,saida,resultado');
+      const montarConsulta = comModalidade => {
+        let consulta = client
+          .from('relatorio_sessoes')
+          .select('jogador,sessao_finalizada_em,entrada,saida,resultado' + (comModalidade ? ',tem_cash,tem_torneio' : ''));
+        if (inicio) consulta = consulta.gte('sessao_finalizada_em', inicio.toISOString());
+        if (comModalidade && modalidadeHistorico === 'cash') consulta = consulta.eq('tem_cash', true);
+        if (comModalidade && modalidadeHistorico === 'torneio') consulta = consulta.eq('tem_torneio', true);
+        return consulta;
+      };
 
+      let ids = null;
       if (termo) {
-        const ids = jogadores.filter(j => normalizarBusca(j.nome).includes(termo)).map(j => j.id);
+        ids = jogadores.filter(j => normalizarBusca(j.nome).includes(termo)).map(j => j.id);
         if (ids.length === 0) {
           itensHistorico = [];
           historicoTemMais = false;
+          saldoAbertoHistorico = new Map();
           renderizarHistorico();
           return;
         }
-        consulta = consulta.in('jogador_id', ids);
       }
 
-      // Uma linha a mais só para saber se existe "Ver Mais".
-      const { data, error } = await consulta
-        .order('ultimo_id', { ascending: false })
-        .range(0, limiteRelatorio);
+      const executar = async comModalidade => {
+        let consulta = montarConsulta(comModalidade);
+        if (ids) consulta = consulta.in('jogador_id', ids);
+        // Uma linha a mais só para saber se existe "Ver Mais".
+        return consulta.order('ultimo_id', { ascending: false }).range(0, limiteRelatorio);
+      };
+
+      let { data, error } = await executar(visaoTemModalidade !== false);
+
+      // Sem o sql/019 a visão ainda não tem tem_cash/tem_torneio: esconde o
+      // filtro Cash/Torneio e repete sem essas colunas.
+      if (error && visaoTemModalidade !== false && erroColunaModalidade(error)) {
+        visaoTemModalidade = false;
+        modalidadeHistorico = '';
+        ({ data, error } = await executar(false));
+      } else if (!error && visaoTemModalidade === null) {
+        visaoTemModalidade = true;
+      }
 
       if (!error) {
         bancoTemResumo = true;
@@ -706,16 +830,20 @@
           saida: Number(s.saida),
           resultado: Number(s.resultado)
         }));
+        await carregarSaldoAbertoHistorico();
+        marcarChipsHistorico();
         renderizarHistorico();
         return;
       }
 
       if (!faltaSql017(error)) throw error;
       bancoTemResumo = false;
+      visaoTemModalidade = false;
+      modalidadeHistorico = '';
     }
 
     // Sem o sql/017: busca as sessões finalizadas (só as colunas da conta) e
-    // agrupa aqui. A busca por jogador e o "Ver Mais" reaproveitam a lista.
+    // agrupa aqui. A busca por jogador, o período e o "Ver Mais" reaproveitam a lista.
     if (!movsHistoricoLocal || abaSuja.historico) {
       movsHistoricoLocal = await buscarTodas(() => client
         .from('movimentacoes')
@@ -724,14 +852,49 @@
         .order('id', { ascending: false }));
     }
 
-    const filtradas = termo
-      ? movsHistoricoLocal.filter(mov => normalizarBusca(mov.jogador).includes(termo))
-      : movsHistoricoLocal;
+    const filtradas = movsHistoricoLocal.filter(mov =>
+      (!termo || normalizarBusca(mov.jogador).includes(termo))
+      && (!inicio || new Date(mov.sessao_finalizada_em) >= inicio));
 
     const todos = agruparParaHistorico(filtradas);
     historicoTemMais = todos.length > limiteRelatorio;
     itensHistorico = todos.slice(0, limiteRelatorio);
+    await carregarSaldoAbertoHistorico();
+    marcarChipsHistorico();
     renderizarHistorico();
+  }
+
+  // Uma consulta pequena: só as movimentações EM ABERTO dos jogadores que
+  // aparecem na página (4 colunas). Se falhar, o selo simplesmente não aparece.
+  async function carregarSaldoAbertoHistorico() {
+
+    saldoAbertoHistorico = new Map();
+
+    const nomes = Array.from(new Set(itensHistorico.map(i => i.jogador)));
+
+    if (nomes.length === 0) return;
+
+    const { data, error } = await client
+      .from('movimentacoes')
+      .select('jogador,tipo,valor,pago')
+      .is('sessao_finalizada_em', null)
+      .in('jogador', nomes);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    const porJogador = new Map();
+    (data || []).forEach(m => {
+      if (!porJogador.has(m.jogador)) porJogador.set(m.jogador, []);
+      porJogador.get(m.jogador).push(m);
+    });
+
+    porJogador.forEach((movs, nome) => {
+      const { resultado } = calcularResultadoMovimentacoes(movs);
+      if (Math.abs(resultado) >= 0.005) saldoAbertoHistorico.set(nome, resultado);
+    });
   }
 
   function recarregarHistorico() {
@@ -750,75 +913,69 @@
   document.getElementById('relatorio').addEventListener('click', tratarCliqueHistorico);
   document.getElementById('relatorioTabela').addEventListener('click', tratarCliqueHistorico);
 
+  // Selo "Em aberto" com link para o Em Aberto já filtrado no jogador.
+  function htmlSeloSaldoAberto(nome) {
+    const saldo = saldoAbertoHistorico.get(nome);
+    if (saldo === undefined) return '';
+    const deve = saldo < 0;
+    return `<a class="rh-selo ${deve ? 'deve' : 'recebe'}" href="em-aberto.html?busca=${encodeURIComponent(nome)}" title="Ver no Em Aberto">Em aberto: ${deve ? 'deve' : 'a receber'} ${formatarMoeda(Math.abs(saldo))}</a>`;
+  }
+
   function renderizarHistorico() {
 
     const relatorio = document.getElementById('relatorio');
     const relatorioTabela = document.getElementById('relatorioTabela');
 
-    const itensVisiveis = itensHistorico;
-
     document.getElementById('btnVerMais').style.display = historicoTemMais ? '' : 'none';
 
-    if (itensVisiveis.length === 0) {
-      relatorio.innerHTML = '<p style="color:var(--apagado);padding:8px 0;">Nenhuma sessão finalizada ainda.</p>';
-      relatorioTabela.innerHTML = '<tr><td colspan="5" style="color:var(--apagado);">Nenhuma sessão finalizada ainda.</td></tr>';
+    if (itensHistorico.length === 0) {
+      const filtrando = filtroRelatorioJogador || periodoHistorico !== 'tudo' || modalidadeHistorico;
+      const msg = filtrando ? 'Nenhuma sessão finalizada com esses filtros.' : 'Nenhuma sessão finalizada ainda.';
+      relatorio.innerHTML = htmlVazioCentral(msg);
+      relatorioTabela.innerHTML = `<tr><td colspan="5">${htmlVazioCentral(msg)}</td></tr>`;
       return;
     }
 
-    let htmlMobile = '';
-    let htmlTabela = '';
+    const valorResultado = item => {
+      const classe = item.resultado >= 0 ? 'positivo' : 'negativo';
+      return { classe, texto: `${item.resultado >= 0 ? '+' : '-'} ${formatarMoeda(Math.abs(item.resultado))}` };
+    };
 
-    itensVisiveis.forEach(item => {
-
-      const dataFormatada = formatarDataHora(item.sessaoFinalizadaEm);
-      const sinal = item.resultado >= 0 ? '+ ' : '- ';
-      const classeValor = item.resultado >= 0 ? 'positivo' : 'negativo';
-
-      let statusPagamento;
-      let classeStatus;
-
-      if (item.resultado < 0) {
-        statusPagamento = 'Pendente';
-        classeStatus = 'negativo';
-      } else if (item.resultado === 0) {
-        statusPagamento = 'Realizado';
-        classeStatus = '';
-      } else {
-        statusPagamento = 'Em Saldo';
-        classeStatus = 'positivo';
-      }
-
-      const statusTipo = item.resultado === 0 ? 'Finalizado' : 'Em Aberto';
+    relatorio.innerHTML = `<div class="ch-lista">${itensHistorico.map(item => {
       const atributos = `data-jogador="${escapeHtml(item.jogador)}" data-sessao="${escapeHtml(item.sessaoFinalizadaEm)}"`;
+      const { classe, texto } = valorResultado(item);
+      const selo = htmlSeloSaldoAberto(item.jogador);
+      return htmlItemCentral({
+        titulo: `<span class="jogador-clicavel" role="button" tabindex="0" ${atributos}>${escapeHtml(item.jogador)}</span>`,
+        detalhe: `Entrou ${formatarMoeda(item.entrada)} · Saiu ${formatarMoeda(item.saida)}${selo ? `<br>${selo}` : ''}`,
+        data: formatarDataHora(item.sessaoFinalizadaEm),
+        valor: texto,
+        classeValor: classe
+      });
+    }).join('')}</div>`;
 
-      htmlMobile += `
-        <div class="linha-desfazer">
-          <div class="linha-desfazer-info">
-            <strong class="jogador-clicavel" ${atributos}>${escapeHtml(item.jogador)}</strong>
-            ${statusTipo} · <span class="${classeStatus}">${statusPagamento}</span><br>
-            Entrou ${formatarMoeda(item.entrada)} · Saiu ${formatarMoeda(item.saida)}<br>
-            <span style="color:var(--apagado-2);">${dataFormatada}</span>
-          </div>
-          <div class="linha-desfazer-valor">
-            <strong class="${classeValor}">${sinal}${formatarMoeda(Math.abs(item.resultado))}</strong>
-          </div>
-        </div>
-      `;
-
-      htmlTabela += `
+    relatorioTabela.innerHTML = itensHistorico.map(item => {
+      const atributos = `data-jogador="${escapeHtml(item.jogador)}" data-sessao="${escapeHtml(item.sessaoFinalizadaEm)}"`;
+      const { classe, texto } = valorResultado(item);
+      return `
         <tr>
-          <td>${dataFormatada}</td>
-          <td class="jogador-clicavel" ${atributos}>${escapeHtml(item.jogador)}</td>
-          <td>${statusTipo}</td>
-          <td class="${classeStatus}">${statusPagamento}</td>
-          <td class="${classeValor}">${sinal}${formatarMoeda(Math.abs(item.resultado))}</td>
+          <td class="rh-data">${formatarDataHora(item.sessaoFinalizadaEm)}</td>
+          <td><span class="jogador-clicavel" role="button" tabindex="0" ${atributos}>${escapeHtml(item.jogador)}</span>${htmlSeloSaldoAberto(item.jogador)}</td>
+          <td class="col-num">${formatarMoeda(item.entrada)}</td>
+          <td class="col-num">${formatarMoeda(item.saida)}</td>
+          <td class="col-num ${classe}">${texto}</td>
         </tr>
       `;
-    });
-
-    relatorio.innerHTML = htmlMobile;
-    relatorioTabela.innerHTML = htmlTabela;
+    }).join('');
   }
+
+  // Enter/espaço no nome abre a sessão (acessível pelo teclado).
+  ['relatorio', 'relatorioTabela'].forEach(id => document.getElementById(id).addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('jogador-clicavel')) {
+      e.preventDefault();
+      tratarCliqueHistorico(e);
+    }
+  }));
 
   function verMaisRelatorio() {
     limiteRelatorio += 10;
