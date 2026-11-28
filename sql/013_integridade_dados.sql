@@ -19,8 +19,15 @@
 --     camadas). O Ranking público continua funcionando.
 --
 -- Pode ser rodado de novo sem problema.
+--
+-- Tudo fica dentro de UM bloco (do $mig$ ... $mig$): o SQL Editor do
+-- Supabase executa cada comando separado, e um bloco único garante que ou
+-- tudo é aplicado, ou nada.
 
-begin;
+do $mig$
+declare
+  v_conflitos text;
+begin
 
 -- ---------------------------------------------------------------------------
 -- 1. Nomes antigos -> nome atual do cadastro
@@ -29,7 +36,8 @@ begin;
 -- (ex.: Nicolas DJ -> Nicolas -> Nicolas R. Oliveira). Nomes sem nenhuma
 -- linha para corrigir são simplesmente ignorados.
 
-create temporary table _renomes (antigo text primary key, atual text not null) on commit drop;
+create temporary table if not exists _renomes (antigo text primary key, atual text not null) on commit drop;
+truncate _renomes;
 
 insert into _renomes (antigo, atual) values
   ('Dim Fernando',                 'Fernando Mendonça'),
@@ -77,9 +85,6 @@ delete from _renomes r
 
 -- Mesma pessoa duas vezes no mesmo torneio / mesa (nome antigo e novo):
 -- não dá para juntar sozinho. Para tudo e avisa.
-do $$
-declare v_conflitos text;
-begin
   select string_agg(format('torneio %s: %s', torneio_id, nome), '; ')
     into v_conflitos
     from (
@@ -107,7 +112,6 @@ begin
   if v_conflitos is not null then
     raise exception 'Jogador com nome antigo e novo na mesma mesa: %', v_conflitos;
   end if;
-end $$;
 
 update movimentacoes m      set jogador = r.atual       from _renomes r where m.jogador = r.antigo;
 update torneio_resultados t set jogador = r.atual       from _renomes r where t.jogador = r.antigo;
@@ -159,14 +163,11 @@ create unique index if not exists jogadores_nome_unico on public.jogadores (lowe
 -- ---------------------------------------------------------------------------
 -- Só converte se ainda for texto (permite rodar o arquivo de novo).
 
-do $$
-begin
   if (select data_type from information_schema.columns
        where table_schema = 'public' and table_name = 'movimentacoes' and column_name = 'data') = 'text' then
     update movimentacoes set data = now()::text where data is null or btrim(data) = '';
     alter table public.movimentacoes alter column data type timestamptz using data::timestamptz;
   end if;
-end $$;
 
 alter table public.movimentacoes alter column data set default now();
 alter table public.movimentacoes alter column data set not null;
@@ -227,6 +228,6 @@ grant execute on function public.desfazer_ajuste_premiacao(bigint) to authentica
 grant execute on function public.encerrar_torneio_com_premios(text, jsonb) to authenticated;
 grant execute on function public.ranking_publico(uuid) to anon, authenticated;
 
-commit;
+end $mig$;
 
 notify pgrst, 'reload schema';
