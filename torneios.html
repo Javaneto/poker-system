@@ -528,7 +528,25 @@
       return;
     }
 
-    if (!await mostrarConfirm(`Excluir permanentemente o torneio "${nomeTorneio}"? Essa ação não pode ser desfeita. As movimentações financeiras continuam no relatório, só deixam de estar vinculadas a esse torneio.`)) return;
+    // Torneio com movimentações (entradas, pagamentos, prêmios) fica guardado:
+    // o histórico financeiro não pode perder o vínculo (sql/014).
+    const { count: qtdMovs, error: erroContagem } = await client
+      .from('movimentacoes')
+      .select('id', { count: 'exact', head: true })
+      .eq('torneio_id', torneioId);
+
+    if (erroContagem) {
+      await mostrarAlerta('Erro ao verificar as movimentações do torneio. Tente novamente.');
+      console.error(erroContagem);
+      return;
+    }
+
+    if (qtdMovs > 0) {
+      await mostrarAlerta(avisoTorneioComMovimentacoes(nomeTorneio, qtdMovs));
+      return;
+    }
+
+    if (!await mostrarConfirm(`Excluir permanentemente o torneio "${nomeTorneio}"? Essa ação não pode ser desfeita. A classificação e o vínculo com o ranking dele também são apagados.`)) return;
 
     const { error } = await client
       .from('torneios')
@@ -536,7 +554,10 @@
       .eq('id', torneioId);
 
     if (error) {
-      await mostrarAlerta('Erro ao excluir torneio');
+      // 23503: entrou alguma movimentação no meio do caminho.
+      await mostrarAlerta(error.code === '23503'
+        ? avisoTorneioComMovimentacoes(nomeTorneio)
+        : 'Erro ao excluir torneio');
       console.error(error);
       return;
     }
@@ -544,6 +565,10 @@
     console.log('Torneio excluído:', torneioId);
 
     await carregarDados();
+  }
+
+  function avisoTorneioComMovimentacoes(nomeTorneio, qtd) {
+    return `O torneio "${nomeTorneio}" tem ${qtd ? qtd + ' movimentação(ões)' : 'movimentações'} (entradas, pagamentos ou prêmios) e por isso não pode ser excluído: o histórico financeiro precisa continuar ligado a ele.\n\nSe era um torneio de teste, desfaça as movimentações dele primeiro (Diretor > Desfazer / Log) e depois exclua.`;
   }
 
   function criarLinhaTipoFixo(tipoFixo, total, rake, containerId, ativo = false, fichas = 0) {

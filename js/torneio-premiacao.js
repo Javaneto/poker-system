@@ -536,8 +536,6 @@ function montarPagamentosPremios() {
 
     if (!(p.valor > 0)) return;
 
-    const cadastro = jogadores.find(j => j.nome === resultado.jogador);
-
     pagamentos.push({
       jogador: resultado.jogador,
       tipo: 'Saída',
@@ -547,8 +545,6 @@ function montarPagamentosPremios() {
       torneio_id: torneioAtual.id,
       pago: false,
       data: agora,
-      cpf: cadastro?.cpf || null,
-      telefone: cadastro?.telefone || null,
       observacao: `Prêmio ${p.posicao}º lugar - ${torneioAtual.nome}${p.texto ? ` (${p.texto})` : ''}`
     });
   });

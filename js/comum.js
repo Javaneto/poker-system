@@ -661,6 +661,27 @@ function descreverAlteracaoLog(item) {
   return mudou.length ? `Campos: ${mudou.map(escapeHtml).join(', ')}` : '';
 }
 
+// Título no Log para tabelas que não são movimentações (sql/014 passou a
+// registrar torneios, classificação, ranking, estruturas e configurações).
+function tituloLogOutraTabela(tabela, dados) {
+  const e = v => escapeHtml(v ?? '-');
+  switch (tabela) {
+    case 'cash_mesas': return `Mesa: ${e(dados.nome)}`;
+    case 'jogadores': return `Jogador: ${e(dados.nome)}`;
+    case 'torneios': return `Torneio: ${e(dados.nome)}`;
+    case 'torneio_valores': return `Valor do torneio: ${e(dados.tipo)}`;
+    case 'torneio_resultados': return `Classificação: ${e(dados.jogador)}${dados.posicao ? ` (${Number(dados.posicao)}º)` : ''}`;
+    case 'torneio_premiacao_ajustes': return `Ajuste de prêmio: ${formatarMoeda(dados.valor)}${dados.observacao ? ` (${e(dados.observacao)})` : ''}`;
+    case 'rankings': return `Ranking: ${e(dados.nome)}`;
+    case 'ranking_torneios': return 'Torneio no ranking';
+    case 'ranking_ajustes': return `Ajuste de ranking: ${e(dados.jogador)} (${Number(dados.pontos) > 0 ? '+' : ''}${Number(dados.pontos) || 0} pts)`;
+    case 'premiacao_estruturas': return `Estrutura de premiação: ${e(dados.nome)}`;
+    case 'estruturas_blinds': return `Estrutura de blinds: ${e(dados.nome)}`;
+    case 'configuracoes': return 'Configurações';
+    default: return e(tabela);
+  }
+}
+
 async function renderizarLogCentral(conteudo) {
 
   const termo = textoBuscaCentral();
@@ -702,9 +723,7 @@ async function renderizarLogCentral(conteudo) {
         ? escapeHtml(dados.jogador || '-')
         : ehRecolhimento
           ? ({ rake: 'Rake', caixinha: 'Caixinha', jackpot: 'Jackpot' }[dados.tipo] || 'Retirada') + ' do Cash'
-          : item.tabela === 'cash_mesas'
-            ? `Mesa: ${escapeHtml(dados.nome || '-')}`
-            : `Jogador: ${escapeHtml(dados.nome || '-')}`;
+          : tituloLogOutraTabela(item.tabela, dados);
       const detalhe = ehMov
         ? htmlDetalhesMov(dados)
         : ehRecolhimento
