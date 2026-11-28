@@ -473,7 +473,7 @@
       // O card inteiro é o botão (como no Cash Game): atual → abre no Diretor; outro → seleciona.
       const acao = document.createElement('span');
       acao.className = 'cg-mesa-acao torneio-card-acao';
-      acao.textContent = ehAtual ? 'Abrir no Diretor ›' : 'Selecionar ›';
+      acao.textContent = ehAtual || estaEncerrado ? 'Abrir no Diretor ›' : 'Selecionar ›';
       rodape.appendChild(acao);
 
       const podeAgir = ehAtual || adminLiberado;
@@ -483,7 +483,7 @@
       };
 
       div.setAttribute('role', ehAtual ? 'link' : 'button');
-      div.setAttribute('aria-label', `${torneio.nome}: ${ehAtual ? 'abrir no Diretor' : 'selecionar como torneio atual'}`);
+      div.setAttribute('aria-label', `${torneio.nome}: ${ehAtual || estaEncerrado ? 'abrir no Diretor' : 'selecionar como torneio atual'}`);
       div.tabIndex = podeAgir ? 0 : -1;
       div.classList.toggle('sem-acao', !podeAgir);
       div.onclick = executar;
@@ -499,7 +499,11 @@
 
     if (!adminLiberado) return;
 
-    if (!await mostrarConfirm('Tornar este o torneio atual? Os pagamentos passam a ser registrados nele.')) return;
+    // Encerrado não recebe mais registros: abre direto, sem perguntar.
+    const torneio = todosTorneios.find(t => t.id === torneioId);
+    const encerrado = torneio?.status === 'encerrado';
+
+    if (!encerrado && !await mostrarConfirm('Tornar este o torneio atual? Os pagamentos passam a ser registrados nele.')) return;
 
     const { error } = await client
       .from('configuracoes')
