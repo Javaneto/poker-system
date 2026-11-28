@@ -207,7 +207,7 @@
 
 .cg-fin-nome { flex: 1; min-width: 0; }
 .cg-fin-nome strong { display: block; font-size: 15px; }
-.cg-fin-nome span { display: block; font-size: 12px; color: var(--apagado); }
+.cg-fin-nome span { display: block; font-size: 12px; color: var(--apagado); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .cg-fin-valor { font-size: 16px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
@@ -322,7 +322,9 @@
   .cg-fechamento { grid-template-columns: minmax(0, 1fr); }
   .cg-cabecalho-titulo h1 { font-size: 20px; }
   .cg-abas { flex-wrap: nowrap; }
-  .cg-aba { padding: 7px 11px; }
+  .cg-abas-barra { display: block; }
+  .cg-abas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+  .cg-aba { flex-direction: column; justify-content: center; gap: 3px; padding: 6px 2px; min-height: 52px; font-size: 12px; }
   .cg-fin-grid { grid-template-columns: minmax(0, 1fr); }
   .cg-fin-item { flex-wrap: wrap; }
   .cg-fin-mov { font-size: 14px; }
