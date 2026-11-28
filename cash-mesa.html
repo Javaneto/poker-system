@@ -863,6 +863,10 @@
       ? `
         <div class="cg-status encerrado">${ICONE_RELOGIO}<span>Encerrado em ${formatarDataHora(mesa.encerrado_em)}</span></div>
         <button type="button" class="btn-gray cg-btn-largo${adminLiberado ? '' : ' disabled'}" onclick="reabrirMesa()">${ICONE_REABRIR}<span>Reabrir mesa</span></button>
+        ${mesaSemMovimentacoes()
+          ? `<button type="button" class="cg-btn-excluir cg-btn-largo${adminLiberado ? '' : ' disabled'}" onclick="excluirMesa()">${ICONE_LIXEIRA}<span>Excluir mesa</span></button>
+             <p class="cg-dica">Esta mesa não teve nenhuma movimentação: pode ser excluída.</p>`
+          : ''}
       `
       : `
         <div class="cg-status andamento">${ICONE_RELOGIO}<span>Cash Game em andamento</span></div>
@@ -1415,6 +1419,51 @@
     }
 
     await carregarDados();
+  }
+
+  // Mesa sem compras, devoluções, rake, caixinha ou jackpot.
+  function mesaSemMovimentacoes() {
+    return movs.length === 0 && recolhimentos.length === 0;
+  }
+
+  // Excluir só vale para mesa encerrada sem nenhuma movimentação (nada some
+  // do financeiro). Confere de novo no banco antes de apagar.
+  async function excluirMesa() {
+
+    if (!adminLiberado || !mesaEncerrada() || !mesaSemMovimentacoes()) return;
+
+    if (!await mostrarConfirm(`Excluir ${mesa.nome}? A mesa não teve movimentações e será apagada da lista. Esta ação não pode ser desfeita.`)) return;
+
+    const [resMovs, resRec] = await Promise.all([
+      client.from('movimentacoes').select('id').eq('mesa_id', mesaId).limit(1),
+      client.from('cash_mesa_recolhimentos').select('id').eq('mesa_id', mesaId).limit(1)
+    ]);
+
+    if (resMovs.error || resRec.error) {
+      console.error(resMovs.error || resRec.error);
+      await mostrarAlerta('Erro ao conferir a mesa. Tente de novo.');
+      return;
+    }
+
+    if ((resMovs.data || []).length > 0 || (resRec.data || []).length > 0) {
+      await mostrarAlerta('Esta mesa tem movimentações e não pode ser excluída.');
+      await carregarDados();
+      return;
+    }
+
+    const { error } = await client
+      .from('cash_mesas')
+      .delete()
+      .eq('id', mesaId)
+      .eq('status', 'encerrado');
+
+    if (error) {
+      console.error(error);
+      await mostrarAlerta('Erro ao excluir a mesa. Tente de novo.');
+      return;
+    }
+
+    location.href = 'index.html?lista';
   }
 
   async function reabrirMesa() {
