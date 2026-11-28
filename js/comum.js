@@ -535,16 +535,15 @@ function garantirModalCentralHistorico() {
         <button type="button" class="ch-fechar" title="Fechar" aria-label="Fechar" onclick="fecharCentralHistorico()">${ICONE_CH.fechar}</button>
       </div>
 
-      <div class="ch-abas" role="tablist" aria-label="Seções do histórico">
-        <button type="button" class="ch-aba" role="tab" data-aba="abertas" onclick="trocarAbaCentralHistorico('abertas')">Em aberto</button>
-        <button type="button" class="ch-aba" role="tab" data-aba="sessoes" onclick="trocarAbaCentralHistorico('sessoes')">Sessões finalizadas</button>
-        <button type="button" class="ch-aba" role="tab" data-aba="log" onclick="trocarAbaCentralHistorico('log')">Log</button>
-      </div>
-
       <div class="ch-filtros">
+        <div class="ch-abas" role="tablist" aria-label="Seções do histórico">
+          <button type="button" class="ch-aba" role="tab" data-aba="abertas" onclick="trocarAbaCentralHistorico('abertas')">Em aberto</button>
+          <button type="button" class="ch-aba" role="tab" data-aba="sessoes" onclick="trocarAbaCentralHistorico('sessoes')">Sessões finalizadas</button>
+          <button type="button" class="ch-aba" role="tab" data-aba="log" onclick="trocarAbaCentralHistorico('log')">Log</button>
+        </div>
         <label class="ch-busca">
           <span class="ch-busca-ico">${ICONE_CH.busca}</span>
-          <input type="search" id="chBusca" placeholder="Filtrar por jogador, tipo, observação..." autocomplete="off" aria-label="Filtrar">
+          <input type="search" id="chBusca" placeholder="Buscar jogador, tipo, obs." autocomplete="off" aria-label="Filtrar">
         </label>
         <button type="button" id="chFiltroTorneio" class="ch-switch" role="switch" aria-checked="false">
           <span class="ch-switch-trilho" aria-hidden="true"><span class="ch-switch-bolinha"></span></span>
